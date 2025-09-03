@@ -1,0 +1,30 @@
+{
+  "name": "vue3-project",
+  "version": "1.0.0",
+  "description": "小石榴校园图文社区Vue3前端项目",
+  "author": "@ZTMYO",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vueuse/core": "^13.5.0",
+    "axios": "^1.11.0",
+    "cropperjs": "^1.6.2",
+    "pinia": "^2.1.7",
+    "vue": "^3.5.17",
+    "vue-router": "^4.5.1",
+    "vue3-emoji-picker": "^1.1.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.0",
+    "fast-glob": "^3.3.3",
+    "patch-package": "^8.0.0",
+    "vite": "^7.0.0",
+    "vite-plugin-svg-icons": "^2.0.1",
+    "vite-plugin-vue-devtools": "^7.7.7"
+  }
+}
