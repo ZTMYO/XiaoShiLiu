@@ -25,7 +25,7 @@ router.get('/search', optionalAuth, async (req, res) => {
        WHERE u.nickname LIKE ? OR u.user_id LIKE ? 
        ORDER BY u.created_at DESC 
        LIMIT ? OFFSET ?`,
-      [`%${keyword}%`, `%${keyword}%`, limit, offset]
+      [`%${keyword}%`, `%${keyword}%`, String(limit), String(offset)]
     );
 
     // 检查关注状态（仅在用户已登录时）
@@ -198,7 +198,7 @@ router.get('/', async (req, res) => {
 
     const [rows] = await pool.execute(
       'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [limit, offset]
+      [String(limit), String(offset)]
     );
 
     const [countResult] = await pool.execute('SELECT COUNT(*) as total FROM users');
@@ -277,7 +277,7 @@ router.get('/:id/posts', optionalAuth, async (req, res) => {
       ${orderBy}
       LIMIT ? OFFSET ?
     `;
-    queryParams.push(limit, offset);
+    queryParams.push(String(limit), String(offset));
 
     const [rows] = await pool.execute(query, queryParams);
     // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -370,7 +370,7 @@ router.get('/:id/collections', optionalAuth, async (req, res) => {
        WHERE c.user_id = ? AND p.is_draft = 0
        ORDER BY c.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, limit, offset]
+      [userId, String(limit), String(offset)]
     );
 
     // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -462,7 +462,7 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
        WHERE l.user_id = ? AND l.target_type = 1 AND p.is_draft = 0
        ORDER BY l.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, limit, offset]
+      [userId, String(limit), String(offset)]
     );
 
     // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -730,7 +730,7 @@ router.get('/:id/following', optionalAuth, async (req, res) => {
        WHERE f.follower_id = ?
        ORDER BY f.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, limit, offset]
+      [userId, String(limit), String(offset)]
     );
 
     // 检查当前用户与这些用户的关注状态
@@ -931,7 +931,7 @@ router.get('/:id/mutual-follows', optionalAuth, async (req, res) => {
        )
        ORDER BY u.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, userId, limit, offset]
+      [userId, userId, String(limit), String(offset)]
     );
 
     // 检查当前用户与这些用户的关注状态

@@ -41,7 +41,7 @@ router.get('/comments', authenticateToken, async (req, res) => {
       ORDER BY n.created_at DESC LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.execute(query, [userId, userId, limit, offset]);
+    const [rows] = await pool.execute(query, [userId, userId, String(limit), String(offset)]);
 
     // 获取总数
     const [countResult] = await pool.execute(
@@ -92,7 +92,7 @@ router.get('/likes', authenticateToken, async (req, res) => {
       ORDER BY n.created_at DESC LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.execute(query, [userId, limit, offset]);
+    const [rows] = await pool.execute(query, [userId, String(limit), String(offset)]);
 
     // 获取总数
     const [countResult] = await pool.execute(
@@ -140,7 +140,7 @@ router.get('/follows', authenticateToken, async (req, res) => {
       ORDER BY n.created_at DESC LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.execute(query, [userId, limit, offset]);
+    const [rows] = await pool.execute(query, [userId, String(limit), String(offset)]);
 
     // 获取总数
     const [countResult] = await pool.execute(
@@ -191,7 +191,7 @@ router.get('/collections', authenticateToken, async (req, res) => {
       ORDER BY n.created_at DESC LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.execute(query, [userId, limit, offset]);
+    const [rows] = await pool.execute(query, [userId, String(limit), String(offset)]);
 
     // 获取总数
     const [countResult] = await pool.execute(
@@ -246,7 +246,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     query += ` ORDER BY n.created_at DESC LIMIT ? OFFSET ?`;
-    queryParams.push(limit, offset);
+    queryParams.push(String(limit), String(offset));
 
     const [rows] = await pool.execute(query, queryParams);
 

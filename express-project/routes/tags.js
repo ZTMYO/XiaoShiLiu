@@ -31,7 +31,7 @@ router.get('/hot', async (req, res) => {
        WHERE use_count > 0
        ORDER BY use_count DESC, name ASC
        LIMIT ?`,
-      [limit]
+      [String(limit)]
     );
 
 

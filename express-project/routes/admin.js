@@ -498,7 +498,7 @@ const postsCrudConfig = {
         ${orderClause}
         LIMIT ? OFFSET ?
       `
-      const [posts] = await pool.execute(dataQuery, [...params, limit, offset])
+      const [posts] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
 
       // 为每个笔记获取图片信息和标签信息
       for (let post of posts) {
@@ -684,7 +684,7 @@ const commentsCrudConfig = {
         ${orderClause}
         LIMIT ? OFFSET ?
       `
-      const [comments] = await pool.execute(dataQuery, [...params, limit, offset])
+      const [comments] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
 
       return {
         data: comments,
@@ -849,7 +849,7 @@ const likesCrudConfig = {
         ${orderClause}
         LIMIT ? OFFSET ?
       `
-      const [likes] = await pool.execute(dataQuery, [...params, limit, offset])
+      const [likes] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
 
       return {
         data: likes,
@@ -1023,7 +1023,7 @@ const collectionsCrudConfig = {
         ${orderClause}
         LIMIT ? OFFSET ?
       `
-      const [collections] = await pool.execute(dataQuery, [...params, limit, offset])
+      const [collections] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
 
       return {
         data: collections,
@@ -1178,7 +1178,7 @@ const followsCrudConfig = {
         ${orderClause}
         LIMIT ? OFFSET ?
       `
-      const [follows] = await pool.execute(dataQuery, [...params, limit, offset])
+      const [follows] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
 
       return {
         data: follows,
@@ -1292,7 +1292,7 @@ const notificationsCrudConfig = {
         ${orderClause}
         LIMIT ? OFFSET ?
       `
-      const [notifications] = await pool.execute(dataQuery, [...params, limit, offset])
+      const [notifications] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
 
       return {
         data: notifications,
@@ -1417,7 +1417,7 @@ const sessionsCrudConfig = {
         ${orderClause}
         LIMIT ? OFFSET ?
       `
-      const [sessions] = await pool.execute(dataQuery, [...params, limit, offset])
+      const [sessions] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
 
       return {
         data: sessions,

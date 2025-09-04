@@ -41,7 +41,8 @@ router.get('/', optionalAuth, async (req, res) => {
         ORDER BY p.view_count DESC
         LIMIT ? OFFSET ?
       `;
-      queryParams = [isDraft, topPostsCount, limit, offset];
+      // 将数字参数转换为字符串以解决MySQL2参数绑定问题
+      queryParams = [isDraft, String(topPostsCount), String(limit), String(offset)];
     } else {
       let whereConditions = [];
 
@@ -60,7 +61,8 @@ router.get('/', optionalAuth, async (req, res) => {
       }
 
       query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
-      queryParams.push(limit, offset);
+      // 将数字参数转换为字符串以解决MySQL2参数绑定问题
+      queryParams.push(String(limit), String(offset));
     }
 
     const [rows] = await pool.execute(query, queryParams);

@@ -82,7 +82,7 @@ router.get('/', optionalAuth, async (req, res) => {
          ${whereClause}
          ORDER BY p.created_at DESC
          LIMIT ? OFFSET ?`,
-        [...queryParams, limit, offset]
+        [...queryParams, String(limit), String(offset)]
       );
 
       // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -189,7 +189,7 @@ router.get('/', optionalAuth, async (req, res) => {
          WHERE u.nickname LIKE ? OR u.user_id LIKE ? 
          ORDER BY u.created_at DESC 
          LIMIT ? OFFSET ?`,
-        [`%${keyword}%`, `%${keyword}%`, limit, offset]
+        [`%${keyword}%`, `%${keyword}%`, String(limit), String(offset)]
       );
 
       // 检查关注状态（仅在用户已登录时）

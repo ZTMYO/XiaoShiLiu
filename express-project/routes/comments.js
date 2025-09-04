@@ -50,7 +50,7 @@ router.get('/', optionalAuth, async (req, res) => {
        WHERE c.post_id = ? AND c.parent_id IS NULL
        ORDER BY c.created_at DESC
        LIMIT ? OFFSET ?`,
-      [postId, limit, offset]
+      [postId, String(limit), String(offset)]
     );
 
     // 为每个评论检查点赞状态
@@ -223,7 +223,7 @@ router.get('/:id/replies', optionalAuth, async (req, res) => {
        WHERE c.parent_id = ?
        ORDER BY c.created_at ASC
        LIMIT ? OFFSET ?`,
-      [parentId, limit, offset]
+      [parentId, String(limit), String(offset)]
     );
 
     // 为每个评论检查点赞状态
