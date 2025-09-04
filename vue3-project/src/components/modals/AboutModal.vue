@@ -5,8 +5,8 @@
       <div class="about-header">
         <div class="header-content">
           <div class="logo-section">
-            <img :src="logoUrl" alt="小石榴" class="about-logo" />
-            <h2 class="about-title">关于小石榴</h2>
+            <img :src="logoUrl" alt="聚包盆" class="about-logo" />
+            <h2 class="about-title">关于聚包盆</h2>
           </div>
           <p class="version">v1.0.0</p>
         </div>
@@ -20,17 +20,17 @@
           <div class="intro-section">
             <h3>项目简介</h3>
             <p>
-              小石榴校园图文社区是一个面向开发者与学习者的开源示例项目，旨在提供从前端到后端的完整实践范本，帮助大家学习现代 Web 应用的架构设计、工程化与业务实现。
+              聚包盆是参考开源项目魔改后，为R.E.D团粉社群打造的一个图文社区。社群内只允许讨论R.E.D相关内容
             </p>
           </div>
           <div class="author-section">
             <h3>开发者</h3>
-            <a href="https://github.com/ZTMYO" target="_blank" class="author-link">
+            <a href="https://github.com/PURE281" target="_blank" class="author-link">
               <div class="author-info">
                 <img class="author-avatar" :src="ztmyoUrl" alt="ZTMYO">
                 <div class="author-details">
-                  <p class="author-name">@ZTMYO</p>
-                  <p class="author-desc">全栈开发者</p>
+                  <p class="author-name">@PURE81</p>
+                  <p class="author-desc">R.E.D铁血团粉</p>
                 </div>
               </div>
             </a>
@@ -103,7 +103,7 @@
           </div>
 
           <div class="about-footer">
-            <p>&copy; 2025 小石榴校园图文社区. Made with ❤️ by @ZTMYO</p>
+            <p>&copy; 2025 聚包盆. Made with ❤️ by @PURE81</p>
           </div>
         </div>
       </div>
@@ -122,7 +122,7 @@ const { lock, unlock } = useScrollLock()
 
 // 静态资源URL
 const logoUrl = new URL('@/assets/imgs/logo.ico', import.meta.url).href
-const ztmyoUrl = new URL('@/assets/imgs/ztmyo.png', import.meta.url).href
+const ztmyoUrl = new URL('@/assets/imgs/logo.ico', import.meta.url).href
 const liciUrl = new URL('@/assets/imgs/栗次元.ico', import.meta.url).href
 const xiaRouUrl = new URL('@/assets/imgs/夏柔.ico', import.meta.url).href
 const baoLuoUrl = new URL('@/assets/imgs/保罗.ico', import.meta.url).href

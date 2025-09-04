@@ -327,7 +327,7 @@ router.get('/search', optionalAuth, async (req, res) => {
        WHERE p.is_draft = 0 AND (p.title LIKE ? OR p.content LIKE ?)
        ORDER BY p.created_at DESC
        LIMIT ? OFFSET ?`,
-      [`%${keyword}%`, `%${keyword}%`, limit, offset]
+      [`%${keyword}%`, `%${keyword}%`, String(limit), String(offset)]
     );
 
     // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -417,7 +417,7 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
        WHERE c.post_id = ? AND c.parent_id IS NULL
        ORDER BY c.created_at DESC
        LIMIT ? OFFSET ?`,
-      [postId, limit, offset]
+      [postId, String(limit), String(offset)]
     );
 
     // 为每个评论检查点赞状态

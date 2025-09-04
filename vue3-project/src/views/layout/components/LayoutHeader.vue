@@ -12,7 +12,7 @@ const route = useRoute()
 const searchHistoryStore = useSearchHistoryStore()
 
 // 静态资源URL
-const logoUrl = new URL('@/assets/imgs/小石榴.png', import.meta.url).href
+const logoUrl = new URL('@/assets/imgs/logo.gif', import.meta.url).href
 
 const isLargeScreen = ref(window.innerWidth > 695)
 const showSidebar = ref(window.innerWidth > 960)
@@ -174,11 +174,11 @@ onUnmounted(() => {
     <header>
         <div class="header-container">
             <template v-if="displaySearch">
-                <img v-if="isLargeScreen" :src="logoUrl" alt="小石榴" @click="router.push('/')">
+                <img v-if="isLargeScreen" :src="logoUrl" alt="聚包盆" @click="router.push('/')">
                 <div class="search-row" :class="{ 'large-screen': isLargeScreen, 'small-screen': !isLargeScreen }">
                     <div class="search-bar-container">
                         <div class="search-bar">
-                            <input v-model="searchText" type="text" placeholder="搜索小石榴" @keypress="handleKeyPress"
+                            <input v-model="searchText" type="text" placeholder="搜索" @keypress="handleKeyPress"
                                 @focus="handleSearchFocus" @blur="handleSearchBlur" />
                             <div class="input-controls">
                                 <div class="clear-btn" @click="clearInput"
@@ -259,8 +259,8 @@ header {
 }
 
 img {
-    width: 68.32px;
-    height: 32px;
+    width: 50px;
+    height: 50px;
 }
 
 .header-right {

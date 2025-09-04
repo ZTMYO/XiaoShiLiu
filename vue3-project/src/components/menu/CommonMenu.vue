@@ -45,7 +45,7 @@ const handleMenuClick = (action) => {
 <template>
 
   <DropdownItem @click="handleMenuClick('about')">
-    关于小石榴
+    关于聚包盆
   </DropdownItem>
 
   <ThemeSwitcherMenuItem />
