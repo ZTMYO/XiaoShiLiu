@@ -1,0 +1,5 @@
+/express-project/node_modules
+/express-project/.env
+/express-project/.env.example
+/express-project/scripts
+/express-project/config/config.js
