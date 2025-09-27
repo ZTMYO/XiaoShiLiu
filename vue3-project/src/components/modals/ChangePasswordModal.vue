@@ -184,7 +184,7 @@ const handleChangePassword = async () => {
   opacity: 0;
   transition: opacity 0.2s ease;
   width: 100vw;
-  height: 100vh;
+  height: 100%;
 }
 
 .auth-modal-overlay.animating {

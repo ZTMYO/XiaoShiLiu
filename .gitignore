@@ -43,3 +43,4 @@ Thumbs.db
 # Vue
 *.tsbuildinfo
 *.vue.js
+vue3-project/vite.config.js

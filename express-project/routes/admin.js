@@ -2189,6 +2189,9 @@ const categoriesCrudConfig = {
       `, queryParams)
 
       // 获取数据
+      const limitNum = Number(limit);
+      const offsetNum = Number(offset);
+
       const [categories] = await pool.execute(`
         SELECT 
           c.id,
@@ -2201,8 +2204,8 @@ const categoriesCrudConfig = {
         ${whereClause}
         GROUP BY c.id, c.name, c.category_title, c.created_at
         ORDER BY ${validSortField} ${validSortOrder}
-        LIMIT ? OFFSET ?
-      `, [...queryParams, parseInt(limit), offset])
+        LIMIT ${limitNum} OFFSET ${offsetNum}
+      `, queryParams);
 
       return {
         data: categories,
