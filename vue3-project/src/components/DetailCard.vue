@@ -4159,14 +4159,24 @@ function handleAvatarError(event) {
     border-bottom: 1px solid var(--border-color-primary);
   }
 
+  /* 针对IOS设备的Safari浏览器模态模式有空白问题修复 */
+  @supports (-webkit-overflow-scrolling: touch) {
+    .detail-card:not(.page-mode) .scrollable-content {
+      padding-top: calc(115px + env(safe-area-inset-top));
+    }
+    .detail-card.page-mode .scrollable-content {
+      padding-bottom: calc(150px + env(safe-area-inset-bottom));
+    }
+  }
+
   /* 可滚动内容区域包含图片和文本 */
   .scrollable-content {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-top: calc(100px + constant(safe-area-inset-top));
-    padding-top: calc(100px + env(safe-area-inset-top));
-    padding-bottom: calc(110px + constant(safe-area-inset-bottom));
+    /* padding-top: calc(100px + constant(safe-area-inset-top)); constant说是弃用了留下一个env就好了吧ovo */
+    padding-top: calc(72px + env(safe-area-inset-top));
+    /* padding-bottom: calc(110px + constant(safe-area-inset-bottom)); ⬆⬆⬆ */
     padding-bottom: calc(110px + env(safe-area-inset-bottom));
     max-width: 100vw;
     box-sizing: border-box;
@@ -4185,7 +4195,7 @@ function handleAvatarError(event) {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    margin-bottom: 16px;
+    /* margin-bottom: 16px; 和上面的空白问题有关系，不确定作用是什么但注释掉有效果 */
   }
 
   /* 图片容器在移动端的样式 */
@@ -4207,7 +4217,7 @@ function handleAvatarError(event) {
   /* 移动端视频容器样式 */
   .mobile-video-container {
     display: flex;
-    height: 50%;
+    height: 40vh;
     width: 100%;
     min-height: 200px;
     margin-bottom: 16px;
