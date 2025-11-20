@@ -7,14 +7,15 @@
  * @version v1.2.0
  * @license GPLv3
  */
-// 加载环境变量
-require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const config = require('./config/config');
 const { HTTP_STATUS, RESPONSE_CODES } = require('./constants');
+
+// 加载环境变量
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 // 导入路由模块
 const authRoutes = require('./routes/auth');
