@@ -252,14 +252,16 @@ EMAIL_FROM=your_email@example.com
 EMAIL_FROM_NAME=小石榴校园图文社区
 ```
 
-安装依赖并初始化数据库：
+安装依赖：
 ```bash
 npm install
-# 初始化数据库结构
-cd scripts
-node init-database.js
+```
+
+初始化数据库：
+```bash
+npm run init-db
 # 生成示例数据（可选）
-node generate-data.js
+npm run generate-data
 ```
 
 启动后端服务：
