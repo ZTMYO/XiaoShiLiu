@@ -52,7 +52,7 @@ const config = {
       },
       // 第三方图床配置
       imagehost: {
-        apiUrl: process.env.IMAGEHOST_API_URL || 'https://api.xunjinlu.fun/tc/api.php',
+        apiUrl: process.env.IMAGEHOST_API_URL || 'https://api.xinyew.cn/api/360tc',
         timeout: parseInt(process.env.IMAGEHOST_TIMEOUT) || 60000
       },
       // Cloudflare R2配置

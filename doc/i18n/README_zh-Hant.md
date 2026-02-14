@@ -157,7 +157,7 @@
 
 ## 第三方API
 - **圖片儲存：** 灌裝的示例圖片來自 [栗次元圖床](https://t.alcy.cc/)，提供穩定的圖片儲存服務
-- **圖片上傳：** 使用者上傳圖片使用了 [夏柔API](https://api.aa1.cn/doc/tcapi.html)，確保圖片上傳的穩定性和速度
+- **圖片上傳：** 使用者上傳圖片使用了 [夏柔API](https://api.aa1.cn/doc/360tc.html)，確保圖片上傳的穩定性和速度
 - **属地查詢：** IP属地查詢服務使用 [保羅API](https://api.pearktrue.cn/console/detail?id=290)，實現精準的IP属地定位功能
 
 
@@ -214,7 +214,7 @@ VIDEO_UPLOAD_DIR=uploads/videos
 VIDEO_COVER_DIR=uploads/covers
 
 # 第三方圖床配置（當IMAGE_UPLOAD_STRATEGY=imagehost時使用）
-IMAGEHOST_API_URL=https://api.xunjinlu.fun/tc/api.php
+IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
 IMAGEHOST_TIMEOUT=60000
 
 # Cloudflare R2 配置（當IMAGE_UPLOAD_STRATEGY=r2或VIDEO_UPLOAD_STRATEGY=r2時使用）

@@ -156,7 +156,7 @@
 
 ## 第三方API
 - **图片存储：** 灌装的示例图片来自 [栗次元图床](https://t.alcy.cc/)，提供稳定的图片存储服务
-- **图片上传：** 用户上传图片使用了 [夏柔API](https://api.aa1.cn/doc/tcapi.html)，确保图片上传的稳定性和速度
+- **图片上传：** 用户上传图片使用了 [夏柔API](https://api.aa1.cn/doc/360tc.html)，确保图片上传的稳定性和速度
 - **属地查询：** IP属地查询服务使用 [保罗API](https://api.pearktrue.cn/console/detail?id=290)，实现精准的IP属地定位功能
 
 
@@ -215,7 +215,7 @@ VIDEO_UPLOAD_DIR=uploads/videos
 VIDEO_COVER_DIR=uploads/covers
 
 # 第三方图床配置（当IMAGE_UPLOAD_STRATEGY=imagehost时使用）
-IMAGEHOST_API_URL=https://api.xunjinlu.fun/tc/api.php
+IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
 IMAGEHOST_TIMEOUT=60000
 
 # Cloudflare R2 配置（当IMAGE_UPLOAD_STRATEGY=r2或VIDEO_UPLOAD_STRATEGY=r2时使用）

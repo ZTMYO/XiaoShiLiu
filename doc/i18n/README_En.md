@@ -157,7 +157,7 @@
 
 ## Third-Party APIs
 - **Image Storage**: Sample images are from [Liciyuan Image Hosting](https://t.alcy.cc/), providing stable image storage service
-- **Image Upload**: User-uploaded images use [Xiarou API](https://api.aa1.cn/doc/tcapi.html) to ensure stability and speed
+- **Image Upload**: User-uploaded images use [Xiarou API](https://api.aa1.cn/doc/360tc.html) to ensure stability and speed
 - **IP Location Query**: IP location service uses [Pear API](https://api.pearktrue.cn/console/detail?id=290) for accurate IP positioning
 
 ## Environment Requirements
@@ -213,7 +213,7 @@ VIDEO_UPLOAD_DIR=uploads/videos
 VIDEO_COVER_DIR=uploads/covers
 
 # Third-party image hosting configuration (when IMAGE_UPLOAD_STRATEGY=imagehost)
-IMAGEHOST_API_URL=https://api.xunjinlu.fun/tc/api.php
+IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
 IMAGEHOST_TIMEOUT=60000
 
 # Cloudflare R2 configuration (when IMAGE_UPLOAD_STRATEGY=r2 or VIDEO_UPLOAD_STRATEGY=r2)

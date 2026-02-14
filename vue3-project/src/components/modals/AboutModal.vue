@@ -58,7 +58,7 @@
                     :src="liciUrl" alt="栗次元" class="api-icon">栗次元图床</a>，提供稳定的图片存储服务。
               </p>
               <p>
-                <strong>图片上传：</strong>用户上传图片使用了 <a href="https://api.aa1.cn/doc/tcapi.html" target="_blank"
+                <strong>图片上传：</strong>用户上传图片使用了 <a href="https://api.aa1.cn/doc/360tc.html" target="_blank"
                   class="api-link"><img :src="xiaRouUrl" alt="夏柔" class="api-icon">夏柔API</a>，确保图片上传的稳定性和速度。
               </p>
               <p>
