@@ -78,7 +78,7 @@ VIDEO_UPLOAD_DIR=uploads/videos
 VIDEO_COVER_DIR=uploads/covers
 
 # Third-party image hosting configuration (when IMAGE_UPLOAD_STRATEGY=imagehost)
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/jdtc
+IMAGEHOST_API_URL=https://api.xunjinlu.fun/tc/api.php
 IMAGEHOST_TIMEOUT=60000
 
 # Cloudflare R2 configuration (when IMAGE_UPLOAD_STRATEGY=r2 or VIDEO_UPLOAD_STRATEGY=r2)
@@ -225,7 +225,7 @@ LOCAL_UPLOAD_DIR=uploads
 LOCAL_BASE_URL=http://localhost:3001
 
 # Third-party Image Hosting Configuration
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/jdtc
+IMAGEHOST_API_URL=https://api.xunjinlu.fun/tc/api.php
 IMAGEHOST_TIMEOUT=60000
 
 # Cloudflare R2 Storage Configuration
@@ -245,7 +245,7 @@ LOCAL_UPLOAD_DIR=uploads
 LOCAL_BASE_URL=http://localhost:3001
 
 # Third-party Image Hosting Configuration
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/jdtc
+IMAGEHOST_API_URL=https://api.xunjinlu.fun/tc/api.php
 IMAGEHOST_TIMEOUT=60000
 
 # API Configuration

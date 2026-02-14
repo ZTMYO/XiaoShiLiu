@@ -2,7 +2,7 @@
 
 ## Project Information
 - **Project Name**: Xiaoshiliu Image and Text Community
-- **Version**: v1.3.0
+- **Version**: v1.3.1
 - **Base URL**: `http://localhost:3001`
 - **Database**: xiaoshiliu (MySQL)
 - **Update Time**: 2025-09-13

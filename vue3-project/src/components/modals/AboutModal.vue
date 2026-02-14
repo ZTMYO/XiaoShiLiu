@@ -9,7 +9,7 @@
 
             <h2 class="about-title">关于小石榴</h2>
           </div>
-          <p class="version">v1.3.0</p>
+          <p class="version">v1.3.1</p>
         </div>
         <button class="close-btn" @click="closeModal">
           <SvgIcon name="close" />
@@ -58,12 +58,13 @@
                     :src="liciUrl" alt="栗次元" class="api-icon">栗次元图床</a>，提供稳定的图片存储服务。
               </p>
               <p>
-                <strong>图片上传：</strong>用户上传图片使用了 <a href="https://api.aa1.cn/doc/xinyew_jdtc.html" target="_blank"
+                <strong>图片上传：</strong>用户上传图片使用了 <a href="https://api.aa1.cn/doc/tcapi.html" target="_blank"
                   class="api-link"><img :src="xiaRouUrl" alt="夏柔" class="api-icon">夏柔API</a>，确保图片上传的稳定性和速度。
               </p>
               <p>
-                <strong>属地查询：</strong>IP属地查询服务使用 <a href="https://api.pearktrue.cn/dashboard/detail/290" target="_blank"
-                  class="api-link"><img :src="baoLuoUrl" alt="保罗" class="api-icon">保罗API</a>，实现精准的IP属地定位功能。
+                <strong>属地查询：</strong>IP属地查询服务使用 <a href="https://api.pearktrue.cn/console/detail?id=290"
+                  target="_blank" class="api-link"><img :src="baoLuoUrl" alt="保罗"
+                    class="api-icon">保罗API</a>，实现精准的IP属地定位功能。
               </p>
             </div>
           </div>

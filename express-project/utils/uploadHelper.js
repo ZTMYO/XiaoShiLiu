@@ -125,8 +125,8 @@ async function uploadToImageHost(fileBuffer, filename, mimetype) {
       })
     });
 
-    if (response.data && response.data.errno === 0 && response.data.data && response.data.data.url) {
-      const imageUrl = response.data.data.url.trim().replace(/\`/g, '').replace(/\s+/g, '');
+    if (response.data && response.data.success === true && response.data.url) {
+      const imageUrl = response.data.url.trim().replace(/\`/g, '').replace(/\s+/g, '');
       return {
         success: true,
         url: imageUrl
@@ -135,7 +135,7 @@ async function uploadToImageHost(fileBuffer, filename, mimetype) {
       console.log('❌ 图床返回错误:', response.data);
       return {
         success: false,
-        message: '图床上传失败'
+        message: response.data.message || '图床上传失败'
       };
     }
   } catch (error) {

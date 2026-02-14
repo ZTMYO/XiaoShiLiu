@@ -1,3 +1,5 @@
+import request from './request'
+
 // 压缩图片函数
 const compressImage = (file, maxSizeMB = 0.8, quality = 0.4) => {
   return new Promise((resolve) => {
@@ -57,25 +59,14 @@ export async function uploadImage(file, options = {}) {
     const filename = options.filename || (compressedFile instanceof File ? compressedFile.name : 'image.png')
     formData.append('file', compressedFile, filename)
 
-    // 创建AbortController用于超时控制
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 60000) // 60秒超时
-
-    const response = await fetch('/api/upload/single', {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal,
+    // 使用request实例上传
+    const result = await request.post('/upload/single', formData, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Content-Type': 'multipart/form-data'
       }
     })
 
-    clearTimeout(timeoutId)
-
-    if (!response.ok) throw new Error(`HTTP错误: ${response.status}`)
-
-    const result = await response.json()
-    if (result.code !== 200) throw new Error(result.message || '上传失败')
+    if (!result.success) throw new Error(result.message || '上传失败')
 
     return {
       success: true,
@@ -158,36 +149,19 @@ export async function uploadImages(files, options = {}) {
 export async function uploadCroppedImage(blob, options = {}) {
   try {
     if (!blob) throw new Error('请选择要上传的文件')
-    
+
     const formData = new FormData()
     const filename = options.filename || 'avatar.png'
     formData.append('file', blob, filename)
 
-    // 自动检测token类型（管理员或普通用户）
-    const adminToken = localStorage.getItem('admin_token')
-    const userToken = localStorage.getItem('token')
-    const token = adminToken || userToken
-
-    if (!token) {
-      throw new Error('未登录，请先登录')
-    }
-
-    // 使用后端的单图片上传接口
-    const response = await fetch('/api/upload/single', {
-      method: 'POST',
-      body: formData,
+    // 使用request实例上传
+    const result = await request.post('/upload/single', formData, {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'multipart/form-data'
       }
     })
 
-    if (!response.ok) {
-      throw new Error(`HTTP错误: ${response.status}`)
-    }
-
-    const result = await response.json()
-    
-    if (result.code === 200) {
+    if (result.success) {
       return {
         success: true,
         data: { url: result.data.url, originalName: filename, size: blob.size },
