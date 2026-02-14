@@ -3,8 +3,8 @@
     <!-- 上半部分：缩略图、标题内容、操作按钮 -->
     <div class="post-upper">
       <div class="post-thumbnail" @click="goToPostDetail">
-        <img v-if="post.type === 2 && post.images && post.images.length > 0" :src="post.images[0]"
-          :alt="post.title" @error="handleImageError" />
+        <img v-if="post.type === 2 && post.images && post.images.length > 0" :src="post.images[0]" :alt="post.title"
+          @error="handleImageError" />
         <img
           v-else-if="post.type !== 2 && ((post.originalData?.images && post.originalData.images.length > 0) || (post.images && post.images.length > 0))"
           :src="(post.originalData?.images && post.originalData.images[0]) || (post.images && post.images[0]) || post.image"
@@ -39,7 +39,7 @@
     <!-- 下半部分：meta标签和发布时间 -->
     <div class="post-lower">
       <div class="meta-row">
-        <span class="category">{{ getCategoryName(post.category)}}</span>
+        <span class="category">{{ getCategoryName(post.category) }}</span>
         <span class="stats">
           <SvgIcon name="view" width="14" height="14" />
           {{ post.view_count }}
@@ -66,6 +66,7 @@
 
 <script setup>
 import SvgIcon from './SvgIcon.vue'
+import defaultPlaceholder from '@/assets/imgs/未加载.png'
 
 // Props定义
 const props = defineProps({
@@ -129,7 +130,7 @@ const formatDate = (dateString) => {
 const handleImageError = (event) => {
   const img = event.target
   // 直接替换为未加载图片
-  img.src = '/src/assets/imgs/未加载.png'
+  img.src = defaultPlaceholder
   img.style.display = 'block'
 }
 
