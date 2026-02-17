@@ -58,7 +58,7 @@ VIDEO_UPLOAD_DIR=uploads/videos
 VIDEO_COVER_DIR=uploads/covers
 
 # 第三方图床配置（当IMAGE_UPLOAD_STRATEGY=imagehost时使用）
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/jdtc
+IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
 IMAGEHOST_TIMEOUT=60000
 
 # Cloudflare R2 配置（当IMAGE_UPLOAD_STRATEGY=r2或VIDEO_UPLOAD_STRATEGY=r2时使用）
@@ -215,7 +215,7 @@ LOCAL_UPLOAD_DIR=uploads
 LOCAL_BASE_URL=http://localhost:3001
 
 # 第三方图床配置（当UPLOAD_STRATEGY=imagehost时使用）
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/jdtc
+IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
 IMAGEHOST_TIMEOUT=60000
 
 # Cloudflare R2 配置（当UPLOAD_STRATEGY=r2时使用）
@@ -353,7 +353,7 @@ XiaoShiLiu/
 
 2. **第三方图床** (`UPLOAD_STRATEGY=imagehost`)
    ```env
-   IMAGEHOST_API_URL=https://api.xinyew.cn/api/jdtc
+   IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
    IMAGEHOST_TIMEOUT=60000
    ```
 

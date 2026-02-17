@@ -50,7 +50,7 @@ services:
       UPLOAD_STRATEGY: ${UPLOAD_STRATEGY:-imagehost}
       LOCAL_UPLOAD_DIR: ${LOCAL_UPLOAD_DIR:-uploads}
       LOCAL_BASE_URL: ${LOCAL_BASE_URL:-http://localhost:3001}
-      IMAGEHOST_API_URL: ${IMAGEHOST_API_URL:-https://api.xinyew.cn/api/jdtc}
+      IMAGEHOST_API_URL: ${IMAGEHOST_API_URL:-https://api.xinyew.cn/api/360tc}
       IMAGEHOST_TIMEOUT: ${IMAGEHOST_TIMEOUT:-60000}
       TZ: Asia/Shanghai
     ports:

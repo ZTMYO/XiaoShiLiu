@@ -5,7 +5,7 @@
  * @author ZTMYO
  * @github https://github.com/ZTMYO
  * @description Express应用的核心配置管理
- * @version v1.3.0
+ * @version v1.3.1
  */
 
 const mysql = require('mysql2/promise');
@@ -52,7 +52,7 @@ const config = {
       },
       // 第三方图床配置
       imagehost: {
-        apiUrl: process.env.IMAGEHOST_API_URL || 'https://api.xinyew.cn/api/jdtc',
+        apiUrl: process.env.IMAGEHOST_API_URL || 'https://api.xinyew.cn/api/360tc',
         timeout: parseInt(process.env.IMAGEHOST_TIMEOUT) || 60000
       },
       // Cloudflare R2配置

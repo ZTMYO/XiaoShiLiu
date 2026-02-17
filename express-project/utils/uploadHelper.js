@@ -125,19 +125,37 @@ async function uploadToImageHost(fileBuffer, filename, mimetype) {
       })
     });
 
-    if (response.data && response.data.errno === 0 && response.data.data && response.data.data.url) {
-      const imageUrl = response.data.data.url.trim().replace(/\`/g, '').replace(/\s+/g, '');
-      return {
-        success: true,
-        url: imageUrl
-      };
-    } else {
-      console.log('❌ 图床返回错误:', response.data);
-      return {
-        success: false,
-        message: '图床上传失败'
-      };
+    // 打印响应数据，以便调试
+    console.log('图床响应数据:', response.data);
+
+    // 检查响应格式，适配不同图床API的返回格式
+    if (response.data && (response.data.errno === 0 || response.data.success === true || response.data.code === 200 || response.data.ok === true)) {
+      // 尝试从不同字段获取URL
+      let imageUrl;
+      if (response.data.data && response.data.data.url) {
+        imageUrl = response.data.data.url;
+      } else if (response.data.url) {
+        imageUrl = response.data.url;
+      } else if (response.data.result) {
+        imageUrl = response.data.result;
+      } else if (response.data.data) {
+        imageUrl = response.data.data;
+      }
+
+      if (imageUrl) {
+        imageUrl = imageUrl.trim().replace(/\`/g, '').replace(/\s+/g, '');
+        return {
+          success: true,
+          url: imageUrl
+        };
+      }
     }
+
+    console.log('❌ 图床返回错误:', response.data);
+    return {
+      success: false,
+      message: response.data.message || response.data.error || '图床上传失败'
+    };
   } catch (error) {
     console.error('❌ 图床上传失败:', error.message);
     return {
@@ -158,7 +176,7 @@ async function uploadToImageHost(fileBuffer, filename, mimetype) {
 async function uploadImageToR2(fileBuffer, filename, mimetype) {
   try {
     const r2Config = config.upload.image.r2;
-    
+
     // 验证必要的配置
     if (!r2Config.accessKeyId || !r2Config.secretAccessKey || !r2Config.bucketName || !r2Config.endpoint) {
       throw new Error('Cloudflare R2 配置不完整');
@@ -225,7 +243,7 @@ async function uploadImageToR2(fileBuffer, filename, mimetype) {
 async function uploadVideoToR2(fileBuffer, filename, mimetype) {
   try {
     const r2Config = config.upload.video.r2;
-    
+
     // 验证必要的配置
     if (!r2Config.accessKeyId || !r2Config.secretAccessKey || !r2Config.bucketName || !r2Config.endpoint) {
       throw new Error('Cloudflare R2 配置不完整');
@@ -361,7 +379,7 @@ function adminAuth(req, res, next) {
  */
 async function uploadImage(fileBuffer, filename, mimetype) {
   const strategy = config.upload.image.strategy;
-  
+
   if (strategy === 'local') {
     return await saveImageToLocal(fileBuffer, filename);
   } else if (strategy === 'imagehost') {
@@ -385,7 +403,7 @@ async function uploadImage(fileBuffer, filename, mimetype) {
  */
 async function uploadVideo(fileBuffer, filename, mimetype) {
   const strategy = config.upload.video.strategy;
-  
+
   if (strategy === 'local') {
     return await saveVideoToLocal(fileBuffer, filename);
   } else if (strategy === 'r2') {
