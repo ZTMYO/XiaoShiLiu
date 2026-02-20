@@ -81,6 +81,9 @@ class DatabaseInitializer {
       // 创建审核表
       await this.createAuditTable(connection);
 
+      // 创建用户封禁表
+      await this.createUserBanTable(connection);
+
       console.log('所有数据表创建完成!');
 
     } catch (error) {
@@ -414,6 +417,28 @@ class DatabaseInitializer {
     `;
     await connection.execute(sql);
     console.log('✓ audit 表创建成功');
+  }
+
+  async createUserBanTable(connection) {
+    const sql = `
+      CREATE TABLE IF NOT EXISTS \`user_ban\` (
+        \`id\` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '封禁记录ID',
+        \`user_id\` bigint(20) NOT NULL COMMENT '被封禁用户ID',
+        \`reason\` varchar(255) NOT NULL COMMENT '封禁原因',
+        \`end_time\` timestamp NULL DEFAULT NULL COMMENT '封禁结束时间',
+        \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        \`status\` int(11) DEFAULT 0 COMMENT '状态：0-封禁中，1-管理员解封，2-自动解封，3-永久封禁，4-封禁撤销',
+        \`operator\` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作人ID：0-系统，其他为管理员ID',
+        PRIMARY KEY (\`id\`),
+        KEY \`idx_user_id\` (\`user_id\`),
+        KEY \`idx_status\` (\`status\`),
+        KEY \`idx_created_at\` (\`created_at\`),
+        KEY \`idx_end_time\` (\`end_time\`),
+        CONSTRAINT \`user_ban_ibfk_1\` FOREIGN KEY (\`user_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户封禁表';
+    `;
+    await connection.execute(sql);
+    console.log('user_ban 表创建成功');
   }
 
   async insertDefaultAdmin() {

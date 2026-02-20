@@ -3,6 +3,7 @@ const router = express.Router();
 const { HTTP_STATUS, RESPONSE_CODES, ERROR_MESSAGES } = require('../constants');
 const { pool } = require('../config/config');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { checkUserBan } = require('../middleware/ban');
 const NotificationHelper = require('../utils/notificationHelper');
 const { extractMentionedUsers, hasMentions } = require('../utils/mentionParser');
 const { sanitizeContent } = require('../utils/contentSecurity');
@@ -102,7 +103,7 @@ router.get('/', optionalAuth, async (req, res) => {
 });
 
 // 创建评论
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, checkUserBan, async (req, res) => {
   try {
     const { post_id, content, parent_id } = req.body;
     const userId = req.user.id;
@@ -292,7 +293,7 @@ router.get('/:id/replies', optionalAuth, async (req, res) => {
 
 
 // 删除评论
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, checkUserBan, async (req, res) => {
   try {
     const commentId = req.params.id;
     const userId = req.user.id;

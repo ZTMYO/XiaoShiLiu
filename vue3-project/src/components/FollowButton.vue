@@ -190,6 +190,7 @@ onUnmounted(() => {
     text-align: center;
     transition: all 0.2s ease;
     user-select: none;
+    outline: none;
 }
 
 .follow-btn:not(.following) {

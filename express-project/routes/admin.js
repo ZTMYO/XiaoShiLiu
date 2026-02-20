@@ -2286,4 +2286,18 @@ router.get('/categories', adminAuth, async (req, res) => {
   }
 })
 
+// ==================== 用户封禁管理 ====================
+const { userBanHandlers, handleUnban, handleGetOne, handleGetList } = require('./admin/ban')
+
+// 用户封禁路由
+router.post('/ban', adminAuth, userBanHandlers.create)
+router.put('/ban/:id', adminAuth, userBanHandlers.update)
+router.delete('/ban/:id', adminAuth, userBanHandlers.deleteOne)
+router.delete('/ban', adminAuth, userBanHandlers.deleteMany)
+router.get('/ban/:id', adminAuth, handleGetOne)
+router.get('/ban', adminAuth, handleGetList)
+
+// 解封用户接口
+router.post('/ban/:id/unban', adminAuth, handleUnban)
+
 module.exports = router

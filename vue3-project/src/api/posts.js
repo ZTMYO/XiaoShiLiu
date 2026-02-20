@@ -301,7 +301,7 @@ export async function createPost(data) {
   try {
     const response = await postApi.createPost(data)
     return {
-      success: true,
+      success: response.success,
       data: response.data,
       message: response.message
     }
@@ -363,7 +363,7 @@ export async function updatePost(postId, data) {
   try {
     const response = await postApi.updatePost(postId, data)
     return {
-      success: true,
+      success: response.success,
       data: response.data,
       message: response.message || '更新成功'
     }
@@ -381,7 +381,7 @@ export async function deletePost(postId) {
   try {
     const response = await postApi.deletePost(postId)
     return {
-      success: true,
+      success: response.success,
       message: response.message || '删除成功'
     }
   } catch (error) {

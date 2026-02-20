@@ -248,6 +248,23 @@ CREATE TABLE IF NOT EXISTS `audit` (
   CONSTRAINT `audit_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审核表';
 
+-- 16. 用户封禁表
+CREATE TABLE IF NOT EXISTS `user_ban` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '封禁记录ID',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `reason` text NOT NULL COMMENT '封禁原因',
+  `end_time` timestamp NULL DEFAULT NULL COMMENT '封禁结束时间',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `status` tinyint(4) DEFAULT 0 COMMENT '状态：0=封禁中，1=管理员解封，2=自动解封，3=永久封禁，4=封禁撤销',
+  `operator` bigint(20) NOT NULL COMMENT '操作人ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_operator` (`operator`),
+  CONSTRAINT `user_ban_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户封禁表';
+
 -- 插入默认管理员账户
 -- 密码: 123456
 INSERT INTO `admin` (`username`, `password`) VALUES 

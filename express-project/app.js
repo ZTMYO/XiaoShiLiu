@@ -13,6 +13,8 @@ const path = require('path');
 const cors = require('cors');
 const config = require('./config/config');
 const { HTTP_STATUS, RESPONSE_CODES } = require('./constants');
+// 导入自动解封功能
+const { startAutoUnbanService } = require('./utils/autoUnban');
 
 // 加载环境变量
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
@@ -87,6 +89,9 @@ app.use((err, req, res, next) => {
 app.use('*', (req, res) => {
   res.status(HTTP_STATUS.NOT_FOUND).json({ code: RESPONSE_CODES.NOT_FOUND, message: '接口不存在' });
 });
+
+// 启动自动解封服务
+startAutoUnbanService();
 
 // 启动服务器
 const PORT = config.server.port;
