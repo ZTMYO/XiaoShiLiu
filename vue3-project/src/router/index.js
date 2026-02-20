@@ -197,8 +197,8 @@ const router = createRouter({
           component: UserManagement
         },
         {
-          path: 'user-ban',
-          name: 'admin_user_ban',
+          path: 'ban',
+          name: 'admin_ban',
           component: UserBanManagement
         },
         {

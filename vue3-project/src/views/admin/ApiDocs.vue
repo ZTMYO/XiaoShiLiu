@@ -2198,7 +2198,7 @@ const apiGroups = ref([
       },
       {
         method: 'GET',
-        path: '/api/admin/user-ban',
+        path: '/api/admin/ban',
         title: '获取用户封禁列表（管理员）',
         description: '管理员获取用户封禁列表，支持分页、搜索和排序',
         auth: true,
@@ -2216,7 +2216,7 @@ const apiGroups = ref([
       },
       {
         method: 'GET',
-        path: '/api/admin/user-ban/:id',
+        path: '/api/admin/ban/:id',
         title: '获取单个封禁记录（管理员）',
         description: '管理员获取单个用户封禁记录的详细信息',
         auth: true,
@@ -2227,7 +2227,7 @@ const apiGroups = ref([
       },
       {
         method: 'POST',
-        path: '/api/admin/user-ban',
+        path: '/api/admin/ban',
         title: '创建封禁记录（管理员）',
         description: '管理员创建用户封禁记录',
         auth: true,
@@ -2241,7 +2241,7 @@ const apiGroups = ref([
       },
       {
         method: 'PUT',
-        path: '/api/admin/user-ban/:id',
+        path: '/api/admin/ban/:id',
         title: '更新封禁记录（管理员）',
         description: '管理员更新用户封禁记录',
         auth: true,
@@ -2255,7 +2255,7 @@ const apiGroups = ref([
       },
       {
         method: 'DELETE',
-        path: '/api/admin/user-ban/:id',
+        path: '/api/admin/ban/:id',
         title: '删除单个封禁记录（管理员）',
         description: '管理员删除单个用户封禁记录',
         auth: true,
@@ -2266,7 +2266,7 @@ const apiGroups = ref([
       },
       {
         method: 'DELETE',
-        path: '/api/admin/user-ban',
+        path: '/api/admin/ban',
         title: '批量删除封禁记录（管理员）',
         description: '管理员批量删除用户封禁记录',
         auth: true,
@@ -2277,7 +2277,7 @@ const apiGroups = ref([
       },
       {
         method: 'POST',
-        path: '/api/admin/user-ban/:id/unban',
+        path: '/api/admin/ban/:id/unban',
         title: '解封用户（管理员）',
         description: '管理员解封被封禁的用户',
         auth: true,

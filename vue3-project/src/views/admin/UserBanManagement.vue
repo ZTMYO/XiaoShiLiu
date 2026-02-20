@@ -1,5 +1,5 @@
 <template>
-  <CrudTable title="用户封禁管理" entity-name="封禁记录" api-endpoint="/admin/user-ban" :columns="columns" :form-fields="formFields"
+  <CrudTable title="用户封禁管理" entity-name="封禁记录" api-endpoint="/admin/ban" :columns="columns" :form-fields="formFields"
     :search-fields="searchFields" default-sort-field="created_at" default-sort-order="desc" />
 </template>
 

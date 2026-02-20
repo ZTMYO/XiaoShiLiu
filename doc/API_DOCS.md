@@ -2048,7 +2048,7 @@ Authorization: Bearer <your_jwt_token>
 ## 管理员用户封禁接口
 
 ### 1. 获取用户封禁列表（管理员）
-**接口地址**: `GET /api/admin/user-ban`
+**接口地址**: `GET /api/admin/ban`
 **需要认证**: 是（管理员权限）
 
 **请求参数**:
@@ -2094,7 +2094,7 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 ### 2. 获取单个用户封禁记录（管理员）
-**接口地址**: `GET /api/admin/user-ban/:id`
+**接口地址**: `GET /api/admin/ban/:id`
 **需要认证**: 是（管理员权限）
 
 **路径参数**:
@@ -2123,7 +2123,7 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 ### 3. 创建用户封禁记录（管理员）
-**接口地址**: `POST /api/admin/user-ban`
+**接口地址**: `POST /api/admin/ban`
 **需要认证**: 是（管理员权限）
 
 **请求参数**:
@@ -2156,7 +2156,7 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 ### 4. 更新用户封禁记录（管理员）
-**接口地址**: `PUT /api/admin/user-ban/:id`
+**接口地址**: `PUT /api/admin/ban/:id`
 **需要认证**: 是（管理员权限）
 
 **路径参数**:
@@ -2189,7 +2189,7 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 ### 5. 删除用户封禁记录（管理员）
-**接口地址**: `DELETE /api/admin/user-ban/:id`
+**接口地址**: `DELETE /api/admin/ban/:id`
 **需要认证**: 是（管理员权限）
 
 **路径参数**:
@@ -2206,7 +2206,7 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 ### 6. 批量删除用户封禁记录（管理员）
-**接口地址**: `DELETE /api/admin/user-ban`
+**接口地址**: `DELETE /api/admin/ban`
 **需要认证**: 是（管理员权限）
 
 **请求参数**:
@@ -2233,7 +2233,7 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 ### 7. 解封用户（管理员）
-**接口地址**: `POST /api/admin/user-ban/:id/unban`
+**接口地址**: `POST /api/admin/ban/:id/unban`
 **需要认证**: 是（管理员权限）
 
 **路径参数**:

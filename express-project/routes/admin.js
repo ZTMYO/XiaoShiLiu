@@ -2290,14 +2290,14 @@ router.get('/categories', adminAuth, async (req, res) => {
 const { userBanHandlers, handleUnban, handleGetOne, handleGetList } = require('./admin/ban')
 
 // 用户封禁路由
-router.post('/user-ban', adminAuth, userBanHandlers.create)
-router.put('/user-ban/:id', adminAuth, userBanHandlers.update)
-router.delete('/user-ban/:id', adminAuth, userBanHandlers.deleteOne)
-router.delete('/user-ban', adminAuth, userBanHandlers.deleteMany)
-router.get('/user-ban/:id', adminAuth, handleGetOne)
-router.get('/user-ban', adminAuth, handleGetList)
+router.post('/ban', adminAuth, userBanHandlers.create)
+router.put('/ban/:id', adminAuth, userBanHandlers.update)
+router.delete('/ban/:id', adminAuth, userBanHandlers.deleteOne)
+router.delete('/ban', adminAuth, userBanHandlers.deleteMany)
+router.get('/ban/:id', adminAuth, handleGetOne)
+router.get('/ban', adminAuth, handleGetList)
 
 // 解封用户接口
-router.post('/user-ban/:id/unban', adminAuth, handleUnban)
+router.post('/ban/:id/unban', adminAuth, handleUnban)
 
 module.exports = router
