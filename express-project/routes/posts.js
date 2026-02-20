@@ -3,6 +3,7 @@ const router = express.Router();
 const { HTTP_STATUS, RESPONSE_CODES, ERROR_MESSAGES } = require('../constants');
 const { pool } = require('../config/config');
 const { optionalAuth, authenticateToken } = require('../middleware/auth');
+const { checkUserBan } = require('../middleware/ban');
 const NotificationHelper = require('../utils/notificationHelper');
 const { extractMentionedUsers, hasMentions } = require('../utils/mentionParser');
 const { batchCleanupFiles } = require('../utils/fileCleanup');
@@ -389,7 +390,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 });
 
 // 创建笔记
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, checkUserBan, async (req, res) => {
   try {
     const { title, content, category_id, images, video, tags, is_draft, type } = req.body;
     const userId = req.user.id;
@@ -719,7 +720,7 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
 
 
 // 收藏/取消收藏笔记
-router.post('/:id/collect', authenticateToken, async (req, res) => {
+router.post('/:id/collect', authenticateToken, checkUserBan, async (req, res) => {
   try {
     const postId = req.params.id;
     const userId = req.user.id;
@@ -780,7 +781,7 @@ router.post('/:id/collect', authenticateToken, async (req, res) => {
 });
 
 // 更新笔记
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, checkUserBan, async (req, res) => {
   try {
     const postId = req.params.id;
     const { title, content, category_id, images, video, tags, is_draft } = req.body;
@@ -1037,7 +1038,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // 删除笔记
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, checkUserBan, async (req, res) => {
   try {
     const postId = req.params.id;
     const userId = req.user.id;
@@ -1106,7 +1107,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 // 取消收藏笔记
-router.delete('/:id/collect', authenticateToken, async (req, res) => {
+router.delete('/:id/collect', authenticateToken, checkUserBan, async (req, res) => {
   try {
     const postId = req.params.id;
     const userId = req.user.id;

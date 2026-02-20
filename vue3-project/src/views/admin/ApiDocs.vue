@@ -2195,6 +2195,96 @@ const apiGroups = ref([
           { name: 'id', type: 'string', required: true, description: '管理员用户名' },
           { name: 'password', type: 'string', required: true, description: '新密码' }
         ]
+      },
+      {
+        method: 'GET',
+        path: '/api/admin/user-ban',
+        title: '获取用户封禁列表（管理员）',
+        description: '管理员获取用户封禁列表，支持分页、搜索和排序',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'page', type: 'int', required: false, description: '页码，默认1' },
+          { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' },
+          { name: 'user_id', type: 'int', required: false, description: '按用户ID筛选' },
+          { name: 'reason', type: 'string', required: false, description: '按封禁原因筛选' },
+          { name: 'status', type: 'int', required: false, description: '按状态筛选（0=封禁中，1=管理员解封，2=自动解封，3=永久封禁，4=封禁撤销）' },
+          { name: 'operator', type: 'int', required: false, description: '按操作人ID筛选' },
+          { name: 'sortField', type: 'string', required: false, description: '排序字段（id, user_id, created_at, end_time, status）' },
+          { name: 'sortOrder', type: 'string', required: false, description: '排序方向（asc, desc），默认desc' }
+        ]
+      },
+      {
+        method: 'GET',
+        path: '/api/admin/user-ban/:id',
+        title: '获取单个封禁记录（管理员）',
+        description: '管理员获取单个用户封禁记录的详细信息',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'id', type: 'int', required: true, description: '封禁记录ID' }
+        ]
+      },
+      {
+        method: 'POST',
+        path: '/api/admin/user-ban',
+        title: '创建封禁记录（管理员）',
+        description: '管理员创建用户封禁记录',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'user_id', type: 'int', required: true, description: '用户ID' },
+          { name: 'reason', type: 'string', required: true, description: '封禁原因' },
+          { name: 'end_time', type: 'string', required: false, description: '解封时间（ISO格式，如：2026-02-20T12:00:00Z）' },
+          { name: 'status', type: 'int', required: false, description: '状态（0=封禁中，1=管理员解封，2=自动解封，3=永久封禁，4=封禁撤销），默认0' }
+        ]
+      },
+      {
+        method: 'PUT',
+        path: '/api/admin/user-ban/:id',
+        title: '更新封禁记录（管理员）',
+        description: '管理员更新用户封禁记录',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'id', type: 'int', required: true, description: '封禁记录ID' },
+          { name: 'reason', type: 'string', required: false, description: '封禁原因' },
+          { name: 'end_time', type: 'string', required: false, description: '解封时间（ISO格式，如：2026-02-20T12:00:00Z）' },
+          { name: 'status', type: 'int', required: false, description: '状态（0=封禁中，1=管理员解封，2=自动解封，3=永久封禁，4=封禁撤销）' }
+        ]
+      },
+      {
+        method: 'DELETE',
+        path: '/api/admin/user-ban/:id',
+        title: '删除单个封禁记录（管理员）',
+        description: '管理员删除单个用户封禁记录',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'id', type: 'int', required: true, description: '封禁记录ID' }
+        ]
+      },
+      {
+        method: 'DELETE',
+        path: '/api/admin/user-ban',
+        title: '批量删除封禁记录（管理员）',
+        description: '管理员批量删除用户封禁记录',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'ids', type: 'array', required: true, description: '封禁记录ID数组' }
+        ]
+      },
+      {
+        method: 'POST',
+        path: '/api/admin/user-ban/:id/unban',
+        title: '解封用户（管理员）',
+        description: '管理员解封被封禁的用户',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'id', type: 'int', required: true, description: '封禁记录ID' }
+        ]
       }
     ]
   }

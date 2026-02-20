@@ -31,6 +31,7 @@ import NotificationManagement from '@/views/admin/NotificationManagement.vue'
 import SessionManagement from '@/views/admin/SessionManagement.vue'
 import AdminManagement from '@/views/admin/AdminManagement.vue'
 import AuditManagement from '@/views/admin/AuditManagement.vue'
+import UserBanManagement from '@/views/admin/UserBanManagement.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -194,6 +195,11 @@ const router = createRouter({
           path: 'users',
           name: 'admin_users',
           component: UserManagement
+        },
+        {
+          path: 'user-ban',
+          name: 'admin_user_ban',
+          component: UserBanManagement
         },
         {
           path: 'posts',

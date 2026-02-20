@@ -5,7 +5,7 @@
 - **版本**: v1.3.1
 - **基础URL**: `http://localhost:3001`
 - **数据库**: xiaoshiliu (MySQL)
-- **更新时间**: 2026-2-14
+- **更新时间**: 2026-2-20
 
 ## 通用说明
 
@@ -182,7 +182,35 @@ Authorization: Bearer <your_jwt_token>
     "like_count": 100,
     "is_active": 1,
     "verified": 0,
-    "created_at": "2025-08-30T00:00:00.000Z"
+    "created_at": "2025-08-30T00:00:00.000Z",
+    "ban": null
+  }
+}
+```
+
+**被封禁用户响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "user_id": "user_001",
+    "nickname": "小石榴",
+    "avatar": "https://example.com/avatar.jpg",
+    "bio": "这是个人简介",
+    "location": "北京",
+    "follow_count": 10,
+    "fans_count": 20,
+    "like_count": 100,
+    "is_active": 1,
+    "verified": 0,
+    "created_at": "2025-08-30T00:00:00.000Z",
+    "ban": {
+      "end_time": "2026-03-31 23:59:59",
+      "reason": "违反社区规定",
+      "created_at": "2026-02-20T10:00:00.000Z"
+    }
   }
 }
 ```
@@ -393,7 +421,34 @@ Authorization: Bearer <your_jwt_token>
     "fans_count": 20,
     "like_count": 100,
     "verified": 0,
-    "created_at": "2025-08-30T00:00:00.000Z"
+    "created_at": "2025-08-30T00:00:00.000Z",
+    "ban": null
+  }
+}
+```
+
+**被封禁用户响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 2,
+    "user_id": "user_002",
+    "nickname": "测试用户",
+    "avatar": "https://example.com/avatar2.jpg",
+    "bio": "测试用户简介",
+    "location": "上海",
+    "follow_count": 5,
+    "fans_count": 8,
+    "like_count": 20,
+    "verified": 0,
+    "created_at": "2025-08-31T00:00:00.000Z",
+    "ban": {
+      "end_time": "2026-03-31 23:59:59",
+      "reason": "违反社区规定",
+      "created_at": "2026-02-20T10:00:00.000Z"
+    }
   }
 }
 ```
@@ -1987,6 +2042,224 @@ Authorization: Bearer <your_jwt_token>
   }
 }
 ```
+
+---
+
+## 管理员用户封禁接口
+
+### 1. 获取用户封禁列表（管理员）
+**接口地址**: `GET /api/admin/user-ban`
+**需要认证**: 是（管理员权限）
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | int | 否 | 页码，默认1 |
+| limit | int | 否 | 每页数量，默认20 |
+| user_id | int | 否 | 用户ID搜索 |
+| reason | string | 否 | 封禁原因搜索 |
+| status | int | 否 | 状态搜索 |
+| operator | int | 否 | 操作人ID搜索 |
+| sortField | string | 否 | 排序字段，可选值：id、user_id、created_at、end_time、status |
+| sortOrder | string | 否 | 排序方式，可选值：asc、desc，默认desc |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "data": [
+      {
+        "id": 1,
+        "user_id": "1",
+        "reason": "发布违规内容",
+        "end_time": null,
+        "created_at": "2025-01-01 12:00:00",
+        "status": 3,
+        "operator": 1,
+        "nickname": "用户1",
+        "user_display_id": "user001",
+        "status_text": "永久封禁"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "pages": 1
+    }
+  }
+}
+```
+
+### 2. 获取单个用户封禁记录（管理员）
+**接口地址**: `GET /api/admin/user-ban/:id`
+**需要认证**: 是（管理员权限）
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 封禁记录ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "user_id": "1",
+    "reason": "发布违规内容",
+    "end_time": null,
+    "created_at": "2025-01-01 12:00:00",
+    "status": 3,
+    "operator": 1,
+    "nickname": "用户1",
+    "user_display_id": "user001",
+    "status_text": "永久封禁"
+  }
+}
+```
+
+### 3. 创建用户封禁记录（管理员）
+**接口地址**: `POST /api/admin/user-ban`
+**需要认证**: 是（管理员权限）
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| user_id | int | 是 | 用户ID |
+| reason | string | 是 | 封禁原因 |
+| end_time | string | 否 | 封禁结束时间（留空表示永久封禁） |
+| status | int | 否 | 状态，0=封禁中，1=管理员解封（默认0） |
+
+**请求示例**:
+```json
+{
+  "user_id": 1,
+  "reason": "发布违规内容",
+  "end_time": "2025-01-31 23:59:59",
+  "status": 0
+}
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "用户封禁创建成功",
+  "data": {
+    "id": 1
+  }
+}
+```
+
+### 4. 更新用户封禁记录（管理员）
+**接口地址**: `PUT /api/admin/user-ban/:id`
+**需要认证**: 是（管理员权限）
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 封禁记录ID |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| reason | string | 否 | 封禁原因 |
+| end_time | string | 否 | 封禁结束时间（留空表示永久封禁） |
+| status | int | 否 | 状态，0=封禁中，1=管理员解封 |
+
+**请求示例**:
+```json
+{
+  "reason": "发布严重违规内容",
+  "end_time": "",
+  "status": 0
+}
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "用户封禁更新成功"
+}
+```
+
+### 5. 删除用户封禁记录（管理员）
+**接口地址**: `DELETE /api/admin/user-ban/:id`
+**需要认证**: 是（管理员权限）
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 封禁记录ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "用户封禁删除成功"
+}
+```
+
+### 6. 批量删除用户封禁记录（管理员）
+**接口地址**: `DELETE /api/admin/user-ban`
+**需要认证**: 是（管理员权限）
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| ids | array | 是 | 封禁记录ID数组 |
+
+**请求示例**:
+```json
+{
+  "ids": [1, 2, 3]
+}
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "成功删除3个用户封禁",
+  "data": {
+    "deletedCount": 3
+  }
+}
+```
+
+### 7. 解封用户（管理员）
+**接口地址**: `POST /api/admin/user-ban/:id/unban`
+**需要认证**: 是（管理员权限）
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 封禁记录ID |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| reason | string | 否 | 解封原因 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "用户已成功解封"
+}
+```
+
+**状态说明**:
+- `0`: 封禁中
+- `1`: 管理员解封
+- `2`: 自动解封
+- `3`: 永久封禁
+- `4`: 封禁撤销
 
 ---
 

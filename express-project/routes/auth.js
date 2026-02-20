@@ -794,6 +794,24 @@ router.get('/me', authenticateToken, async (req, res) => {
       }
     }
 
+    // 查询用户的封禁状态
+    const [banResult] = await pool.execute(
+      'SELECT reason, end_time, created_at FROM user_ban WHERE user_id = ? AND status IN (0, 3) ORDER BY created_at DESC LIMIT 1',
+      [user.id.toString()]
+    );
+
+    // 添加封禁状态信息
+    if (banResult.length > 0) {
+      const ban = banResult[0];
+      user.ban = {
+        end_time: ban.end_time,
+        reason: ban.reason,
+        created_at: ban.created_at
+      };
+    } else {
+      user.ban = null;
+    }
+
     res.json({
       code: RESPONSE_CODES.SUCCESS,
       message: 'success',
