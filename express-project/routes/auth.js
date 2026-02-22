@@ -602,7 +602,7 @@ router.post('/login', async (req, res) => {
 
     // 查找用户
     const [userRows] = await pool.execute(
-      'SELECT id, user_id, nickname, password, avatar, bio, location, follow_count, fans_count, like_count, is_active, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE user_id = ?',
+      'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, is_active, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE user_id = ?',
       [user_id.toString()]
     );
 

@@ -146,7 +146,7 @@ router.get('/:id', async (req, res) => {
     const userIdParam = req.params.id;
     // 只通过小石榴号(user_id)进行查找
     const [rows] = await pool.execute(
-      'SELECT * FROM users WHERE user_id = ?',
+      'SELECT id, user_id, nickname, avatar, bio, location, email, gender, zodiac_sign, mbti, education, major, interests, follow_count, fans_count, like_count, created_at, verified FROM users WHERE user_id = ?',
       [userIdParam]
     );
 
