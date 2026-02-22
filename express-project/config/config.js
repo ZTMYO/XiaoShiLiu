@@ -13,13 +13,6 @@ const path = require('path');
 const crypto = require('crypto');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
-/**
- * 生成安全的JWT密钥
- * @returns {string} 32位随机密钥
- */
-function generateJwtSecret() {
-  return crypto.randomBytes(32).toString('hex');
-}
 
 const config = {
   // 服务器配置
@@ -30,7 +23,7 @@ const config = {
 
   // JWT配置
   jwt: {
-    secret: process.env.JWT_SECRET || generateJwtSecret(),
+    secret: process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex'),
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     refreshExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '30d'
   },
