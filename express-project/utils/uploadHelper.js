@@ -11,9 +11,10 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
  * 保存图片文件到本地
  * @param {Buffer} fileBuffer - 文件缓冲区
  * @param {string} filename - 文件名
+ * @param {string} mimetype - 文件MIME类型
  * @returns {Promise<{success: boolean, url?: string, message?: string}>}
  */
-async function saveImageToLocal(fileBuffer, filename) {
+async function saveImageToLocal(fileBuffer, filename, mimetype) {
   try {
     // 确保上传目录存在
     const uploadDir = path.join(process.cwd(), config.upload.image.local.uploadDir);
@@ -21,8 +22,27 @@ async function saveImageToLocal(fileBuffer, filename) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
+    // MIME类型到扩展名的映射
+    const mimeToExt = {
+      'image/jpeg': '.jpg',
+      'image/jpg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/gif': '.gif'
+    };
+
+    // 根据MIME类型获取正确的扩展名
+    let ext = mimeToExt[mimetype] || path.extname(filename);
+    // 确保扩展名以.开头
+    if (!ext.startsWith('.')) {
+      ext = '.' + ext;
+    }
+    // 如果没有扩展名，使用.jpg作为默认
+    if (ext === '.') {
+      ext = '.jpg';
+    }
+
     // 生成唯一文件名
-    const ext = path.extname(filename);
     const hash = crypto.createHash('md5').update(fileBuffer).digest('hex');
     const uniqueFilename = `${Date.now()}_${hash}${ext}`;
     const filePath = path.join(uploadDir, uniqueFilename);
@@ -49,9 +69,10 @@ async function saveImageToLocal(fileBuffer, filename) {
  * 保存视频文件到本地
  * @param {Buffer} fileBuffer - 文件缓冲区
  * @param {string} filename - 文件名
+ * @param {string} mimetype - 文件MIME类型
  * @returns {Promise<{success: boolean, url?: string, message?: string}>}
  */
-async function saveVideoToLocal(fileBuffer, filename) {
+async function saveVideoToLocal(fileBuffer, filename, mimetype) {
   try {
     // 确保上传目录存在
     const uploadDir = path.join(process.cwd(), config.upload.video.local.uploadDir);
@@ -59,8 +80,28 @@ async function saveVideoToLocal(fileBuffer, filename) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
+    // MIME类型到扩展名的映射
+    const mimeToExt = {
+      'video/mp4': '.mp4',
+      'video/avi': '.avi',
+      'video/mov': '.mov',
+      'video/wmv': '.wmv',
+      'video/flv': '.flv',
+      'video/webm': '.webm'
+    };
+
+    // 根据MIME类型获取正确的扩展名
+    let ext = mimeToExt[mimetype] || path.extname(filename);
+    // 确保扩展名以.开头
+    if (!ext.startsWith('.')) {
+      ext = '.' + ext;
+    }
+    // 如果没有扩展名，使用.mp4作为默认
+    if (ext === '.') {
+      ext = '.mp4';
+    }
+
     // 生成唯一文件名
-    const ext = path.extname(filename);
     const hash = crypto.createHash('md5').update(fileBuffer).digest('hex');
     const uniqueFilename = `${Date.now()}_${hash}${ext}`;
     const filePath = path.join(uploadDir, uniqueFilename);
@@ -102,12 +143,36 @@ async function uploadToImageHost(fileBuffer, filename, mimetype) {
       };
     }
 
+    // MIME类型到扩展名的映射
+    const mimeToExt = {
+      'image/jpeg': '.jpg',
+      'image/jpg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/gif': '.gif'
+    };
+
+    // 根据MIME类型获取正确的扩展名
+    let ext = mimeToExt[mimetype] || path.extname(filename);
+    // 确保扩展名以.开头
+    if (!ext.startsWith('.')) {
+      ext = '.' + ext;
+    }
+    // 如果没有扩展名，使用.jpg作为默认
+    if (ext === '.') {
+      ext = '.jpg';
+    }
+
+    // 生成安全的文件名
+    const nameWithoutExt = path.basename(filename, path.extname(filename));
+    const safeFilename = `${nameWithoutExt}${ext}`;
+
     // 构建multipart/form-data请求体
     const boundary = `----formdata-${Date.now()}`;
 
     const formDataBody = Buffer.concat([
       Buffer.from(`--${boundary}\r\n`),
-      Buffer.from(`Content-Disposition: form-data; name="file"; filename="${filename}"\r\n`),
+      Buffer.from(`Content-Disposition: form-data; name="file"; filename="${safeFilename}"\r\n`),
       Buffer.from(`Content-Type: ${mimetype}\r\n\r\n`),
       fileBuffer,
       Buffer.from(`\r\n--${boundary}--\r\n`)
@@ -192,8 +257,27 @@ async function uploadImageToR2(fileBuffer, filename, mimetype) {
       },
     });
 
+    // MIME类型到扩展名的映射
+    const mimeToExt = {
+      'image/jpeg': '.jpg',
+      'image/jpg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/gif': '.gif'
+    };
+
+    // 根据MIME类型获取正确的扩展名
+    let ext = mimeToExt[mimetype] || path.extname(filename);
+    // 确保扩展名以.开头
+    if (!ext.startsWith('.')) {
+      ext = '.' + ext;
+    }
+    // 如果没有扩展名，使用.jpg作为默认
+    if (ext === '.') {
+      ext = '.jpg';
+    }
+
     // 生成唯一文件名
-    const ext = path.extname(filename);
     const hash = crypto.createHash('md5').update(fileBuffer).digest('hex');
     const uniqueFilename = `images/${Date.now()}_${hash}${ext}`;
 
@@ -259,8 +343,28 @@ async function uploadVideoToR2(fileBuffer, filename, mimetype) {
       },
     });
 
+    // MIME类型到扩展名的映射
+    const mimeToExt = {
+      'video/mp4': '.mp4',
+      'video/avi': '.avi',
+      'video/mov': '.mov',
+      'video/wmv': '.wmv',
+      'video/flv': '.flv',
+      'video/webm': '.webm'
+    };
+
+    // 根据MIME类型获取正确的扩展名
+    let ext = mimeToExt[mimetype] || path.extname(filename);
+    // 确保扩展名以.开头
+    if (!ext.startsWith('.')) {
+      ext = '.' + ext;
+    }
+    // 如果没有扩展名，使用.mp4作为默认
+    if (ext === '.') {
+      ext = '.mp4';
+    }
+
     // 生成唯一文件名
-    const ext = path.extname(filename);
     const hash = crypto.createHash('md5').update(fileBuffer).digest('hex');
     const uniqueFilename = `videos/${Date.now()}_${hash}${ext}`;
 
@@ -381,7 +485,7 @@ async function uploadImage(fileBuffer, filename, mimetype) {
   const strategy = config.upload.image.strategy;
 
   if (strategy === 'local') {
-    return await saveImageToLocal(fileBuffer, filename);
+    return await saveImageToLocal(fileBuffer, filename, mimetype);
   } else if (strategy === 'imagehost') {
     return await uploadToImageHost(fileBuffer, filename, mimetype);
   } else if (strategy === 'r2') {
@@ -405,7 +509,7 @@ async function uploadVideo(fileBuffer, filename, mimetype) {
   const strategy = config.upload.video.strategy;
 
   if (strategy === 'local') {
-    return await saveVideoToLocal(fileBuffer, filename);
+    return await saveVideoToLocal(fileBuffer, filename, mimetype);
   } else if (strategy === 'r2') {
     return await uploadVideoToR2(fileBuffer, filename, mimetype);
   } else {
