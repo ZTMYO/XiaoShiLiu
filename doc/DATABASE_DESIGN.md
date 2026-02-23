@@ -198,7 +198,21 @@
 | password | VARCHAR(255) | 管理员密码 | 加密存储 |
 | created_at | TIMESTAMP | 创建时间 | 账号创建时间 |
 
-### 14. 审核表 (audit)
+### 14. 管理员会话表 (admin_sessions)
+
+| 字段名 | 类型 | 说明 | 备注 |
+|--------|------|------|------|
+| id | BIGINT | 会话ID | 主键，自增 |
+| admin_id | BIGINT | 管理员ID | 外键关联admin |
+| token | VARCHAR(255) | 访问令牌 | 唯一 |
+| refresh_token | VARCHAR(255) | 刷新令牌 | 可为空 |
+| expires_at | TIMESTAMP | 过期时间 | 令牌过期时间 |
+| user_agent | TEXT | 用户代理 | 浏览器信息，可为空 |
+| is_active | TINYINT(1) | 是否激活 | 默认1 |
+| created_at | TIMESTAMP | 创建时间 | 会话创建时间 |
+| updated_at | TIMESTAMP | 更新时间 | 自动更新 |
+
+### 15. 审核表 (audit)
 
 | 字段名 | 类型 | 说明 | 备注 |
 |--------|------|------|------|
@@ -210,7 +224,7 @@
 | audit_time | TIMESTAMP | 审核时间 | 完成审核时间，可为空 |
 | status | TINYINT(1) | 审核状态 | 0-待审核，1-审核通过，默认0 |
 
-### 15. 用户封禁表 (user_ban)
+### 16. 用户封禁表 (user_ban)
 
 | 字段名 | 类型 | 说明 | 备注 |
 |--------|------|------|------|

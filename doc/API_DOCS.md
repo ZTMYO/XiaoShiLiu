@@ -2963,6 +2963,27 @@ async function example() {
 }
 ```
 
+### 15. 管理员刷新令牌
+**接口地址**: `POST /api/auth/admin/refresh`
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| refresh_token | string | 是 | 管理员刷新令牌 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "令牌刷新成功",
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expires_in": 3600
+  }
+}
+```
+
 ### 3. 用户管理
 
 #### 3.1 获取用户列表
