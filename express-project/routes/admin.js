@@ -1462,7 +1462,7 @@ const sessionsCrudConfig = {
         params.push(`%${req.query.user_display_id}%`)
       }
 
-      if (req.query.is_active !== undefined) {
+      if (req.query.is_active !== undefined && req.query.is_active !== '') {
         whereClause += whereClause ? ' AND s.is_active = ?' : 'WHERE s.is_active = ?'
         params.push(req.query.is_active)
       }
