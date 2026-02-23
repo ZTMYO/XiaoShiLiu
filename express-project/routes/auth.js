@@ -866,6 +866,17 @@ router.post('/admin/login', async (req, res) => {
       type: 'admin'
     });
 
+    // 获取用户IP和User-Agent
+    const userIP = getRealIP(req);
+    const userAgent = req.headers['user-agent'] || '';
+
+    // 清除旧会话并保存新会话
+    await pool.execute('UPDATE admin_sessions SET is_active = 0 WHERE admin_id = ?', [admin.id.toString()]);
+    await pool.execute(
+      'INSERT INTO admin_sessions (admin_id, token, refresh_token, expires_at, user_agent, is_active) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY), ?, 1)',
+      [admin.id.toString(), accessToken, refreshToken, userAgent]
+    );
+
     // 移除密码字段
     delete admin.password;
 
@@ -1134,6 +1145,96 @@ router.put('/admin/admins/:id/password', authenticateToken, async (req, res) => 
     });
   } catch (error) {
     console.error('重置密码失败:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: RESPONSE_CODES.ERROR, message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
+
+// 管理员刷新令牌
+router.post('/admin/refresh', async (req, res) => {
+  try {
+    const { refresh_token } = req.body;
+
+    if (!refresh_token) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '缺少刷新令牌' });
+    }
+
+    // 验证刷新令牌
+    const decoded = verifyToken(refresh_token);
+
+    // 检查是否为管理员令牌
+    if (!decoded.type || decoded.type !== 'admin') {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ code: RESPONSE_CODES.UNAUTHORIZED, message: '无效的刷新令牌' });
+    }
+
+    // 检查会话是否有效
+    const [sessionRows] = await pool.execute(
+      'SELECT id FROM admin_sessions WHERE admin_id = ? AND refresh_token = ? AND is_active = 1 AND expires_at > NOW()',
+      [decoded.adminId.toString(), refresh_token]
+    );
+
+    if (sessionRows.length === 0) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ code: RESPONSE_CODES.UNAUTHORIZED, message: '刷新令牌无效或已过期' });
+    }
+
+    // 生成新的令牌
+    const newAccessToken = generateAccessToken({ 
+      adminId: decoded.adminId, 
+      username: decoded.username, 
+      type: 'admin' 
+    });
+    const newRefreshToken = generateRefreshToken({ 
+      adminId: decoded.adminId, 
+      username: decoded.username, 
+      type: 'admin' 
+    });
+
+    // 获取用户IP和User-Agent
+    const userAgent = req.headers['user-agent'] || '';
+
+    // 更新会话
+    await pool.execute(
+      'UPDATE admin_sessions SET token = ?, refresh_token = ?, expires_at = DATE_ADD(NOW(), INTERVAL 7 DAY), user_agent = ? WHERE id = ?',
+      [newAccessToken, newRefreshToken, userAgent, sessionRows[0].id.toString()]
+    );
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: '令牌刷新成功',
+      data: {
+        access_token: newAccessToken,
+        refresh_token: newRefreshToken,
+        expires_in: 3600
+      }
+    });
+  } catch (error) {
+    console.error('刷新令牌失败:', error);
+    res.status(HTTP_STATUS.UNAUTHORIZED).json({ code: RESPONSE_CODES.UNAUTHORIZED, message: '刷新令牌无效' });
+  }
+});
+
+// 管理员登出
+router.post('/admin/logout', authenticateToken, async (req, res) => {
+  try {
+    // 检查是否为管理员token
+    if (!req.user.type || req.user.type !== 'admin') {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({ code: RESPONSE_CODES.FORBIDDEN, message: '权限不足' });
+    }
+
+    const adminId = req.user.adminId || req.user.id;
+    const token = req.token;
+
+    // 注销会话
+    await pool.execute(
+      'UPDATE admin_sessions SET is_active = 0 WHERE admin_id = ? AND token = ?',
+      [adminId.toString(), token]
+    );
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: '登出成功'
+    });
+  } catch (error) {
+    console.error('管理员登出失败:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: RESPONSE_CODES.ERROR, message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR });
   }
 });

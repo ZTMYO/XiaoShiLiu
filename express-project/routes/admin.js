@@ -1544,6 +1544,114 @@ router.get('/sessions', adminAuth, async (req, res) => {
   }
 })
 
+// 管理员会话管理 CRUD 配置
+const adminSessionsCrudConfig = {
+  table: 'admin_sessions',
+  name: '管理员会话',
+  requiredFields: ['admin_id'],
+  updateFields: ['user_agent', 'is_active'],
+  searchFields: {
+    admin_id: { operator: '=' },
+    is_active: { operator: '=' }
+  },
+  allowedSortFields: ['id', 'is_active', 'expires_at', 'created_at'],
+  defaultOrderBy: 'created_at DESC',
+
+  // 自定义查询
+  customQueries: {
+    getList: async (req) => {
+      const { pool } = require('../config/config')
+      const page = parseInt(req.query.page) || 1
+      const limit = parseInt(req.query.limit) || 20
+      const offset = (page - 1) * limit
+
+      // 构建搜索条件
+      let whereClause = ''
+      const params = []
+
+      if (req.query.username) {
+        whereClause += whereClause ? ' AND a.username LIKE ?' : 'WHERE a.username LIKE ?'
+        params.push(`%${req.query.username}%`)
+      }
+
+      if (req.query.is_active !== undefined && req.query.is_active !== '') {
+        whereClause += whereClause ? ' AND s.is_active = ?' : 'WHERE s.is_active = ?'
+        params.push(req.query.is_active)
+      }
+
+      // 获取总数
+      const countQuery = `SELECT COUNT(*) as total FROM admin_sessions s LEFT JOIN admin a ON s.admin_id = a.id ${whereClause}`
+      const [countResult] = await pool.execute(countQuery, params)
+      const total = countResult[0].total
+
+      // 排序处理 - 使用对象映射
+      const allowedSortFields = {
+        'id': 's.id',
+        'is_active': 's.is_active',
+        'expires_at': 's.expires_at',
+        'created_at': 's.created_at'
+      }
+      
+      const allowedSortOrders = {
+        'asc': 'ASC',
+        'desc': 'DESC'
+      }
+      
+      const validSortField = allowedSortFields[req.query.sortField] || 's.created_at'
+      const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
+      const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
+
+      // 获取数据
+      const dataQuery = `
+        SELECT s.id, s.admin_id, s.refresh_token, s.user_agent, s.is_active, s.expires_at, s.created_at,
+               a.username
+        FROM admin_sessions s
+        LEFT JOIN admin a ON s.admin_id = a.id
+        ${whereClause}
+        ${orderClause}
+        LIMIT ? OFFSET ?
+      `
+      const [sessions] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
+
+      return {
+        data: sessions,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    }
+  }
+}
+
+const adminSessionsHandlers = createCrudHandlers(adminSessionsCrudConfig)
+
+// 管理员会话管理路由
+router.post('/admin-sessions', adminAuth, adminSessionsHandlers.create)
+router.put('/admin-sessions/:id', adminAuth, adminSessionsHandlers.update)
+router.delete('/admin-sessions/:id', adminAuth, adminSessionsHandlers.deleteOne)
+router.delete('/admin-sessions', adminAuth, adminSessionsHandlers.deleteMany)
+router.get('/admin-sessions/:id', adminAuth, adminSessionsHandlers.getOne)
+// 使用自定义查询覆盖默认的getList
+router.get('/admin-sessions', adminAuth, async (req, res) => {
+  try {
+    const result = await adminSessionsCrudConfig.customQueries.getList(req)
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: result
+    })
+  } catch (error) {
+    console.error('获取管理员会话列表失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '获取管理员会话列表失败'
+    })
+  }
+})
+
 
 
 // ===== USERS CRUD (使用工厂模式) =====

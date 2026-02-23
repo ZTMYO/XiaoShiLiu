@@ -78,6 +78,9 @@ class DatabaseInitializer {
       // 创建用户会话表
       await this.createUserSessionsTable(connection);
 
+      // 创建管理员会话表
+      await this.createAdminSessionsTable(connection);
+
       // 创建审核表
       await this.createAuditTable(connection);
 
@@ -395,6 +398,30 @@ class DatabaseInitializer {
     `;
     await connection.execute(sql);
     console.log('✓ user_sessions 表创建成功');
+  }
+
+  async createAdminSessionsTable(connection) {
+    const sql = `
+      CREATE TABLE IF NOT EXISTS \`admin_sessions\` (
+        \`id\` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '会话ID',
+        \`admin_id\` bigint(20) NOT NULL COMMENT '管理员ID',
+        \`token\` varchar(255) NOT NULL COMMENT '访问令牌',
+        \`refresh_token\` varchar(255) DEFAULT NULL COMMENT '刷新令牌',
+        \`expires_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '过期时间',
+        \`user_agent\` text DEFAULT NULL COMMENT '用户代理',
+        \`is_active\` tinyint(1) DEFAULT 1 COMMENT '是否激活',
+        \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        \`updated_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+        PRIMARY KEY (\`id\`),
+        UNIQUE KEY \`token\` (\`token\`),
+        KEY \`idx_admin_id\` (\`admin_id\`),
+        KEY \`idx_token\` (\`token\`),
+        KEY \`idx_expires_at\` (\`expires_at\`),
+        CONSTRAINT \`admin_sessions_ibfk_1\` FOREIGN KEY (\`admin_id\`) REFERENCES \`admin\` (\`id\`) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员会话表';
+    `;
+    await connection.execute(sql);
+    console.log('✓ admin_sessions 表创建成功');
   }
 
   async createAuditTable(connection) {

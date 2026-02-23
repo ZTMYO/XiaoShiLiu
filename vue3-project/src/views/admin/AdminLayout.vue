@@ -277,7 +277,8 @@ const menuItems = [
   { path: '/admin/collections', title: '收藏管理', icon: 'collect' },
   { path: '/admin/follows', title: '关注管理', icon: 'follow' },
   { path: '/admin/notifications', title: '通知管理', icon: 'notification' },
-  { path: '/admin/sessions', title: '会话管理', icon: 'setting' },
+  { path: '/admin/sessions', title: '用户会话管理', icon: 'setting' },
+  { path: '/admin/admin-sessions', title: '管理员会话管理', icon: 'setting' },
   { path: '/admin/audit', title: '认证管理', icon: 'verified' },
   { path: '/admin/admins', title: '管理员管理', icon: 'admin' }
 ]

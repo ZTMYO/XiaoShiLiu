@@ -46,9 +46,44 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  // 刷新令牌
+  const refreshTokens = async () => {
+    try {
+      if (!refreshToken.value) {
+        throw new Error('无刷新令牌')
+      }
+
+      const response = await adminApi.refreshToken({ refresh_token: refreshToken.value })
+
+      if (response.success && response.data) {
+        // 保存新令牌
+        token.value = response.data.access_token
+        refreshToken.value = response.data.refresh_token
+
+        // 更新本地存储
+        localStorage.setItem('admin_token', token.value)
+        localStorage.setItem('admin_refresh_token', refreshToken.value)
+
+        return { success: true }
+      } else {
+        throw new Error(response.message || '刷新令牌失败')
+      }
+    } catch (error) {
+      console.error('刷新令牌失败:', error)
+      // 刷新失败，清除登录状态
+      await logout()
+      return { success: false, message: error.message }
+    }
+  }
+
   // 退出登录
   const logout = async () => {
     try {
+      // 调用后端登出接口
+      if (token.value) {
+        await adminApi.logout()
+      }
+
       // 清除本地存储
       admin.value = null
       token.value = ''
@@ -61,6 +96,13 @@ export const useAdminStore = defineStore('admin', () => {
       // 管理员退出登录成功
     } catch (error) {
       console.error('管理员退出登录失败:', error)
+      // 即使后端接口失败，也要清除本地状态
+      admin.value = null
+      token.value = ''
+      refreshToken.value = ''
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('admin_refresh_token')
+      localStorage.removeItem('admin_info')
     }
   }
 
@@ -83,9 +125,28 @@ export const useAdminStore = defineStore('admin', () => {
     } catch (error) {
       console.error('获取管理员信息失败:', error)
 
-      // 如果是401错误，清除登录状态
+      // 如果是401错误，尝试刷新令牌
       if (error.response?.status === 401) {
-        await logout()
+        const refreshResult = await refreshTokens()
+        if (refreshResult.success) {
+          // 刷新成功后重新获取管理员信息
+          try {
+            const newResponse = await adminApi.getCurrentAdmin()
+            if (newResponse.success && newResponse.data) {
+              admin.value = newResponse.data
+              localStorage.setItem('admin_info', JSON.stringify(admin.value))
+              return { success: true, data: newResponse.data }
+            } else {
+              throw new Error(newResponse.message || '获取管理员信息失败')
+            }
+          } catch (refreshError) {
+            console.error('刷新令牌后获取管理员信息失败:', refreshError)
+            return { success: false, message: refreshError.message }
+          }
+        } else {
+          // 刷新失败，清除登录状态
+          await logout()
+        }
       }
 
       return { success: false, message: error.message }
@@ -131,6 +192,7 @@ export const useAdminStore = defineStore('admin', () => {
     // 方法
     login,
     logout,
+    refreshTokens,
     getCurrentAdmin,
     initializeAdmin,
     checkTokenValidity

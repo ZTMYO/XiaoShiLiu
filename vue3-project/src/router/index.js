@@ -29,6 +29,7 @@ import CollectionManagement from '@/views/admin/CollectionManagement.vue'
 import FollowManagement from '@/views/admin/FollowManagement.vue'
 import NotificationManagement from '@/views/admin/NotificationManagement.vue'
 import SessionManagement from '@/views/admin/SessionManagement.vue'
+import AdminSessionManagement from '@/views/admin/AdminSessionManagement.vue'
 import AdminManagement from '@/views/admin/AdminManagement.vue'
 import AuditManagement from '@/views/admin/AuditManagement.vue'
 import UserBanManagement from '@/views/admin/UserBanManagement.vue'
@@ -245,6 +246,11 @@ const router = createRouter({
           path: 'sessions',
           name: 'admin_sessions',
           component: SessionManagement
+        },
+        {
+          path: 'admin-sessions',
+          name: 'admin_admin_sessions',
+          component: AdminSessionManagement
         },
         {
           path: 'admins',
