@@ -198,7 +198,21 @@
 | password | VARCHAR(255) | 管理员密码 | 加密存储 |
 | created_at | TIMESTAMP | 创建时间 | 账号创建时间 |
 
-### 14. 审核表 (audit)
+### 14. 管理员会话表 (admin_sessions)
+
+| 字段名 | 类型 | 说明 | 备注 |
+|--------|------|------|------|
+| id | BIGINT | 会话ID | 主键，自增 |
+| admin_id | BIGINT | 管理员ID | 外键关联admin |
+| token | VARCHAR(255) | 访问令牌 | 唯一 |
+| refresh_token | VARCHAR(255) | 刷新令牌 | 可为空 |
+| expires_at | TIMESTAMP | 过期时间 | 令牌过期时间 |
+| user_agent | TEXT | 用户代理 | 浏览器信息，可为空 |
+| is_active | TINYINT(1) | 是否激活 | 默认1 |
+| created_at | TIMESTAMP | 创建时间 | 会话创建时间 |
+| updated_at | TIMESTAMP | 更新时间 | 自动更新 |
+
+### 15. 审核表 (audit)
 
 | 字段名 | 类型 | 说明 | 备注 |
 |--------|------|------|------|
@@ -209,4 +223,26 @@
 | created_at | TIMESTAMP | 创建时间 | 提交审核时间 |
 | audit_time | TIMESTAMP | 审核时间 | 完成审核时间，可为空 |
 | status | TINYINT(1) | 审核状态 | 0-待审核，1-审核通过，默认0 |
+
+### 16. 用户封禁表 (user_ban)
+
+| 字段名 | 类型 | 说明 | 备注 |
+|--------|------|------|------|
+| id | BIGINT | 封禁记录ID | 主键，自增 |
+| user_id | BIGINT | 被封禁用户ID | 外键关联users |
+| reason | VARCHAR(255) | 封禁原因 | 封禁理由描述 |
+| end_time | TIMESTAMP | 封禁结束时间 | 可为空（永久封禁） |
+| created_at | TIMESTAMP | 创建时间 | 封禁记录创建时间 |
+| status | INT | 状态 | 0-封禁中，1-管理员解封，2-自动解封，3-永久封禁，4-封禁撤销 |
+| operator | BIGINT | 操作人ID | 0-系统，其他为管理员ID |
+
+**索引：**
+- PRIMARY KEY (`id`)
+- KEY `idx_user_id` (`user_id`)
+- KEY `idx_status` (`status`)
+- KEY `idx_created_at` (`created_at`)
+- KEY `idx_end_time` (`end_time`)
+
+**外键：**
+- CONSTRAINT `user_ban_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 

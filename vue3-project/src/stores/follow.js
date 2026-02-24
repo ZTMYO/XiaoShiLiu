@@ -50,7 +50,13 @@ export const useFollowStore = defineStore('follow', () => {
     }
 
     try {
-      await userApi.followUser(userId)
+      const response = await userApi.followUser(userId)
+      if (!response.success) {
+        // 关注失败，回滚状态
+        updateUserFollowState(userId, false, currentState.isMutual, currentState.buttonType)
+        followingList.value = followingList.value.filter(user => user.user_id !== userIdStr)
+        return { success: false, error: response.message }
+      }
       return { success: true }
     } catch (error) {
       console.error('关注失败:', error)
@@ -92,7 +98,15 @@ export const useFollowStore = defineStore('follow', () => {
     followingList.value = followingList.value.filter(user => user.user_id !== userIdStr)
 
     try {
-      await userApi.unfollowUser(userId)
+      const response = await userApi.unfollowUser(userId)
+      if (!response.success) {
+        // 取消关注失败，回滚状态
+        updateUserFollowState(userId, true, currentState.isMutual, currentState.buttonType)
+        if (!followingList.value.some(user => user.user_id === userIdStr)) {
+          followingList.value.push({ user_id: userIdStr })
+        }
+        return { success: false, error: response.message }
+      }
       return { success: true }
     } catch (error) {
       console.error('取消关注失败:', error)

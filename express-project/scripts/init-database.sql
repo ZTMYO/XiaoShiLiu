@@ -231,7 +231,26 @@ CREATE TABLE IF NOT EXISTS `user_sessions` (
   CONSTRAINT `user_sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户会话表';
 
--- 15. 审核表
+-- 15. 管理员会话表
+CREATE TABLE IF NOT EXISTS `admin_sessions` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '会话ID',
+  `admin_id` bigint(20) NOT NULL COMMENT '管理员ID',
+  `token` varchar(255) NOT NULL COMMENT '访问令牌',
+  `refresh_token` varchar(255) DEFAULT NULL COMMENT '刷新令牌',
+  `expires_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '过期时间',
+  `user_agent` text DEFAULT NULL COMMENT '用户代理',
+  `is_active` tinyint(1) DEFAULT 1 COMMENT '是否激活',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token` (`token`),
+  KEY `idx_admin_id` (`admin_id`),
+  KEY `idx_token` (`token`),
+  KEY `idx_expires_at` (`expires_at`),
+  CONSTRAINT `admin_sessions_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员会话表';
+
+-- 16. 审核表
 CREATE TABLE IF NOT EXISTS `audit` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '审核ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -247,6 +266,23 @@ CREATE TABLE IF NOT EXISTS `audit` (
   KEY `idx_created_at` (`created_at`),
   CONSTRAINT `audit_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审核表';
+
+-- 17. 用户封禁表
+CREATE TABLE IF NOT EXISTS `user_ban` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '封禁记录ID',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `reason` text NOT NULL COMMENT '封禁原因',
+  `end_time` timestamp NULL DEFAULT NULL COMMENT '封禁结束时间',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `status` tinyint(4) DEFAULT 0 COMMENT '状态：0=封禁中，1=管理员解封，2=自动解封，3=永久封禁，4=封禁撤销',
+  `operator` bigint(20) NOT NULL COMMENT '操作人ID',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_operator` (`operator`),
+  CONSTRAINT `user_ban_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户封禁表';
 
 -- 插入默认管理员账户
 -- 密码: 123456

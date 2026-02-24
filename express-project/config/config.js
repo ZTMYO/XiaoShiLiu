@@ -10,7 +10,9 @@
 
 const mysql = require('mysql2/promise');
 const path = require('path');
+const crypto = require('crypto');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
+
 
 const config = {
   // 服务器配置
@@ -21,7 +23,7 @@ const config = {
 
   // JWT配置
   jwt: {
-    secret: process.env.JWT_SECRET || 'xiaoshiliu_secret_key_2025',
+    secret: process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex'),
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     refreshExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '30d'
   },

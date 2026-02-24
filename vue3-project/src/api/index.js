@@ -430,6 +430,11 @@ export const adminApi = {
     return request.post('/auth/admin/logout')
   },
 
+  // 管理员刷新令牌
+  refreshToken(data) {
+    return request.post('/auth/admin/refresh', data)
+  },
+
   // ========== 用户管理 ==========
   // 获取用户列表
   getUsers(params = {}) {
@@ -707,6 +712,37 @@ export const adminApi = {
   // 获取单个会话详情
   getSessionDetail(sessionId) {
     return request.get(`/admin/sessions/${sessionId}`)
+  },
+
+  // ========== 管理员会话管理 ==========
+  // 获取管理员会话列表
+  getAdminSessions(params = {}) {
+    return request.get('/admin/admin-sessions', { params })
+  },
+
+  // 创建管理员会话
+  createAdminSession(data) {
+    return request.post('/admin/admin-sessions', data)
+  },
+
+  // 更新管理员会话
+  updateAdminSession(sessionId, data) {
+    return request.put(`/admin/admin-sessions/${sessionId}`, data)
+  },
+
+  // 删除管理员会话
+  deleteAdminSession(sessionId) {
+    return request.delete(`/admin/admin-sessions/${sessionId}`)
+  },
+
+  // 批量删除管理员会话
+  batchDeleteAdminSessions(ids) {
+    return request.delete('/admin/admin-sessions', { data: { ids } })
+  },
+
+  // 获取单个管理员会话详情
+  getAdminSessionDetail(sessionId) {
+    return request.get(`/admin/admin-sessions/${sessionId}`)
   },
 
   // ========== 管理员管理 ==========

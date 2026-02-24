@@ -3,6 +3,7 @@ const router = express.Router();
 const { HTTP_STATUS, RESPONSE_CODES, ERROR_MESSAGES } = require('../constants');
 const { pool } = require('../config/config');
 const { optionalAuth, authenticateToken } = require('../middleware/auth');
+const { checkUserBan } = require('../middleware/ban');
 const NotificationHelper = require('../utils/notificationHelper');
 
 // 搜索用户（必须放在 /:id 之前）
@@ -145,7 +146,7 @@ router.get('/:id', async (req, res) => {
     const userIdParam = req.params.id;
     // 只通过小石榴号(user_id)进行查找
     const [rows] = await pool.execute(
-      'SELECT * FROM users WHERE user_id = ?',
+      'SELECT id, user_id, nickname, avatar, bio, location, email, gender, zodiac_sign, mbti, education, major, interests, follow_count, fans_count, like_count, created_at, verified FROM users WHERE user_id = ?',
       [userIdParam]
     );
 
@@ -169,6 +170,24 @@ router.get('/:id', async (req, res) => {
       } catch (e) {
         user.interests = null;
       }
+    }
+
+    // 查询用户的封禁状态
+    const [banResult] = await pool.execute(
+      'SELECT id, reason, end_time, status, created_at FROM user_ban WHERE user_id = ? AND status IN (0, 3) ORDER BY created_at DESC LIMIT 1',
+      [user.id.toString()]
+    );
+
+    // 添加封禁状态信息
+    if (banResult.length > 0) {
+      const ban = banResult[0];
+      user.ban = {
+        end_time: ban.end_time,
+        reason: ban.reason,
+        created_at: ban.created_at
+      };
+    } else {
+      user.ban = null;
     }
 
     res.json({
@@ -532,7 +551,7 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
 });
 
 // 关注用户
-router.post('/:id/follow', authenticateToken, async (req, res) => {
+router.post('/:id/follow', authenticateToken, checkUserBan, async (req, res) => {
   try {
     const userIdParam = req.params.id;
     const followerId = req.user.id;
@@ -589,7 +608,7 @@ router.post('/:id/follow', authenticateToken, async (req, res) => {
 });
 
 // 取消关注用户
-router.delete('/:id/follow', authenticateToken, async (req, res) => {
+router.delete('/:id/follow', authenticateToken, checkUserBan, async (req, res) => {
   try {
     const userIdParam = req.params.id;
     const followerId = req.user.id;

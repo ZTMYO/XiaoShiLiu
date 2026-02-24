@@ -34,6 +34,19 @@ async function authenticateToken(req, res, next) {
         });
       }
 
+      // 检查管理员会话是否有效
+      const [sessionRows] = await pool.execute(
+        'SELECT id FROM admin_sessions WHERE admin_id = ? AND token = ? AND is_active = 1 AND expires_at > NOW()',
+        [decoded.adminId, token]
+      );
+
+      if (sessionRows.length === 0) {
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+          code: RESPONSE_CODES.UNAUTHORIZED,
+          message: '会话已过期，请重新登录'
+        });
+      }
+
       // 将管理员信息添加到请求对象
       req.user = {
         ...adminRows[0],
