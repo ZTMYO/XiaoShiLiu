@@ -3,7 +3,6 @@ const router = express.Router();
 const { HTTP_STATUS, RESPONSE_CODES, ERROR_MESSAGES } = require('../constants');
 const { pool } = require('../config/config');
 const { optionalAuth, authenticateToken } = require('../middleware/auth');
-const { checkUserBan } = require('../middleware/ban');
 const NotificationHelper = require('../utils/notificationHelper');
 
 // 搜索用户（必须放在 /:id 之前）
@@ -551,7 +550,7 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
 });
 
 // 关注用户
-router.post('/:id/follow', authenticateToken, checkUserBan, async (req, res) => {
+router.post('/:id/follow', authenticateToken, async (req, res) => {
   try {
     const userIdParam = req.params.id;
     const followerId = req.user.id;
@@ -608,7 +607,7 @@ router.post('/:id/follow', authenticateToken, checkUserBan, async (req, res) => 
 });
 
 // 取消关注用户
-router.delete('/:id/follow', authenticateToken, checkUserBan, async (req, res) => {
+router.delete('/:id/follow', authenticateToken, async (req, res) => {
   try {
     const userIdParam = req.params.id;
     const followerId = req.user.id;

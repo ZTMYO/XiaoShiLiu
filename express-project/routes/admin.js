@@ -1718,6 +1718,170 @@ const usersCrudConfig = {
     }
 
     return { isValid: true }
+  },
+
+  // 自定义查询，关联用户封禁状态
+  customQueries: {
+    getList: async (req) => {
+      const page = parseInt(req.query.page) || 1
+      const limit = parseInt(req.query.limit) || 20
+      const offset = (page - 1) * limit
+
+      // 搜索条件
+      let whereClause = ''
+      const params = []
+
+      if (req.query.user_id) {
+        whereClause += ' WHERE u.user_id LIKE ?'
+        params.push(`%${req.query.user_id}%`)
+      }
+
+      if (req.query.nickname) {
+        whereClause += whereClause ? ' AND u.nickname LIKE ?' : ' WHERE u.nickname LIKE ?'
+        params.push(`%${req.query.nickname}%`)
+      }
+
+      if (req.query.location) {
+        whereClause += whereClause ? ' AND u.location LIKE ?' : ' WHERE u.location LIKE ?'
+        params.push(`%${req.query.location}%`)
+      }
+
+      if (req.query.is_active !== undefined && req.query.is_active !== '') {
+        whereClause += whereClause ? ' AND u.is_active = ?' : ' WHERE u.is_active = ?'
+        params.push(req.query.is_active)
+      }
+
+      if (req.query.ban_status !== undefined && req.query.ban_status !== '') {
+        const banStatus = req.query.ban_status
+        if (banStatus === 'normal') {
+          // 正常状态：没有活跃的封禁记录
+          whereClause += whereClause ? ' AND ub.id IS NULL' : ' WHERE ub.id IS NULL'
+        } else if (banStatus === 'banned') {
+          // 封禁状态：有活跃的封禁记录
+          whereClause += whereClause ? ' AND ub.id IS NOT NULL' : ' WHERE ub.id IS NOT NULL'
+        }
+      }
+
+      // 获取总数
+      const countQuery = `
+        SELECT COUNT(*) as total 
+        FROM users u
+        LEFT JOIN user_ban ub ON u.id = ub.user_id AND ub.status IN (0, 3)
+        ${whereClause}
+      `
+      const [countResult] = await pool.execute(countQuery, params)
+      const total = countResult[0].total
+
+      // 排序处理
+      const allowedSortFields = {
+        'id': 'u.id',
+        'user_id': 'u.user_id',
+        'nickname': 'u.nickname',
+        'fans_count': 'u.fans_count',
+        'like_count': 'u.like_count',
+        'created_at': 'u.created_at'
+      }
+      
+      const allowedSortOrders = {
+        'asc': 'ASC',
+        'desc': 'DESC'
+      }
+      
+      const validSortField = allowedSortFields[req.query.sortField] || 'u.created_at'
+      const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
+      const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
+
+      // 获取数据
+      const dataQuery = `
+        SELECT u.*,
+               COALESCE(ub.status, -1) as ban_status,
+               ub.reason as ban_reason,
+               ub.end_time as ban_end_time,
+               ub.created_at as ban_created_at
+        FROM users u
+        LEFT JOIN user_ban ub ON u.id = ub.user_id AND ub.status IN (0, 3)
+        ${whereClause}
+        ${orderClause}
+        LIMIT ? OFFSET ?
+      `
+      const [users] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
+
+      // 处理用户数据
+      for (let user of users) {
+        // 处理interests字段
+        if (user.interests) {
+          try {
+            user.interests = JSON.parse(user.interests)
+          } catch (e) {
+            user.interests = null
+          }
+        }
+        
+        // 合并封禁状态为完整状态文本
+        if (user.ban_status === -1) {
+          user.ban_status_display = '正常'
+        } else if (user.ban_status === 0) {
+          user.ban_status_display = '封禁中'
+        } else if (user.ban_status === 3) {
+          user.ban_status_display = '永久封禁'
+        } else {
+          user.ban_status_display = '正常'
+        }
+      }
+
+      return {
+        data: users,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    },
+
+    getOne: async (req) => {
+      const userId = req.params.id
+
+      const [userResult] = await pool.execute(`
+        SELECT u.*,
+               COALESCE(ub.status, -1) as ban_status,
+               ub.reason as ban_reason,
+               ub.end_time as ban_end_time,
+               ub.created_at as ban_created_at
+        FROM users u
+        LEFT JOIN user_ban ub ON u.id = ub.user_id AND ub.status IN (0, 3)
+        WHERE u.id = ?
+      `, [String(userId)])
+
+      if (userResult.length === 0) {
+        return null
+      }
+
+      const user = userResult[0]
+
+      // 处理interests字段
+      if (user.interests) {
+        try {
+          user.interests = JSON.parse(user.interests)
+        } catch (e) {
+          user.interests = null
+        }
+      }
+      
+      // 合并封禁状态为完整状态文本
+      if (user.ban_status === -1) {
+        user.ban_status_display = '正常'
+      } else if (user.ban_status === 0) {
+        user.ban_status_display = '封禁中'
+      } else if (user.ban_status === 3) {
+        user.ban_status_display = '永久封禁'
+      } else {
+        user.ban_status_display = '正常'
+      }
+
+      return user
+    }
   }
 }
 
@@ -1728,8 +1892,250 @@ router.post('/users', adminAuth, usersHandlers.create)
 router.put('/users/:id', adminAuth, usersHandlers.update)
 router.delete('/users/:id', adminAuth, usersHandlers.deleteOne)
 router.delete('/users', adminAuth, usersHandlers.deleteMany)
-router.get('/users/:id', adminAuth, usersHandlers.getOne)
-router.get('/users', adminAuth, usersHandlers.getList)
+router.get('/users/:id', adminAuth, async (req, res) => {
+  try {
+    const result = await usersCrudConfig.customQueries.getOne(req)
+    if (!result) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        code: RESPONSE_CODES.NOT_FOUND,
+        message: '用户不存在'
+      })
+    }
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: result
+    })
+  } catch (error) {
+    console.error('获取用户详情失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '获取用户详情失败'
+    })
+  }
+})
+router.get('/users', adminAuth, async (req, res) => {
+  try {
+    const result = await usersCrudConfig.customQueries.getList(req)
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: result
+    })
+  } catch (error) {
+    console.error('获取用户列表失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '获取用户列表失败'
+    })
+  }
+})
+
+// 更新用户is_active状态的辅助函数
+async function updateUserActiveStatus(userId, active, operatorId) {
+  try {
+    await pool.execute(
+      'UPDATE users SET is_active = ? WHERE id = ?',
+      [active ? 1 : 0, String(userId)]
+    )
+    console.log(`用户 ${userId} 的is_active状态已更新为 ${active ? 1 : 0}，操作人：${operatorId}`)
+  } catch (error) {
+    console.error('更新用户is_active状态失败:', error)
+    throw error
+  }
+}
+
+// 撤销现有封禁记录的辅助函数
+async function revokeExistingBans(userId, operatorId) {
+  try {
+    // 检查是否已经有未解除的封禁记录
+    const [existingBan] = await pool.execute(
+      'SELECT id FROM user_ban WHERE user_id = ? AND status IN (0, 3)',
+      [String(userId)]
+    )
+    
+    // 如果有未解除的封禁记录，先将其状态改为"封禁撤销"
+    if (existingBan.length > 0) {
+      const updatePromises = existingBan.map(ban => 
+        pool.execute(
+          'UPDATE user_ban SET status = 4, operator = ? WHERE id = ?',
+          [operatorId, ban.id]
+        )
+      )
+      await Promise.all(updatePromises)
+      
+      console.log(`用户 ${userId} 的 ${existingBan.length} 条现有封禁记录已被撤销，操作人：${operatorId}`)
+      
+      // 恢复用户的is_active为1
+      await updateUserActiveStatus(userId, true, operatorId)
+    }
+    
+    return existingBan.length > 0
+  } catch (error) {
+    console.error('撤销现有封禁记录失败:', error)
+    throw error
+  }
+}
+
+// 用户封禁操作
+router.post('/users/:id/ban', adminAuth, async (req, res) => {
+  try {
+    const userId = req.params.id
+    const { reason, end_time } = req.body
+    const adminId = req.user?.id || 0
+
+    console.log(`开始封禁用户 ${userId}，操作人：${adminId}`)
+
+    // 检查用户是否存在
+    const [userResult] = await pool.execute('SELECT id FROM users WHERE id = ?', [String(userId)])
+    if (userResult.length === 0) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        code: RESPONSE_CODES.NOT_FOUND,
+        message: '用户不存在'
+      })
+    }
+
+    // 撤销现有封禁记录
+    await revokeExistingBans(userId, adminId)
+
+    // 处理封禁数据
+    const data = {
+      user_id: userId,
+      reason,
+      end_time,
+
+      status: 0
+    }
+
+    // 验证状态值
+    const validStatuses = [0, 1, 2, 3, 4]
+    const statusNum = data.status !== undefined ? Number(data.status) : 0
+    if (!validStatuses.includes(statusNum)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        code: RESPONSE_CODES.VALIDATION_ERROR,
+        message: '无效的状态值'
+      })
+    }
+    
+    // 设置状态值
+    data.status = statusNum
+    
+    // 处理时间
+    if (!data.end_time || data.end_time === '' || data.end_time === 'null' || data.end_time === 'undefined') {
+      data.end_time = null
+      // 无时间时，状态自动改为3（永久封禁）
+      data.status = 3
+    } else {
+      // 有时间时，转换ISO格式的日期时间字符串为MySQL兼容格式
+      if (typeof data.end_time === 'string' && data.end_time.includes('T')) {
+        const date = new Date(data.end_time)
+        data.end_time = date.toISOString().slice(0, 19).replace('T', ' ')
+      }
+      // 有时间时，状态自动改为0（封禁中）
+      data.status = 0
+    }
+
+    // 设置操作人ID
+    data.operator = adminId
+
+    // 创建新的封禁记录
+    await pool.execute(
+      'INSERT INTO user_ban (user_id, reason, end_time, status, operator) VALUES (?, ?, ?, ?, ?)',
+      [String(data.user_id), data.reason, data.end_time, data.status, String(data.operator)]
+    )
+
+    console.log(`用户 ${userId} 封禁记录已创建`)
+
+    // 更新用户的is_active为0（限制登录）
+    await updateUserActiveStatus(userId, false, adminId)
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: '用户封禁成功'
+    })
+  } catch (error) {
+    console.error('封禁用户失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '封禁用户失败'
+    })
+  }
+})
+
+// 解封用户的辅助函数
+async function unbanUser(userId, operatorId) {
+  try {
+    // 查找用户的活跃封禁记录
+    const [banResult] = await pool.execute(
+      'SELECT id FROM user_ban WHERE user_id = ? AND status IN (0, 3)',
+      [String(userId)]
+    )
+
+    if (banResult.length === 0) {
+      throw new Error('该用户没有活跃的封禁记录')
+    }
+
+    // 更新所有活跃封禁记录为管理员解封
+    const updatePromises = banResult.map(ban => 
+      pool.execute(
+        'UPDATE user_ban SET status = 1, operator = ? WHERE id = ?',
+        [String(operatorId), ban.id]
+      )
+    )
+    await Promise.all(updatePromises)
+
+    console.log(`用户 ${userId} 的 ${banResult.length} 条封禁记录已被解封，操作人：${operatorId}`)
+
+    // 恢复用户的is_active为1
+    await updateUserActiveStatus(userId, true, operatorId)
+
+    return {
+      banCount: banResult.length
+    }
+  } catch (error) {
+    console.error('解封用户失败:', error)
+    throw error
+  }
+}
+
+// 用户解封操作
+router.post('/users/:id/unban', adminAuth, async (req, res) => {
+  try {
+    const userId = req.params.id
+    const adminId = req.user?.id || 0
+
+    console.log(`开始解封用户 ${userId}，操作人：${adminId}`)
+
+    // 检查用户是否存在
+    const [userResult] = await pool.execute('SELECT id FROM users WHERE id = ?', [String(userId)])
+    if (userResult.length === 0) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        code: RESPONSE_CODES.NOT_FOUND,
+        message: '用户不存在'
+      })
+    }
+
+    // 执行解封操作
+    await unbanUser(userId, adminId)
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: '用户已成功解封'
+    })
+  } catch (error) {
+    if (error.message === '该用户没有活跃的封禁记录') {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        code: RESPONSE_CODES.VALIDATION_ERROR,
+        message: error.message
+      })
+    }
+    console.error('解封用户失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '解封用户失败'
+    })
+  }
+})
 
 // ===== ADMINS CRUD (使用工厂模式) =====
 const adminsCrudConfig = {
@@ -2393,19 +2799,5 @@ router.get('/categories', adminAuth, async (req, res) => {
     })
   }
 })
-
-// ==================== 用户封禁管理 ====================
-const { userBanHandlers, handleUnban, handleGetOne, handleGetList } = require('./admin/ban')
-
-// 用户封禁路由
-router.post('/ban', adminAuth, userBanHandlers.create)
-router.put('/ban/:id', adminAuth, userBanHandlers.update)
-router.delete('/ban/:id', adminAuth, userBanHandlers.deleteOne)
-router.delete('/ban', adminAuth, userBanHandlers.deleteMany)
-router.get('/ban/:id', adminAuth, handleGetOne)
-router.get('/ban', adminAuth, handleGetList)
-
-// 解封用户接口
-router.post('/ban/:id/unban', adminAuth, handleUnban)
 
 module.exports = router

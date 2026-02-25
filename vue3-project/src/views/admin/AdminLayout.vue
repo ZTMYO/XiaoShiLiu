@@ -268,7 +268,6 @@ const menuItems = [
   { path: '/admin/api-docs', title: 'API文档', icon: 'data' },
   { path: '/admin/monitor', title: '动态监控', icon: 'monitor' },
   { path: '/admin/users', title: '用户管理', icon: 'user' },
-  { path: '/admin/ban', title: '封禁管理', icon: 'ban' },
   { path: '/admin/posts', title: '笔记管理', icon: 'post' },
   { path: '/admin/comments', title: '评论管理', icon: 'chat' },
   { path: '/admin/categories', title: '分类管理', icon: 'category' },
@@ -295,7 +294,6 @@ const currentPageDescription = computed(() => {
     '/admin/api-docs': '查看和测试API接口文档',
     '/admin/monitor': '查看系统最近动态和活动监控',
     '/admin/users': '管理用户账户和权限',
-    '/admin/ban': '管理用户封禁记录和状态',
     '/admin/posts': '管理用户发布的笔记内容',
     '/admin/comments': '管理用户评论和回复',
     '/admin/categories': '管理笔记分类和分类信息',
@@ -305,6 +303,7 @@ const currentPageDescription = computed(() => {
     '/admin/follows': '管理用户关注关系',
     '/admin/notifications': '管理系统通知消息',
     '/admin/sessions': '管理用户登录会话',
+    '/admin/admin-sessions': '管理管理员登录会话',
     '/admin/audit': '管理用户认证申请和审核',
     '/admin/admins': '管理系统管理员账号'
   }

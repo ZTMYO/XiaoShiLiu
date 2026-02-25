@@ -156,6 +156,7 @@ watch(() => props.visible, (newVisible) => {
   font-size: 16px;
   line-height: 1.5;
   color: var(--text-color-primary);
+  white-space: pre-line;
 }
 
 .dialog-actions {
