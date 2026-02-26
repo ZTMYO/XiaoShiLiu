@@ -1762,11 +1762,20 @@ const usersCrudConfig = {
         }
       }
 
-      // 获取总数
+      // 获取总数（使用子查询确保计数准确）
       const countQuery = `
         SELECT COUNT(*) as total 
         FROM users u
-        LEFT JOIN user_ban ub ON u.id = ub.user_id AND ub.status IN (0, 3)
+        LEFT JOIN (
+          SELECT user_id
+          FROM user_ban
+          WHERE id IN (
+            SELECT MAX(id)
+            FROM user_ban
+            WHERE status IN (0, 3)
+            GROUP BY user_id
+          )
+        ) ub ON u.id = ub.user_id
         ${whereClause}
       `
       const [countResult] = await pool.execute(countQuery, params)
@@ -1791,7 +1800,7 @@ const usersCrudConfig = {
       const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
       const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
 
-      // 获取数据
+      // 获取数据（使用子查询只获取每个用户最新的封禁记录）
       const dataQuery = `
         SELECT u.*,
                COALESCE(ub.status, -1) as ban_status,
@@ -1799,7 +1808,16 @@ const usersCrudConfig = {
                ub.end_time as ban_end_time,
                ub.created_at as ban_created_at
         FROM users u
-        LEFT JOIN user_ban ub ON u.id = ub.user_id AND ub.status IN (0, 3)
+        LEFT JOIN (
+          SELECT user_id, status, reason, end_time, created_at
+          FROM user_ban
+          WHERE id IN (
+            SELECT MAX(id)
+            FROM user_ban
+            WHERE status IN (0, 3)
+            GROUP BY user_id
+          )
+        ) ub ON u.id = ub.user_id
         ${whereClause}
         ${orderClause}
         LIMIT ? OFFSET ?
@@ -1850,7 +1868,16 @@ const usersCrudConfig = {
                ub.end_time as ban_end_time,
                ub.created_at as ban_created_at
         FROM users u
-        LEFT JOIN user_ban ub ON u.id = ub.user_id AND ub.status IN (0, 3)
+        LEFT JOIN (
+          SELECT user_id, status, reason, end_time, created_at
+          FROM user_ban
+          WHERE id IN (
+            SELECT MAX(id)
+            FROM user_ban
+            WHERE status IN (0, 3)
+            GROUP BY user_id
+          )
+        ) ub ON u.id = ub.user_id
         WHERE u.id = ?
       `, [String(userId)])
 
