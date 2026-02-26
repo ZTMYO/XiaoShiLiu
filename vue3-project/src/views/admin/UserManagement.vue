@@ -81,7 +81,7 @@ const customActions = [
 // 封禁模态框相关
 const banModalVisible = ref(false)
 const banModalTitle = ref('封禁用户')
-const banFormData = ref({ reason: '', end_time: '' })
+const banFormData = ref({ reason: '', duration: 'permanent' })
 const isSubmitting = ref(false)
 const currentUserId = ref(null)
 
@@ -95,11 +95,19 @@ const banFormFields = [
     required: true
   },
   {
-    key: 'end_time',
-    label: '封禁结束时间',
-    type: 'text',
-    placeholder: '格式：YYYY-MM-DD HH:MM:SS，留空为永久封禁',
-    required: false
+    key: 'duration',
+    label: '封禁时长',
+    type: 'select',
+    placeholder: '请选择封禁时长',
+    required: true,
+    options: [
+      { value: '1h', label: '1 小时' },
+      { value: '1d', label: '1 天' },
+      { value: '7d', label: '7 天' },
+      { value: '30d', label: '30 天' },
+      { value: '1y', label: '1 年' },
+      { value: 'permanent', label: '永久封禁' }
+    ]
   }
 ]
 
@@ -167,7 +175,6 @@ const userFormFields = [
   },
   { key: 'major', label: '专业', type: 'text', placeholder: '请输入专业' },
   { key: 'interests', label: '兴趣爱好', type: 'interest-input', placeholder: '请输入兴趣爱好' },
-  { key: 'is_active', label: '激活状态', type: 'checkbox', checkboxLabel: '激活' },
   { key: 'verified', label: '认证状态', type: 'radio', options: [
     { value: 0, label: '无认证' },
     { value: 1, label: '官方认证' },
@@ -176,7 +183,7 @@ const userFormFields = [
 ]
 
 // 编辑表单字段（使用通用表单字段）
-const editFormFields = userFormFields
+const editFormFields = userFormFields.filter(field => field.key !== 'is_active')
 
 const getAuthHeaders = () => {
   const headers = {
@@ -252,7 +259,7 @@ const handleCustomAction = async (actionData) => {
     } else {
       // 用户未被封禁，显示封禁模态框
       // 重置表单数据
-      banFormData.value = { reason: '', end_time: '' }
+      banFormData.value = { reason: '', duration: 'permanent' }
       currentUserId.value = item.id
       banModalTitle.value = `封禁用户 - ${item.nickname}`
       banModalVisible.value = true
@@ -260,14 +267,45 @@ const handleCustomAction = async (actionData) => {
   }
 }
 
+const formatDateTimeForApi = (date) => {
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+const calculateBanEndTime = (duration) => {
+  if (!duration || duration === 'permanent') return null
+
+  const now = new Date()
+  const end = new Date(now)
+
+  if (duration === '1h') {
+    end.setHours(end.getHours() + 1)
+  } else if (duration === '1d') {
+    end.setDate(end.getDate() + 1)
+  } else if (duration === '7d') {
+    end.setDate(end.getDate() + 7)
+  } else if (duration === '30d') {
+    end.setDate(end.getDate() + 30)
+  } else if (duration === '1y') {
+    end.setFullYear(end.getFullYear() + 1)
+  } else {
+    return null
+  }
+
+  return formatDateTimeForApi(end)
+}
+
 // 处理编辑提交
 const handleEditSubmit = async (formData) => {
   if (!currentUserId.value) return
   
+  const payload = { ...formData }
+  delete payload.is_active
+
   await handleApiRequest(
     `${apiConfig.baseURL}/admin/users/${currentUserId.value}`,
     'PUT',
-    formData,
+    payload,
     '用户编辑成功',
     '编辑失败',
     editModalVisible
@@ -306,11 +344,11 @@ const handleConfirmUnban = async () => {
 
 const handleBanSubmit = async (formData) => {
   if (!currentUserId.value) return
-  
+
   await handleApiRequest(
     `${apiConfig.baseURL}/admin/users/${currentUserId.value}/ban`,
     'POST',
-    { reason: formData.reason, end_time: formData.end_time || null },
+    { reason: formData.reason, end_time: calculateBanEndTime(formData.duration) },
     '用户封禁成功',
     '封禁失败',
     banModalVisible
