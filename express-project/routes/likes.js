@@ -3,11 +3,10 @@ const router = express.Router();
 const { HTTP_STATUS, RESPONSE_CODES, ERROR_MESSAGES } = require('../constants');
 const { pool } = require('../config/config');
 const { authenticateToken } = require('../middleware/auth');
-const { checkUserBan } = require('../middleware/ban');
 const NotificationHelper = require('../utils/notificationHelper');
 
 // 点赞/取消点赞
-router.post('/', authenticateToken, checkUserBan, async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const { target_type, target_id } = req.body;
     const userId = req.user.id;
@@ -120,7 +119,7 @@ router.post('/', authenticateToken, checkUserBan, async (req, res) => {
 });
 
 // 取消点赞（兼容旧接口）
-router.delete('/', authenticateToken, checkUserBan, async (req, res) => {
+router.delete('/', authenticateToken, async (req, res) => {
   try {
     const { target_type, target_id } = req.body;
     const userId = req.user.id;
