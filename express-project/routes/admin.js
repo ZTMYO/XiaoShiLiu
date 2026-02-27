@@ -1755,10 +1755,10 @@ const usersCrudConfig = {
         const banStatus = req.query.ban_status
         if (banStatus === 'normal') {
           // 正常状态：没有活跃的封禁记录
-          whereClause += whereClause ? ' AND ub.id IS NULL' : ' WHERE ub.id IS NULL'
+          whereClause += whereClause ? ' AND ub.user_id IS NULL' : ' WHERE ub.user_id IS NULL'
         } else if (banStatus === 'banned') {
           // 封禁状态：有活跃的封禁记录
-          whereClause += whereClause ? ' AND ub.id IS NOT NULL' : ' WHERE ub.id IS NOT NULL'
+          whereClause += whereClause ? ' AND ub.user_id IS NOT NULL' : ' WHERE ub.user_id IS NOT NULL'
         }
       }
 
