@@ -363,17 +363,6 @@ const searchFields = [
   { key: 'nickname', label: '昵称', placeholder: '搜索昵称' },
   { key: 'location', label: '属地', placeholder: '搜索属地' },
   {
-    key: 'is_active',
-    label: '账号状态',
-    type: 'select',
-    placeholder: '账号状态',
-    options: [
-      { value: '', label: '全部状态' },
-      { value: '1', label: '激活' },
-      { value: '0', label: '未激活' }
-    ]
-  },
-  {
     key: 'ban_status',
     label: '封禁状态',
     type: 'select',

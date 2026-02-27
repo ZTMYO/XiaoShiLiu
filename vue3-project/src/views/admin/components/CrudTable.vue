@@ -114,8 +114,8 @@
               <input type="checkbox" :value="item.id" v-model="selectedItems" />
             </td>
             <td v-for="column in columns" :key="column.key">
-              <span v-if="column.type === 'image' && item[column.key]">
-                <img :src="item[column.key]" alt="图片" class="table-image" @click="showImageModal(item[column.key])"
+              <span v-if="column.type === 'image'">
+                <img :src="item[column.key] || defaultAvatar" alt="图片" class="table-image" @click="showImageModal(item[column.key] || defaultAvatar)"
                   @error="handleImageError" />
               </span>
               <span v-else-if="column.type === 'image-gallery'">
