@@ -204,7 +204,7 @@
 |--------|------|------|------|
 | id | BIGINT | 審核ID | 主鍵，自增 |
 | admin_id | BIGINT | 審核人ID | 外鍵關聯admin，可為空 |
-| type | TINYINT | 審核類型 | 1-使用者個人審核，2-企業審核，3-內容審核，4-評論審核 |
+| type | TINYINT | 審核類型 | 1-官方認證，2-個人認證，3-筆記審核，4-評論審核 |
 | target_id | BIGINT | 目標ID | 根據type不同，對應使用者ID、筆記ID或評論ID |
 | content | TEXT | 審核內容 | 待審核的具體內容 |
 | remark | TEXT | 審核備註 | 審核人填寫的備註資訊，可為空 |

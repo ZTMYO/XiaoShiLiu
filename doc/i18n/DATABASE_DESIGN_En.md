@@ -203,7 +203,7 @@ Database structure design for the Xiaoshiliu-style image-text community project 
 |------------|------|-------------|-------|
 | id | BIGINT | Audit ID | Primary key, auto-increment |
 | admin_id | BIGINT | Auditor ID | Foreign key to admin table, nullable |
-| type | TINYINT | Audit Type | 1-Personal audit, 2-Enterprise audit, 3-Content audit, 4-Comment audit |
+| type | TINYINT | Audit Type | 1-Official verification, 2-Personal verification, 3-Post audit, 4-Comment audit |
 | target_id | BIGINT | Target ID | User ID for type 1/2, Post ID for type 3, Comment ID for type 4 |
 | content | TEXT | Audit Content | Specific content to be audited |
 | remark | TEXT | Audit Remark | Remark filled by auditor, nullable |

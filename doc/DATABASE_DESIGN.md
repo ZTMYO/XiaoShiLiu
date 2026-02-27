@@ -218,7 +218,7 @@
 |--------|------|------|------|
 | id | BIGINT | 审核ID | 主键，自增 |
 | admin_id | BIGINT | 审核人ID | 外键关联admin，可为空 |
-| type | TINYINT | 审核类型 | 1-个人审核，2-企业审核，3-内容审核，4-评论审核 |
+| type | TINYINT | 审核类型 | 1-官方认证，2-个人认证，3-笔记审核，4-评论审核 |
 | target_id | BIGINT | 目标ID | 根据type不同，对应用户ID、笔记ID或评论ID |
 | content | TEXT | 审核内容 | 待审核的具体内容 |
 | remark | TEXT | 审核备注 | 审核人填写的备注信息，可为空 |
