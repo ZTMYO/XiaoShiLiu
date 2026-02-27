@@ -949,7 +949,7 @@ Authorization: Bearer <your_jwt_token>
     "description": "申请个人认证",
     "status": 0,
     "audit_time": null,
-    "reject_reason": null,
+    "remark": null,
     "created_at": "2025-01-02T00:00:00.000Z"
   }
 }
@@ -3052,7 +3052,7 @@ async function example() {
         "description": "申请个人认证",
         "status": 0,
         "audit_time": null,
-        "reject_reason": null,
+        "remark": null,
         "created_at": "2025-01-02T00:00:00.000Z",
         "user": {
           "id": 1,
@@ -3121,9 +3121,15 @@ async function example() {
 |------|------|------|------|
 | id | int | 是 | 认证申请ID |
 
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| remark | string | 否 | 审核备注 |
+
 **功能说明**:
 - 审核通过后，用户的认证状态会自动更新为已认证
-- 系统会记录审核时间
+- 系统会记录审核时间和审核人
+- 可选填写审核备注
 
 **响应示例**:
 ```json
@@ -3145,7 +3151,7 @@ async function example() {
 **请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| reject_reason | string | 是 | 拒绝原因 |
+| remark | string | 否 | 审核备注 |
 
 **功能说明**:
 - 审核拒绝后，用户可以查看拒绝原因

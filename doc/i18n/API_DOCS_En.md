@@ -668,7 +668,7 @@ General parameters for interfaces that support pagination:
     "description": "Application for individual verification",
     "status": 0,
     "audit_time": null,
-    "reject_reason": null,
+    "remark": null,
     "created_at": "2025-01-02T00:00:00.000Z"
   }
 }
@@ -2671,7 +2671,7 @@ Administrator interfaces use JWT authentication:
 **Request Parameters**:
 | Parameter | Type | Required | Description |
 |------|------|------|------|
-| reject_reason | string | Yes | Reject reason |
+| remark | string | No | Audit remark |
 
 **Function Description**:
 - After verification is rejected, the user can view the reject reason

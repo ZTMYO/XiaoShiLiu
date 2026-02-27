@@ -789,7 +789,7 @@ Authorization: Bearer <your_jwt_token>
     "description": "申請個人認證",
     "status": 0,
     "audit_time": null,
-    "reject_reason": null,
+    "remark": null,
     "created_at": "2025-01-02T00:00:00.000Z"
   }
 }
@@ -2826,9 +2826,15 @@ async function example() {
 |------|------|------|------|
 | id | int | 是 | 認證申請ID |
 
+**請求參數**:
+| 參數 | 型態 | 必填 | 說明 |
+|------|------|------|------|
+| remark | string | 否 | 核對備註 |
+
 **功能說明**:
 - 核對通過後，用戶的認證狀態會自動更新為已認證
-- 系統會記錄核對時間
+- 系統會記錄核對時間和核對人
+- 可選填寫核對備註
 
 **回應範例**:
 ```json
@@ -2850,7 +2856,7 @@ async function example() {
 **請求參數**:
 | 參數 | 型態 | 必填 | 說明 |
 |------|------|------|------|
-| reject_reason | string | 是 | 拒絕原因 |
+| remark | string | 否 | 核對備註 |
 
 **功能說明**:
 - 核對拒絕後，用戶可以查看拒絕原因

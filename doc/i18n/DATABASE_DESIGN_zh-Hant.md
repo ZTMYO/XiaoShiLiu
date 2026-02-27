@@ -189,12 +189,14 @@
 | 欄位名 | 類型 | 說明 | 備註 |
 |--------|------|------|------|
 | id | BIGINT | 審核ID | 主鍵，自增 |
-| user_id | BIGINT | 使用者ID | 外鍵關聯users |
-| type | TINYINT | 審核類型 | 1-使用者審核，2-內容審核，3-評論審核 |
+| admin_id | BIGINT | 審核人ID | 外鍵關聯admin，可為空 |
+| type | TINYINT | 審核類型 | 1-使用者個人審核，2-企業審核，3-內容審核，4-評論審核 |
+| target_id | BIGINT | 目標ID | 根據type不同，對應使用者ID、筆記ID或評論ID |
 | content | TEXT | 審核內容 | 待審核的具體內容 |
+| remark | TEXT | 審核備註 | 審核人填寫的備註資訊，可為空 |
 | created_at | TIMESTAMP | 建立時間 | 提交審核時間 |
 | audit_time | TIMESTAMP | 審核時間 | 完成審核時間，可為空 |
-| status | TINYINT(1) | 審核狀態 | 0-待審核，1-審核通過，預設0 |
+| status | TINYINT(1) | 審核狀態 | 0-待審核，1-審核通過，2-審核拒絕，預設0 |
 
 ---
 

@@ -188,12 +188,14 @@ Database structure design for the Xiaoshiliu-style image-text community project 
 | Field Name | Type | Description | Notes |
 |------------|------|-------------|-------|
 | id | BIGINT | Audit ID | Primary key, auto-increment |
-| user_id | BIGINT | User ID | Foreign key to users table |
-| type | TINYINT | Audit Type | 1-User audit, 2-Content audit, 3-Comment audit |
+| admin_id | BIGINT | Auditor ID | Foreign key to admin table, nullable |
+| type | TINYINT | Audit Type | 1-Personal audit, 2-Enterprise audit, 3-Content audit, 4-Comment audit |
+| target_id | BIGINT | Target ID | User ID for type 1/2, Post ID for type 3, Comment ID for type 4 |
 | content | TEXT | Audit Content | Specific content to be audited |
+| remark | TEXT | Audit Remark | Remark filled by auditor, nullable |
 | created_at | TIMESTAMP | Creation Time | Time when audit was submitted |
 | audit_time | TIMESTAMP | Audit Time | Time when audit was completed, nullable |
-| status | TINYINT(1) | Audit Status | 0-Pending, 1-Approved, default 0 |
+| status | TINYINT(1) | Audit Status | 0-Pending, 1-Approved, 2-Rejected |
 
 ---
 
