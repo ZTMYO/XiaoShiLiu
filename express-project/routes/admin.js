@@ -2329,7 +2329,7 @@ const auditCrudConfig = {
       const offset = (page - 1) * limit
 
       // 构建查询条件
-      let whereClause = 'WHERE 1=1'
+      let whereClause = 'WHERE 1=1 AND a.type IN (1, 2)'
       const queryParams = []
 
       // 处理筛选条件
@@ -2422,7 +2422,7 @@ const auditCrudConfig = {
           u.avatar
         FROM audit a
         LEFT JOIN users u ON a.target_id = u.id
-        WHERE a.id = ?
+        WHERE a.id = ? AND a.type IN (1, 2)
       `
 
       const result = await pool.query(query, [id])
@@ -2498,18 +2498,30 @@ router.put('/audit/:id/approve', adminAuth, async (req, res) => {
 
     const { target_id , type } = auditResult[0]
 
-    // 更新审核状态为通过，记录审核人和备注
-    await pool.query('UPDATE audit SET status = 1, audit_time = NOW(), admin_id = ?, remark = ? WHERE id = ?',[adminId, remark || null, id])
+    // 开始事务
+    await pool.query('START TRANSACTION')
 
-    // 根据认证类型更新用户的verified字段
-    // type: 1-官方认证, 2-个人认证
-    const verifiedValue = type === 1 ? 1 : (type === 2 ? 2 : 0)
-    await pool.query('UPDATE users SET verified = ? WHERE id = ?', [verifiedValue, target_id])
+    try {
+      // 更新审核状态为通过，记录审核人和备注
+      await pool.query('UPDATE audit SET status = 1, audit_time = NOW(), admin_id = ?, remark = ? WHERE id = ?',[adminId, remark || null, id])
 
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: '审核通过成功'
-    })
+      // 根据认证类型更新用户的verified字段
+      // type: 1-官方认证, 2-个人认证
+      const verifiedValue = type === 1 ? 1 : (type === 2 ? 2 : 0)
+      await pool.query('UPDATE users SET verified = ? WHERE id = ?', [verifiedValue, target_id])
+
+      // 提交事务
+      await pool.query('COMMIT')
+
+      res.json({
+        code: RESPONSE_CODES.SUCCESS,
+        message: '审核通过成功'
+      })
+    } catch (error) {
+      // 回滚事务
+      await pool.query('ROLLBACK')
+      throw error
+    }
   } catch (error) {
     console.error('审核通过失败:', error)
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -2538,16 +2550,28 @@ router.put('/audit/:id/reject', adminAuth, async (req, res) => {
 
     const { target_id } = auditResult[0]
 
-    // 更新审核状态为拒绝，记录审核人和备注
-    await pool.query('UPDATE audit SET status = 2, audit_time = NOW(), admin_id = ?, remark = ? WHERE id = ?',[adminId, remark || null, id])
-    
-    // 拒绝认证申请时，将用户的verified字段设置为0（未认证）
-    await pool.query('UPDATE users SET verified = 0 WHERE id = ?', [target_id])
+    // 开始事务
+    await pool.query('START TRANSACTION')
 
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: '拒绝申请成功'
-    })
+    try {
+      // 更新审核状态为拒绝，记录审核人和备注
+      await pool.query('UPDATE audit SET status = 2, audit_time = NOW(), admin_id = ?, remark = ? WHERE id = ?',[adminId, remark || null, id])
+
+      // 拒绝认证申请时，将用户的verified字段设置为0（未认证）
+      await pool.query('UPDATE users SET verified = 0 WHERE id = ?', [target_id])
+
+      // 提交事务
+      await pool.query('COMMIT')
+
+      res.json({
+        code: RESPONSE_CODES.SUCCESS,
+        message: '拒绝申请成功'
+      })
+    } catch (error) {
+      // 回滚事务
+      await pool.query('ROLLBACK')
+      throw error
+    }
   } catch (error) {
     console.error('拒绝申请失败:', error)
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
