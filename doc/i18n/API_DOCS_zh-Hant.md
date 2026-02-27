@@ -2,10 +2,10 @@
 
 ## 專案資訊
 - **專案名稱**: 小石榴圖文社區
-- **版本**: v1.3.1
+- **版本**: v1.3.2
 - **基礎URL**: `http://localhost:3001`
 - **數據庫**: xiaoshiliu (MySQL)
-- **更新時間**: 2025-09-13
+- **更新時間**: 2026-02-27
 
 ## 通用說明
 
@@ -3109,9 +3109,135 @@ async function example() {
 **接口地址**: `PUT /api/auth/admin/admins/:id/status`
 **需要認證**: 是（JWT）
 
-### 13. 監控管理
+### 13. 筆記審核管理
 
-#### 13.1 獲取系統活動監控
+#### 13.1 獲取筆記審核列表
+**接口地址**: `GET /api/admin/post-audit`
+**需要認證**: 是
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| page | int | 否 | 頁碼，默認1 |
+| limit | int | 否 | 每頁數量，默認20 |
+| title | string | 否 | 筆記標題搜索 |
+| user_display_id | string | 否 | 用戶小石榴號搜索 |
+| status | int | 否 | 審核狀態篩選（0=待審核，1=已通過，2=已拒絕） |
+| sortField | string | 否 | 排序字段（audit_id, created_at, audit_time, status） |
+| sortOrder | string | 否 | 排序方向（ASC, DESC） |
+
+**響應範例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "audit_id": 1,
+        "id": 1,
+        "title": "測試筆記",
+        "user_display_id": "user123",
+        "user_nickname": "測試用戶",
+        "category": "生活",
+        "type": 1,
+        "tags": [
+          { "id": 1, "name": "測試" },
+          { "id": 2, "name": "生活" }
+        ],
+        "content": "測試內容",
+        "images": ["https://example.com/image1.jpg"],
+        "status": 0,
+        "created_at": "2026-02-27T10:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 1,
+      "pages": 1
+    }
+  }
+}
+```
+
+#### 13.2 創建筆記審核記錄
+**接口地址**: `POST /api/admin/post-audit`
+**需要認證**: 是
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| target_id | int | 是 | 筆記ID |
+| content | string | 是 | 審核原因 |
+| status | int | 否 | 審核狀態（0=待審核，1=已通過，2=已拒絕） |
+
+**響應範例**:
+```json
+{
+  "code": 200,
+  "message": "筆記審核創建成功",
+  "data": {
+    "id": 1
+  }
+}
+```
+
+#### 13.3 審核通過
+**接口地址**: `PUT /api/admin/post-audit/{id}/approve`
+**需要認證**: 是
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 審核記錄ID |
+
+**響應範例**:
+```json
+{
+  "code": 200,
+  "message": "審核通過成功"
+}
+```
+
+#### 13.4 審核拒絕
+**接口地址**: `PUT /api/admin/post-audit/{id}/reject`
+**需要認證**: 是
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 審核記錄ID |
+| remark | string | 是 | 拒絕原因 |
+
+**響應範例**:
+```json
+{
+  "code": 200,
+  "message": "審核拒絕成功"
+}
+```
+
+#### 13.5 刪除審核記錄
+**接口地址**: `DELETE /api/admin/post-audit/{id}`
+**需要認證**: 是
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 審核記錄ID |
+
+**響應範例**:
+```json
+{
+  "code": 200,
+  "message": "筆記審核刪除成功"
+}
+```
+
+### 14. 監控管理
+
+#### 14.1 獲取系統活動監控
 **接口地址**: `GET /api/admin/monitor/activities`
 **需要認證**: 是
 

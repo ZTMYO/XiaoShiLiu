@@ -2,10 +2,10 @@
 
 ## Project Information
 - **Project Name**: Xiaoshiliu Image and Text Community
-- **Version**: v1.3.1
+- **Version**: v1.3.2
 - **Base URL**: `http://localhost:3001`
 - **Database**: xiaoshiliu (MySQL)
-- **Update Time**: 2025-09-13
+- **Update Time**: 2026-02-27
 
 ## General Instructions
 
@@ -2922,9 +2922,135 @@ Administrator interfaces use JWT authentication:
 **API Endpoint**: `PUT /api/auth/admin/admins/:id/status`
 **Authentication Required**: Yes (JWT)
 
-### 13. Monitoring Management
+### 13. Post Audit Management
 
-#### 13.1 Obtain System Activity Monitoring
+#### 13.1 Get Post Audit List
+**API Endpoint**: `GET /api/admin/post-audit`
+**Authentication Required**: Yes
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| page | int | No | Page number, default 1 |
+| limit | int | No | Number of items per page, default 20 |
+| title | string | No | Post title search |
+| user_display_id | string | No | User Xiaoshiliu number search |
+| status | int | No | Audit status filter (0=pending, 1=approved, 2=rejected) |
+| sortField | string | No | Sorting field (audit_id, created_at, audit_time, status) |
+| sortOrder | string | No | Sorting direction (ASC, DESC) |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "audit_id": 1,
+        "id": 1,
+        "title": "Test Post",
+        "user_display_id": "user123",
+        "user_nickname": "Test User",
+        "category": "Life",
+        "type": 1,
+        "tags": [
+          { "id": 1, "name": "Test" },
+          { "id": 2, "name": "Life" }
+        ],
+        "content": "Test content",
+        "images": ["https://example.com/image1.jpg"],
+        "status": 0,
+        "created_at": "2026-02-27T10:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 1,
+      "pages": 1
+    }
+  }
+}
+```
+
+#### 13.2 Create Post Audit Record
+**API Endpoint**: `POST /api/admin/post-audit`
+**Authentication Required**: Yes
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| target_id | int | Yes | Post ID |
+| content | string | Yes | Audit reason |
+| status | int | No | Audit status (0=pending, 1=approved, 2=rejected) |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "Post audit created successfully",
+  "data": {
+    "id": 1
+  }
+}
+```
+
+#### 13.3 Approve Audit
+**API Endpoint**: `PUT /api/admin/post-audit/{id}/approve`
+**Authentication Required**: Yes
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | int | Yes | Audit record ID |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "Audit approved successfully"
+}
+```
+
+#### 13.4 Reject Audit
+**API Endpoint**: `PUT /api/admin/post-audit/{id}/reject`
+**Authentication Required**: Yes
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | int | Yes | Audit record ID |
+| remark | string | Yes | Rejection reason |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "Audit rejected successfully"
+}
+```
+
+#### 13.5 Delete Audit Record
+**API Endpoint**: `DELETE /api/admin/post-audit/{id}`
+**Authentication Required**: Yes
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | int | Yes | Audit record ID |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "Post audit deleted successfully"
+}
+```
+
+### 14. Monitoring Management
+
+#### 14.1 Obtain System Activity Monitoring
 **API Endpoint**: `GET /api/admin/monitor/activities`
 **Authentication Required**: Yes
 

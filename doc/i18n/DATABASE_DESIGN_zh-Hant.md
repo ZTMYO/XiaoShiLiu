@@ -184,7 +184,21 @@
 | password | VARCHAR(255) | 管理員密碼 | 加密儲存 |
 | created_at | TIMESTAMP | 建立時間 | 帳號建立時間 |
 
-### 13. 審核表 (audit)
+### 13. 管理員會話表 (admin_sessions)
+
+| 欄位名 | 類型 | 說明 | 備註 |
+|--------|------|------|------|
+| id | BIGINT | 會話ID | 主鍵，自增 |
+| admin_id | BIGINT | 管理員ID | 外鍵關聯admin |
+| token | VARCHAR(255) | 訪問令牌 | 唯一 |
+| refresh_token | VARCHAR(255) | 重新整理令牌 | 可為空 |
+| expires_at | TIMESTAMP | 過期時間 | 令牌過期時間 |
+| user_agent | TEXT | 使用者代理 | 瀏覽器資訊，可為空 |
+| is_active | TINYINT(1) | 是否啟用 | 預設1 |
+| created_at | TIMESTAMP | 建立時間 | 會話建立時間 |
+| updated_at | TIMESTAMP | 更新時間 | 自動更新 |
+
+### 14. 審核表 (audit)
 
 | 欄位名 | 類型 | 說明 | 備註 |
 |--------|------|------|------|
@@ -198,7 +212,24 @@
 | audit_time | TIMESTAMP | 審核時間 | 完成審核時間，可為空 |
 | status | TINYINT(1) | 審核狀態 | 0-待審核，1-審核通過，2-審核拒絕，預設0 |
 
+### 15. 使用者封禁表 (user_ban)
+
+| 欄位名 | 類型 | 說明 | 備註 |
+|--------|------|------|------|
+| id | BIGINT | 封禁記錄ID | 主鍵，自增 |
+| user_id | BIGINT | 被封禁使用者ID | 外鍵關聯users |
+| reason | VARCHAR(255) | 封禁原因 | 封禁理由描述 |
+| end_time | TIMESTAMP | 封禁結束時間 | 可為空（永久封禁） |
+| created_at | TIMESTAMP | 建立時間 | 封禁記錄建立時間 |
+| status | INT | 狀態 | 0-封禁中，1-管理員解封，2-自動解封，3-永久封禁，4-封禁撤銷 |
+| operator | BIGINT | 操作人ID | 0-系統，其他為管理員ID |
+
+**索引：**
+- PRIMARY KEY (`id`)
+- KEY `idx_user_id` (`user_id`)
+- KEY `idx_status` (`status`)
+
 ---
 
-*最後更新: 2025年1月16日*
-*資料庫版本: 1.0.3*
+*最後更新: 2026年2月27日*
+*資料庫版本: 1.0.4*
