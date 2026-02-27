@@ -550,7 +550,7 @@ router.post('/register', async (req, res) => {
     // 邮件功能未启用时，email字段存储空字符串
     const userEmail = isEmailEnabled ? email : '';
     const [result] = await pool.execute(
-      'INSERT INTO users (user_id, nickname, password, email, avatar, bio, location) VALUES (?, ?, SHA2(?, 256), ?, ?, ?, ?)',
+      'INSERT INTO users (user_id, nickname, password, email, avatar, bio, location, last_login_at) VALUES (?, ?, SHA2(?, 256), ?, ?, ?, ?, NOW())',
       [user_id, nickname, password, userEmail, defaultAvatar, '', ipLocation]
     );
 
@@ -634,10 +634,10 @@ router.post('/login', async (req, res) => {
     const userIP = getRealIP(req);
     const userAgent = req.headers['user-agent'] || '';
 
-    // 获取IP地理位置并更新用户location
+    // 获取IP地理位置并更新用户location和最后登录时间
     const ipLocation = await getIPLocation(userIP);
     await pool.execute(
-      'UPDATE users SET location = ? WHERE id = ?',
+      'UPDATE users SET location = ?, last_login_at = NOW() WHERE id = ?',
       [ipLocation, user.id.toString()]
     );
 
@@ -1177,15 +1177,15 @@ router.post('/admin/refresh', async (req, res) => {
     }
 
     // 生成新的令牌
-    const newAccessToken = generateAccessToken({ 
-      adminId: decoded.adminId, 
-      username: decoded.username, 
-      type: 'admin' 
+    const newAccessToken = generateAccessToken({
+      adminId: decoded.adminId,
+      username: decoded.username,
+      type: 'admin'
     });
-    const newRefreshToken = generateRefreshToken({ 
-      adminId: decoded.adminId, 
-      username: decoded.username, 
-      type: 'admin' 
+    const newRefreshToken = generateRefreshToken({
+      adminId: decoded.adminId,
+      username: decoded.username,
+      type: 'admin'
     });
 
     // 获取用户IP和User-Agent
