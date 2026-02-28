@@ -428,18 +428,22 @@ class DatabaseInitializer {
     const sql = `
       CREATE TABLE IF NOT EXISTS \`audit\` (
         \`id\` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '审核ID',
-        \`user_id\` bigint(20) NOT NULL COMMENT '用户ID',
-        \`type\` tinyint(4) NOT NULL COMMENT '审核类型：1-用户审核，2-内容审核，3-评论审核',
+        \`admin_id\` bigint(20) DEFAULT NULL COMMENT '审核人ID（管理员ID）',
+        \`type\` tinyint(4) NOT NULL COMMENT '审核类型：1-用户个人审核，2-用户官方审核，3-内容审核，4-评论审核',
+        \`target_id\` bigint(20) NOT NULL COMMENT '目标ID：根据type不同，对应用户ID、笔记ID或评论ID',
         \`content\` text NOT NULL COMMENT '审核内容',
+        \`remark\` text DEFAULT NULL COMMENT '审核备注',
         \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
         \`audit_time\` timestamp NULL DEFAULT NULL COMMENT '审核时间',
-        \`status\` tinyint(1) DEFAULT 0 COMMENT '审核状态：0-待审核，1-审核通过',
+        \`status\` tinyint(1) DEFAULT 0 COMMENT '审核状态：0-待审核，1-审核通过，2-审核拒绝',
         PRIMARY KEY (\`id\`),
-        KEY \`idx_user_id\` (\`user_id\`),
+        KEY \`idx_admin_id\` (\`admin_id\`),
         KEY \`idx_type\` (\`type\`),
+        KEY \`idx_target_id\` (\`target_id\`),
         KEY \`idx_status\` (\`status\`),
         KEY \`idx_created_at\` (\`created_at\`),
-        CONSTRAINT \`audit_ibfk_1\` FOREIGN KEY (\`user_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE
+        KEY \`idx_type_target\` (\`type\`, \`target_id\`),
+        CONSTRAINT \`audit_ibfk_1\` FOREIGN KEY (\`admin_id\`) REFERENCES \`admin\` (\`id\`) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审核表';
     `;
     await connection.execute(sql);

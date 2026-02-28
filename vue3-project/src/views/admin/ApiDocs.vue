@@ -1860,12 +1860,12 @@ const apiGroups = ref([
         method: 'PUT',
         path: '/api/admin/audit/:id/reject',
         title: '审核拒绝认证申请（管理员）',
-        description: '管理员审核拒绝认证申请，需要提供拒绝原因',
+        description: '管理员审核拒绝认证申请',
         auth: true,
         expanded: false,
         params: [
           { name: 'id', type: 'int', required: true, description: '认证申请ID' },
-          { name: 'reject_reason', type: 'string', required: true, description: '拒绝原因' }
+          { name: 'remark', type: 'string', required: false, description: '审核备注' }
         ]
       },
       {

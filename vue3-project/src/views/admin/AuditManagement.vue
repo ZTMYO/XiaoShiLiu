@@ -112,7 +112,7 @@ const columns = [
 
 // 表单字段定义
 const formFields = computed(() => [
-  { key: 'user_id', label: '用户ID', type: 'number', required: true, placeholder: '请输入用户ID' },
+  { key: 'target_id', label: '用户ID', type: 'number', required: true, placeholder: '请输入用户ID' },
   {
     key: 'type',
     label: '认证类型',

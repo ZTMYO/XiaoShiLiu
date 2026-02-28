@@ -183,19 +183,52 @@ Database structure design for the Xiaoshiliu-style image-text community project 
 | password | VARCHAR(255) | Admin Password | Encrypted storage |
 | created_at | TIMESTAMP | Creation Time | Account creation time |
 
-### 13. Audit Table (audit)
+### 13. Admin Session Table (admin_sessions)
+
+| Field Name | Type | Description | Notes |
+|------------|------|-------------|-------|
+| id | BIGINT | Session ID | Primary key, auto-increment |
+| admin_id | BIGINT | Admin ID | Foreign key to admin table |
+| token | VARCHAR(255) | Access Token | Unique |
+| refresh_token | VARCHAR(255) | Refresh Token | Nullable |
+| expires_at | TIMESTAMP | Expiration Time | Token expiration time |
+| user_agent | TEXT | User Agent | Browser info, nullable |
+| is_active | TINYINT(1) | Is Active | Default 1 |
+| created_at | TIMESTAMP | Creation Time | Session creation time |
+| updated_at | TIMESTAMP | Update Time | Auto update |
+
+### 14. Audit Table (audit)
 
 | Field Name | Type | Description | Notes |
 |------------|------|-------------|-------|
 | id | BIGINT | Audit ID | Primary key, auto-increment |
-| user_id | BIGINT | User ID | Foreign key to users table |
-| type | TINYINT | Audit Type | 1-User audit, 2-Content audit, 3-Comment audit |
+| admin_id | BIGINT | Auditor ID | Foreign key to admin table, nullable |
+| type | TINYINT | Audit Type | 1-Official verification, 2-Personal verification, 3-Post audit, 4-Comment audit |
+| target_id | BIGINT | Target ID | User ID for type 1/2, Post ID for type 3, Comment ID for type 4 |
 | content | TEXT | Audit Content | Specific content to be audited |
+| remark | TEXT | Audit Remark | Remark filled by auditor, nullable |
 | created_at | TIMESTAMP | Creation Time | Time when audit was submitted |
 | audit_time | TIMESTAMP | Audit Time | Time when audit was completed, nullable |
-| status | TINYINT(1) | Audit Status | 0-Pending, 1-Approved, default 0 |
+| status | TINYINT(1) | Audit Status | 0-Pending, 1-Approved, 2-Rejected |
+
+### 15. User Ban Table (user_ban)
+
+| Field Name | Type | Description | Notes |
+|------------|------|-------------|-------|
+| id | BIGINT | Ban Record ID | Primary key, auto-increment |
+| user_id | BIGINT | Banned User ID | Foreign key to users table |
+| reason | VARCHAR(255) | Ban Reason | Reason for the ban |
+| end_time | TIMESTAMP | Ban End Time | Nullable (permanent ban) |
+| created_at | TIMESTAMP | Creation Time | Ban record creation time |
+| status | INT | Status | 0-Banned, 1-Unbanned by admin, 2-Auto unbanned, 3-Permanent ban, 4-Ban revoked |
+| operator | BIGINT | Operator ID | 0-System, others are admin IDs |
+
+**Indexes:**
+- PRIMARY KEY (`id`)
+- KEY `idx_user_id` (`user_id`)
+- KEY `idx_status` (`status`)
 
 ---
 
-*Last Updated: January 16, 2025*
-*Database Version: 1.0.3*
+*Last Updated: February 27, 2026*
+*Database Version: 1.0.4*

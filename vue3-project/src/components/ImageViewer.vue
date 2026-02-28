@@ -4,7 +4,7 @@
     <div v-if="visible" class="image-viewer-overlay" @click="handleOverlayClick" @keydown="handleKeydown" tabindex="0">
       <div class="image-viewer-container" @click.stop>
         <!-- 关闭按钮 -->
-        <button class="close-btn" @click.stop="closeViewer" aria-label="关闭图片查看器">
+        <button type="button" class="close-btn" @click.stop="closeViewer" aria-label="关闭图片查看器">
           <SvgIcon name="close" :width="24" :height="24" />
         </button>
 
@@ -26,11 +26,11 @@
 
         <!-- 导航按钮 (多图时显示) -->
         <template v-if="images.length > 1">
-          <button class="nav-btn prev-btn" :class="{ disabled: currentIndex === 0 }" @click.stop="prevImage"
+          <button type="button" class="nav-btn prev-btn" :class="{ disabled: currentIndex === 0 }" @click.stop="prevImage"
             :disabled="currentIndex === 0" aria-label="上一张图片">
             <SvgIcon name="left" :width="24" :height="24" />
           </button>
-          <button class="nav-btn next-btn" :class="{ disabled: currentIndex === images.length - 1 }" @click.stop="nextImage"
+          <button type="button" class="nav-btn next-btn" :class="{ disabled: currentIndex === images.length - 1 }" @click.stop="nextImage"
             :disabled="currentIndex === images.length - 1" aria-label="下一张图片">
             <SvgIcon name="right" :width="24" :height="24" />
           </button>

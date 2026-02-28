@@ -1302,7 +1302,7 @@ router.post('/verification', authenticateToken, async (req, res) => {
 
     // 检查是否已有待审核的认证申请
     const [existingAudit] = await pool.execute(
-      'SELECT id FROM audit WHERE user_id = ? AND type = ? AND status = 0',
+      'SELECT id FROM audit WHERE target_id = ? AND type = ? AND status = 0',
       [userId.toString(), type.toString()]
     );
 
@@ -1313,9 +1313,9 @@ router.post('/verification', authenticateToken, async (req, res) => {
       });
     }
 
-    // 插入审核记录
+    // 插入审核记录，target_id为用户ID
     const [result] = await pool.execute(
-      'INSERT INTO audit (user_id, type, content, status, created_at) VALUES (?, ?, ?, 0, NOW())',
+      'INSERT INTO audit (target_id, type, content, status, created_at) VALUES (?, ?, ?, 0, NOW())',
       [userId.toString(), type.toString(), content]
     );
 
@@ -1342,7 +1342,7 @@ router.get('/verification/status', authenticateToken, async (req, res) => {
 
     // 获取用户的认证申请记录
     const [audits] = await pool.execute(
-      'SELECT id, type, status, created_at, audit_time FROM audit WHERE user_id = ? ORDER BY created_at DESC',
+      'SELECT id, type, status, created_at, audit_time FROM audit WHERE target_id = ? ORDER BY created_at DESC',
       [userId.toString()]
     );
 
@@ -1367,7 +1367,7 @@ router.delete('/verification/revoke', authenticateToken, async (req, res) => {
 
     // 查找用户的认证申请（包括待审核、已通过和已拒绝的）
     const [existingAudits] = await pool.execute(
-      'SELECT id, status FROM audit WHERE user_id = ? AND status IN (0, 1, 2)',
+      'SELECT id, status FROM audit WHERE target_id = ? AND status IN (0, 1, 2)',
       [userId.toString()]
     );
 
@@ -1380,7 +1380,7 @@ router.delete('/verification/revoke', authenticateToken, async (req, res) => {
 
     // 删除认证申请记录
     await pool.execute(
-      'DELETE FROM audit WHERE user_id = ? AND status IN (0, 1, 2)',
+      'DELETE FROM audit WHERE target_id = ? AND status IN (0, 1, 2)',
       [userId.toString()]
     );
 

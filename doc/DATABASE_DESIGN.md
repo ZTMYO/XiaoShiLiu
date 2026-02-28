@@ -217,12 +217,14 @@
 | 字段名 | 类型 | 说明 | 备注 |
 |--------|------|------|------|
 | id | BIGINT | 审核ID | 主键，自增 |
-| user_id | BIGINT | 用户ID | 外键关联users |
-| type | TINYINT | 审核类型 | 1-用户审核，2-内容审核，3-评论审核 |
+| admin_id | BIGINT | 审核人ID | 外键关联admin，可为空 |
+| type | TINYINT | 审核类型 | 1-官方认证，2-个人认证，3-笔记审核，4-评论审核 |
+| target_id | BIGINT | 目标ID | 根据type不同，对应用户ID、笔记ID或评论ID |
 | content | TEXT | 审核内容 | 待审核的具体内容 |
+| remark | TEXT | 审核备注 | 审核人填写的备注信息，可为空 |
 | created_at | TIMESTAMP | 创建时间 | 提交审核时间 |
 | audit_time | TIMESTAMP | 审核时间 | 完成审核时间，可为空 |
-| status | TINYINT(1) | 审核状态 | 0-待审核，1-审核通过，默认0 |
+| status | TINYINT(1) | 审核状态 | 0-待审核，1-审核通过，2-审核拒绝，默认0 |
 
 ### 16. 用户封禁表 (user_ban)
 
