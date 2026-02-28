@@ -4,6 +4,10 @@ const { HTTP_STATUS, RESPONSE_CODES } = require('../constants');
 const multer = require('multer');
 const { authenticateToken } = require('../middleware/auth');
 const { uploadFile, uploadVideo } = require('../utils/uploadHelper');
+const config = require('../config/config');
+
+const imageMaxSize = config.parseFileSize(config.upload.image.maxSize);
+const videoMaxSize = config.parseFileSize(config.upload.video.maxSize);
 
 // 配置 multer 内存存储（用于云端图床）
 const storage = multer.memoryStorage();
@@ -34,7 +38,7 @@ const upload = multer({
   storage: storage,
   fileFilter: imageFileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB 限制
+    fileSize: imageMaxSize
   }
 });
 
@@ -62,9 +66,9 @@ const mixedFileFilter = (req, file, cb) => {
 
 const videoUpload = multer({
   storage: storage,
-  fileFilter: mixedFileFilter, // 使用混合文件过滤器
+  fileFilter: mixedFileFilter,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB 限制
+    fileSize: videoMaxSize
   }
 });
 
@@ -256,7 +260,10 @@ router.post('/video', authenticateToken, videoUpload.fields([
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '文件大小超过限制（5MB）' });
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
+        code: RESPONSE_CODES.VALIDATION_ERROR, 
+        message: `文件大小超过限制（图片: ${config.upload.image.maxSize}, 视频: ${config.upload.video.maxSize}）` 
+      });
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '文件数量超过限制（9个）' });
