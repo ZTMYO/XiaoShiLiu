@@ -13,6 +13,22 @@ const path = require('path');
 const crypto = require('crypto');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
+function parseFileSize(sizeStr) {
+  if (!sizeStr) return 0;
+  const units = {
+    'b': 1,
+    'kb': 1024,
+    'mb': 1024 * 1024,
+    'gb': 1024 * 1024 * 1024,
+    'tb': 1024 * 1024 * 1024 * 1024
+  };
+  const match = sizeStr.match(/^(\d+(?:\.\d+)?)\s*([a-z]+)?$/i);
+  if (!match) return 0;
+  const value = parseFloat(match[1]);
+  const unit = (match[2] || 'b').toLowerCase();
+  return Math.floor(value * (units[unit] || 1));
+}
+
 
 const config = {
   // 服务器配置
@@ -144,5 +160,6 @@ const pool = mysql.createPool(dbConfig);
 
 module.exports = {
   ...config,
-  pool
+  pool,
+  parseFileSize
 };
