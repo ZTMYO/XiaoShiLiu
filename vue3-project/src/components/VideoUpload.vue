@@ -47,7 +47,7 @@
         <SvgIcon name="publish" class="upload-icon" />
         <p>添加视频</p>
         <p class="upload-hint">支持 MP4、MOV、AVI 格式</p>
-        <p class="upload-hint">文件大小不超过100MB</p>
+        <p class="upload-hint">文件大小不超过{{ UPLOAD_CONFIG.VIDEO_MAX_SIZE_TEXT }}</p>
         <p class="drag-hint">或拖拽视频到此处</p>
       </div>
 
@@ -66,7 +66,7 @@
 
     <div class="upload-tips">
       <p>• 支持 MP4、MOV、AVI 格式</p>
-      <p>• 文件大小不超过100MB</p>
+      <p>• 文件大小不超过{{ UPLOAD_CONFIG.VIDEO_MAX_SIZE_TEXT }}</p>
       <p>• 建议视频时长不超过5分钟</p>
       <p v-if="videoData && !isUploading">• 点击缩略图可自定义封面</p>
     </div>
@@ -82,15 +82,16 @@ import MessageToast from './MessageToast.vue'
 import { videoApi } from '@/api/video.js'
 import { uploadImage } from '@/api/upload.js'
 import { generateVideoThumbnail, blobToFile, generateThumbnailFilename } from '@/utils/videoThumbnail.js'
+import { UPLOAD_CONFIG } from '@/config/constants.js'
 
 const props = defineProps({
   modelValue: {
-    type: [String, Object], // 支持字符串和对象类型
+    type: [String, Object],
     default: ''
   },
   maxSize: {
     type: Number,
-    default: 100 * 1024 * 1024 // 100MB
+    default: UPLOAD_CONFIG.VIDEO_MAX_SIZE
   }
 })
 
