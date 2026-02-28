@@ -31,3 +31,15 @@ export const ERROR_MESSAGES = {
   REQUEST_CONFIG_ERROR: '请求配置错误',
   SESSION_EXPIRED: '会话已过期，已自动退出登录'
 }
+
+// 上传配置常量
+export const UPLOAD_CONFIG = {
+  // 图片最大大小 (字节)
+  IMAGE_MAX_SIZE: 10 * 1024 * 1024, // 10MB
+  // 视频最大大小 (字节)
+  VIDEO_MAX_SIZE: 100 * 1024 * 1024, // 100MB
+  // 图片最大大小 (显示文本)
+  IMAGE_MAX_SIZE_TEXT: '10MB',
+  // 视频最大大小 (显示文本)
+  VIDEO_MAX_SIZE_TEXT: '100MB'
+}
