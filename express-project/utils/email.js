@@ -5,7 +5,7 @@
  * @author ZTMYO
  * @github https://github.com/ZTMYO
  * @description 提供邮件发送服务，主要用于邮箱验证
- * @version v1.3.1
+ * @version v1.3.2
  */
 
 const nodemailer = require('nodemailer');
