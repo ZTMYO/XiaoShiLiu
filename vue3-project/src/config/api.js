@@ -1,4 +1,5 @@
 // API配置文件
+import { UPLOAD_CONFIG } from './constants.js'
 
 // 解析是否使用真实API
 const useRealApi = String(import.meta.env.VITE_USE_REAL_API || '').toLowerCase() === 'true'
@@ -27,13 +28,13 @@ export const apiConfig = {
   upload: {
     // 图片上传配置
     image: {
-      maxFileSize: 10 * 1024 * 1024, // 10MB
+      maxFileSize: UPLOAD_CONFIG.IMAGE_MAX_SIZE,
       allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
       maxCount: 9 // 最多上传9张图片
     },
     // 视频上传配置
     video: {
-      maxFileSize: 100 * 1024 * 1024, // 100MB
+      maxFileSize: UPLOAD_CONFIG.VIDEO_MAX_SIZE,
       allowedTypes: ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'],
       maxCount: 1 // 最多上传1个视频
     }

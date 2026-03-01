@@ -54,7 +54,7 @@
           <div class="upload-tips">
             <p>• 最多上传{{ maxImages }}张图片（已确认{{ confirmedImages.length }}张）</p>
             <p>• 支持 JPG、PNG 格式</p>
-            <p>• 单张图片不超过5MB</p>
+            <p>• 单张图片不超过{{ UPLOAD_CONFIG.IMAGE_MAX_SIZE_TEXT }}</p>
             <p>• 长按图片可拖拽排序</p>
             <p v-if="localImages.length > 0">• 当前选择{{ localImages.length }}张，点击确认上传后才会显示在预览区域</p>
           </div>
@@ -76,7 +76,8 @@
 <script setup>
 import { ref, watch } from 'vue'
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useScrollLock } from '@/composables/useScrollLock'
+import { useScrollLock } from '@vueuse/core'
+import { UPLOAD_CONFIG } from '@/config/constants.js'
 
 const props = defineProps({
   visible: {
@@ -174,9 +175,9 @@ const processFiles = async (files) => {
         continue
       }
 
-      // 检查文件大小 (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        error.value = '图片大小不能超过5MB'
+      // 检查文件大小
+      if (file.size > UPLOAD_CONFIG.IMAGE_MAX_SIZE) {
+        error.value = `图片大小不能超过${UPLOAD_CONFIG.IMAGE_MAX_SIZE_TEXT}`
         continue
       }
 
