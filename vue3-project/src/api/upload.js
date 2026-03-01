@@ -1,5 +1,4 @@
 import request from './request'
-import { UPLOAD_CONFIG } from '@/config/constants.js'
 
 // 压缩图片函数
 const compressImage = (file, maxSizeMB = 0.8, quality = 0.4) => {
@@ -51,11 +50,7 @@ export async function uploadImage(file, options = {}) {
   try {
     if (!file) throw new Error('请选择要上传的文件')
     if (file instanceof File && !file.type.startsWith('image/')) throw new Error('请选择图片文件')
-    const maxSize = options.maxSize || UPLOAD_CONFIG.IMAGE_MAX_SIZE
-    if (file.size > maxSize) {
-      const maxSizeMB = Math.round(maxSize / (1024 * 1024))
-      throw new Error(`图片大小不能超过${maxSizeMB}MB`)
-    }
+    if (file.size > 5 * 1024 * 1024) throw new Error('图片大小不能超过5MB')
 
     // 压缩图片
     const compressedFile = await compressImage(file)
@@ -187,7 +182,7 @@ export async function uploadCroppedImage(blob, options = {}) {
 
 export function validateImageFile(file, options = {}) {
   const {
-    maxSize = UPLOAD_CONFIG.IMAGE_MAX_SIZE,
+    maxSize = 5 * 1024 * 1024,
     allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
   } = options
 
