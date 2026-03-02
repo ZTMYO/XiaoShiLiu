@@ -32,7 +32,7 @@ const columns = [
   { key: 'user_display_id', label: '小石榴号', type: 'user-link', sortable: false },
   { key: 'category', label: '分类', sortable: false },
   { key: 'type', label: '类型', type: 'mapped', map: { 1: '图文', 2: '视频' }, sortable: false },
-  { key: 'is_draft', label: '草稿', sortable: false, type: 'boolean', trueText: '是', falseText: '否' },
+  { key: 'status', label: '状态', sortable: false, type: 'mapped', map: { 0: '已发布', 1: '草稿', 2: '待审核' } },
   { key: 'content', label: '内容', type: 'content', sortable: false },
   { key: 'tags', label: '标签', type: 'tags', sortable: false },
   { key: 'images', label: '媒体', type: 'image-gallery', sortable: false },
@@ -65,7 +65,18 @@ const formFields = computed(() => {
         { value: 2, label: '视频笔记' }
       ]
     },
-    { key: 'is_draft', label: '草稿', type: 'checkbox', required: false, description: '勾选表示保存为草稿，不勾选表示发布' },
+    {
+      key: 'status',
+      label: '笔记状态',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 0, label: '发布（审核通过）' },
+        { value: 1, label: '草稿' },
+        { value: 2, label: '待审核' }
+      ],
+      description: '0=发布, 1=草稿, 2=待审核'
+    },
     { key: 'view_count', label: '浏览量', type: 'number', required: false, placeholder: '请输入浏览量', min: 0 },
     { key: 'tags', label: '标签', type: 'tags', maxTags: 10 }
   ]
@@ -104,14 +115,15 @@ const searchFields = computed(() => [
     ]
   },
   {
-    key: 'is_draft',
-    label: '发布状态',
+    key: 'status',
+    label: '笔记状态',
     type: 'select',
-    placeholder: '发布状态',
+    placeholder: '笔记状态',
     options: [
       { value: '', label: '全部状态' },
       { value: '0', label: '已发布' },
-      { value: '1', label: '草稿' }
+      { value: '1', label: '草稿' },
+      { value: '2', label: '待审核' }
     ]
   },
   { key: 'user_display_id', label: '作者小石榴号', placeholder: '搜索作者小石榴号' }

@@ -77,7 +77,7 @@
 | content | TEXT | 内容 | 笔记描述 |
 | category_id | INT | 分类ID | 外键关联categories表，可为空 |
 | type | INT | 笔记类型 | 1-图片笔记，2-视频笔记，默认1 |
-| is_draft | TINYINT(1) | 是否为草稿 | 1-草稿，0-已发布，默认1 |
+| status | TINYINT(1) | 笔记状态 | 0-发布（审核通过），1-草稿，2-待审核，默认2 |
 | view_count | BIGINT | 浏览量 | 统计字段，默认0 |
 | like_count | INT | 点赞数 | 统计字段，默认0 |
 | collect_count | INT | 收藏数 | 统计字段，默认0 |

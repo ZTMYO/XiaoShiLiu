@@ -348,10 +348,20 @@ class DataGenerator {
   // 插入笔记数据
   async insertPosts(connection, posts) {
     for (const post of posts) {
-      await connection.execute(
-        'INSERT INTO posts (user_id, title, content, category_id, type, is_draft, view_count, like_count, collect_count, comment_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [post.user_id, post.title, post.content, post.category_id, 1, post.is_draft, post.view_count, 0, 0, 0]
+      const [result] = await connection.execute(
+        'INSERT INTO posts (user_id, title, content, category_id, type, status, view_count, like_count, collect_count, comment_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [post.user_id, post.title, post.content, post.category_id, 1, post.status, post.view_count, 0, 0, 0]
       );
+      const postId = result.insertId;
+      
+      // 草稿不创建审核记录
+      if (post.status !== 1) {
+        await connection.execute(
+          'INSERT INTO audit (type, target_id, content, status) VALUES (?, ?, ?, ?)',
+          [3, postId, post.title || '笔记审核', 0]
+        );
+      }
+      
       await this.delay(50);
     }
     console.log(`     已插入 ${posts.length} 个笔记`);
@@ -534,7 +544,7 @@ class DataGenerator {
         title: categoryInfo.titles[Math.floor(Math.random() * categoryInfo.titles.length)],
         content: categoryInfo.contents[Math.floor(Math.random() * categoryInfo.contents.length)],
         category_id: categoryIndex + 1, // 使用分类ID（从1开始）
-        is_draft: 0, // 灌装数据全部为已发布状态（0表示非草稿）
+        status: 0, // 默认状态为审核提供
         view_count: Math.floor(Math.random() * 10000),
         like_count: Math.floor(Math.random() * 500),
         collect_count: Math.floor(Math.random() * 100),

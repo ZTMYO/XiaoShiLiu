@@ -470,12 +470,13 @@ const apiGroups = ref([
         method: 'GET',
         path: '/api/users/:id/posts',
         title: '获取用户发布的笔记',
-        description: '获取指定用户发布的笔记列表',
+        description: '获取指定用户发布的笔记列表，支持状态筛选',
         expanded: false,
         params: [
           { name: 'id', type: 'string', required: true, description: '小石榴号' },
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
-          { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' }
+          { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' },
+          { name: 'status', type: 'string', required: false, description: '状态筛选，all=已发布和待审核，不传则只查询已发布' }
         ]
       },
       {
@@ -633,7 +634,7 @@ const apiGroups = ref([
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
           { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' },
           { name: 'category', type: 'string', required: false, description: '分类ID筛选，支持"recommend"推荐频道' },
-          { name: 'is_draft', type: 'int', required: false, description: '是否获取草稿，1=草稿，0=已发布（默认）' },
+          { name: 'status', type: 'int', required: false, description: '笔记状态筛选，0=已发布（审核通过），1=草稿，2=待审核（默认2）' },
           { name: 'user_id', type: 'int', required: false, description: '用户ID筛选（查看草稿时会强制为当前用户）' }
         ]
       },
@@ -641,7 +642,7 @@ const apiGroups = ref([
         method: 'GET',
         path: '/api/posts/:id',
         title: '获取笔记详情',
-        description: '根据笔记ID获取笔记详细信息，返回数据包含笔记基本信息、图片列表(images数组)、标签列表、作者信息、点赞收藏状态等',
+        description: '根据笔记ID获取笔记详细信息，返回数据包含笔记基本信息、图片列表(images数组)、标签列表、作者信息、点赞收藏状态等。权限说明：已发布的笔记所有人可查看，草稿和待审核的笔记只有作者本人可以查看',
         expanded: false,
         params: [
           { name: 'id', type: 'int', required: true, description: '笔记ID' }
@@ -662,7 +663,7 @@ const apiGroups = ref([
           { name: 'images', type: 'array', required: false, description: '图片URL数组（图文笔记使用）' },
           { name: 'video', type: 'object', required: false, description: '视频信息对象（视频笔记使用）' },
           { name: 'tags', type: 'array', required: false, description: '标签名称数组（字符串数组）' },
-          { name: 'is_draft', type: 'int', required: false, description: '是否为草稿，1=草稿，0=发布（默认0）' }
+          { name: 'status', type: 'int', required: false, description: '笔记状态，0=已发布（审核通过），1=草稿，2=待审核（默认2）' }
         ]
       },
       {
@@ -741,7 +742,7 @@ const apiGroups = ref([
           { name: 'images', type: 'array', required: false, description: '图片URL数组（图文笔记使用）' },
           { name: 'video', type: 'object', required: false, description: '视频信息对象（视频笔记使用）' },
           { name: 'tags', type: 'array', required: false, description: '标签名称数组（字符串数组）' },
-          { name: 'is_draft', type: 'int', required: false, description: '是否为草稿，1=草稿，0=发布（默认0）' }
+          { name: 'status', type: 'int', required: false, description: '笔记状态，0=发布（审核通过），1=草稿，2=待审核（默认2）' }
         ]
       },
       {
@@ -1642,6 +1643,17 @@ const apiGroups = ref([
         ]
       },
       {
+        method: 'GET',
+        path: '/api/admin/posts/:id',
+        title: '获取笔记详情（管理员）',
+        description: '管理员获取笔记详细信息，可查看所有状态的笔记（包括草稿和待审核）',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'id', type: 'int', required: true, description: '笔记ID' }
+        ]
+      },
+      {
         method: 'POST',
         path: '/api/admin/posts',
         title: '创建笔记（管理员）',
@@ -1685,6 +1697,55 @@ const apiGroups = ref([
         path: '/api/admin/posts',
         title: '批量删除笔记（管理员）',
         description: '管理员批量删除笔记',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'ids', type: 'array', required: true, description: '笔记ID数组' }
+        ]
+      },
+      {
+        method: 'GET',
+        path: '/api/admin/posts-audit',
+        title: '获取待审核笔记列表（管理员）',
+        description: '管理员获取待审核笔记列表，支持分页、搜索和排序',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'page', type: 'int', required: false, description: '页码，默认1' },
+          { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' },
+          { name: 'keyword', type: 'string', required: false, description: '搜索关键词（标题或内容）' },
+          { name: 'user_display_id', type: 'string', required: false, description: '按作者小石榴号筛选' },
+          { name: 'sortField', type: 'string', required: false, description: '排序字段（id, view_count, like_count, collect_count, comment_count, created_at）' },
+          { name: 'sortOrder', type: 'string', required: false, description: '排序方向（asc, desc），默认desc' }
+        ]
+      },
+      {
+        method: 'PUT',
+        path: '/api/admin/posts-audit/:id/approve',
+        title: '审核通过笔记（管理员）',
+        description: '管理员审核通过笔记，将笔记状态更新为已发布',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'id', type: 'int', required: true, description: '笔记ID' }
+        ]
+      },
+      {
+        method: 'PUT',
+        path: '/api/admin/posts-audit/:id/reject',
+        title: '拒绝发布笔记（管理员）',
+        description: '管理员拒绝发布笔记，将笔记状态更新为草稿',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'id', type: 'int', required: true, description: '笔记ID' }
+        ]
+      },
+      {
+        method: 'DELETE',
+        path: '/api/admin/posts-audit',
+        title: '批量删除待审核笔记（管理员）',
+        description: '管理员批量删除待审核笔记',
         auth: true,
         expanded: false,
         params: [

@@ -606,7 +606,7 @@ const handlePublish = async () => {
       tags: form.tags,
       category_id: form.category_id,
       type: uploadType.value === 'image' ? 1 : 2, // 1: 图文, 2: 视频
-      is_draft: false // 发布状态
+      status: 2 // 发布状态：2=待审核
     }
 
 
@@ -851,7 +851,7 @@ const handleSaveDraft = async () => {
       tags: form.tags || [],
       category_id: form.category_id || null,
       type: uploadType.value === 'image' ? 1 : 2, // 1: 图文, 2: 视频
-      is_draft: true
+      status: 1 // 草稿状态
     }
 
     showMessage('正在保存草稿...', 'info')

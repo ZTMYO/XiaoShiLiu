@@ -1038,7 +1038,7 @@ Authorization: Bearer <your_jwt_token>
 | page | int | 否 | 頁碼，預設1 |
 | limit | int | 否 | 每頁數量，預設20 |
 | category | string | 否 | 分類ID過濾，支持"recommend"推薦頻道 |
-| is_draft | int | 否 | 是否獲取草稿，1=草稿，0=已發布（預設） |
+| status | int | 否 | 筆記狀態篩選，0=已發布，1=草稿，2=待審核（預設0） |
 | user_id | int | 否 | 用戶ID過濾（查看草稿時會強制為當前用戶） |
 
 **回應範例**:
@@ -1106,7 +1106,7 @@ Authorization: Bearer <your_jwt_token>
 | category_id | int | 否 | 分類ID |
 | images | array | 否 | 圖片URL陣列 |
 | tags | array | 否 | 標籤名稱陣列（字串陣列） |
-| is_draft | boolean | 否 | 是否為草稿，默認false |
+| status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核（預設2） |
 
 **請求範例**:
 ```json
@@ -1119,7 +1119,7 @@ Authorization: Bearer <your_jwt_token>
     "https://example.com/image2.jpg"
   ],
   "tags": ["生活", "攝影", "分享"],
-  "is_draft": false
+  "status": 0
 }
 ```
 
@@ -2609,9 +2609,81 @@ async function example() {
 **接口地址**: `DELETE /api/admin/posts`
 **需要認證**: 是
 
-### 5. 評論管理
+#### 4.6 獲取記錄詳情
+**接口地址**: `GET /api/admin/posts/:id`
+**需要認證**: 是
 
-#### 5.1 獲取評論清單
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 記錄ID |
+
+**說明**: 管理員可查看所有狀態的記錄（包括草稿和待審核）
+
+### 5. 記錄審核管理
+
+#### 5.1 獲取待審核記錄清單
+**接口地址**: `GET /api/admin/posts-audit`
+**需要認證**: 是
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| page | int | 否 | 頁碼，默認1 |
+| limit | int | 否 | 每頁數量，默認20 |
+| keyword | string | 否 | 搜索關鍵詞（標題或內容） |
+| user_display_id | string | 否 | 按作者小石榴號過濾 |
+| category_id | int/string | 否 | 分類ID過濾，傳"null"過濾未分類記錄 |
+
+**響應數據**:
+| 字段 | 類型 | 說明 |
+|------|------|------|
+| id | int | 記錄ID |
+| title | string | 記錄標題 |
+| content | string | 記錄內容 |
+| type | int | 記錄類型：1-圖文，2-視頻 |
+| category | string | 分類名稱 |
+| status | int | 記錄狀態：2-待審核 |
+| user_display_id | string | 作者小石榴號 |
+| nickname | string | 作者昵稱 |
+| tags | array | 標籤清單 |
+| images | array | 圖片URL清單 |
+| created_at | datetime | 創建時間 |
+
+#### 5.2 審核通過
+**接口地址**: `PUT /api/admin/posts-audit/:id/approve`
+**需要認證**: 是
+
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 記錄ID |
+
+**說明**: 將記錄狀態更新為已發布（status=0），同時更新審核記錄
+
+#### 5.3 拒絕發布
+**接口地址**: `PUT /api/admin/posts-audit/:id/reject`
+**需要認證**: 是
+
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 記錄ID |
+
+**說明**: 將記錄狀態更新為草稿（status=1），同時更新審核記錄
+
+#### 5.4 批量刪除待審核記錄
+**接口地址**: `DELETE /api/admin/posts-audit`
+**需要認證**: 是
+
+**請求體**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| ids | array | 是 | 要刪除的記錄ID數組 |
+
+### 6. 評論管理
+
+#### 6.1 獲取評論清單
 **接口地址**: `GET /api/admin/comments`
 **需要認證**: 是
 
@@ -2626,7 +2698,7 @@ async function example() {
 | sortField | string | 否 | 排序字段（id, like_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 5.2 創建評論
+#### 6.2 創建評論
 ```
 
 **接口位置**: `POST /api/admin/comments`
@@ -2640,7 +2712,7 @@ async function example() {
 | post_id | int | 是 | 詩篇ID |
 | parent_id | int | 否 | 父評論ID（回覆評論時使用） |
 
-#### 5.3 更新評論
+#### 6.3 更新評論
 **接口位置**: `PUT /api/admin/comments/:id`
 **需要驗證**: 是
 
@@ -2649,11 +2721,11 @@ async function example() {
 |------|------|------|------|
 | content | string | 否 | 評論內容 |
 
-#### 5.4 刪除評論
+#### 6.4 刪除評論
 **接口位置**: `DELETE /api/admin/comments/:id`
 **需要驗證**: 是
 
-#### 5.5 批量刪除評論
+#### 6.5 批量刪除評論
 **接口位置**: `DELETE /api/admin/comments`
 **需要驗證**: 是
 
@@ -2662,13 +2734,13 @@ async function example() {
 |------|------|------|------|
 | ids | array | 是 | 評論ID陣列 |
 
-#### 5.6 獲取單個評論詳情
+#### 6.6 獲取單個評論詳情
 **接口位置**: `GET /api/admin/comments/:id`
 **需要驗證**: 是
 
-### 6. 標籤管理
+### 7. 標籤管理
 
-#### 6.1 獲取標籤清單
+#### 7.1 獲取標籤清單
 **接口位置**: `GET /api/admin/tags`
 **需要驗證**: 是
 
@@ -2681,7 +2753,7 @@ async function example() {
 | sortField | string | 否 | 排序字段（id, use_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 6.2 創建標籤
+#### 7.2 創建標籤
 **接口位置**: `POST /api/admin/tags`
 **需要驗證**: 是
 
@@ -2691,7 +2763,7 @@ async function example() {
 | name | string | 是 | 標籤名稱 |
 | description | string | 否 | 標籤描述 |
 
-#### 6.3 更新標籤
+#### 7.3 更新標籤
 **接口位置**: `PUT /api/admin/tags/:id`
 **需要驗證**: 是
 
@@ -2701,11 +2773,11 @@ async function example() {
 | name | string | 否 | 標籤名稱 |
 | description | string | 否 | 標籤描述 |
 
-#### 6.4 刪除標籤
+#### 7.4 刪除標籤
 **接口位置**: `DELETE /api/admin/tags/:id`
 **需要驗證**: 是
 
-#### 6.5 批量刪除標籤
+#### 7.5 批量刪除標籤
 **接口位置**: `DELETE /api/admin/tags`
 **需要驗證**: 是
 
@@ -2714,13 +2786,13 @@ async function example() {
 |------|------|------|------|
 | ids | array | 是 | 標籤ID陣列 |
 
-#### 6.6 獲取單個標籤詳情
+#### 7.6 獲取單個標籤詳情
 **接口位置**: `GET /api/admin/tags/:id`
 **需要驗證**: 是
 
-### 7. 證書審核管理
+### 8. 證書審核管理
 
-#### 7.1 獲取證書申請清單
+#### 8.1 獲取證書申請清單
 **接口位置**: `GET /api/admin/audit`
 **需要驗證**: 是
 
@@ -2777,7 +2849,7 @@ async function example() {
 }
 ```
 
-#### 7.2 取得認證申請詳情
+#### 8.2 取得認證申請詳情
 **接口位置**: `GET /api/admin/audit/:id`
 **需要認證**: 是
 
@@ -2817,7 +2889,7 @@ async function example() {
 }
 ```
 
-#### 7.3 核對認證申請（通過）
+#### 8.3 核對認證申請（通過）
 **接口位置**: `PUT /api/admin/audit/:id/approve`
 **需要認證**: 是
 
@@ -2844,7 +2916,7 @@ async function example() {
 }
 ```
 
-#### 7.4 核對認證申請（拒絕）
+#### 8.4 核對認證申請（拒絕）
 **接口位置**: `PUT /api/admin/audit/:id/reject`
 **需要認證**: 是
 
@@ -3109,135 +3181,9 @@ async function example() {
 **接口地址**: `PUT /api/auth/admin/admins/:id/status`
 **需要認證**: 是（JWT）
 
-### 13. 筆記審核管理
+### 13. 監控管理
 
-#### 13.1 獲取筆記審核列表
-**接口地址**: `GET /api/admin/post-audit`
-**需要認證**: 是
-
-**請求參數**:
-| 參數 | 類型 | 必填 | 說明 |
-|------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| title | string | 否 | 筆記標題搜索 |
-| user_display_id | string | 否 | 用戶小石榴號搜索 |
-| status | int | 否 | 審核狀態篩選（0=待審核，1=已通過，2=已拒絕） |
-| sortField | string | 否 | 排序字段（audit_id, created_at, audit_time, status） |
-| sortOrder | string | 否 | 排序方向（ASC, DESC） |
-
-**響應範例**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "items": [
-      {
-        "audit_id": 1,
-        "id": 1,
-        "title": "測試筆記",
-        "user_display_id": "user123",
-        "user_nickname": "測試用戶",
-        "category": "生活",
-        "type": 1,
-        "tags": [
-          { "id": 1, "name": "測試" },
-          { "id": 2, "name": "生活" }
-        ],
-        "content": "測試內容",
-        "images": ["https://example.com/image1.jpg"],
-        "status": 0,
-        "created_at": "2026-02-27T10:00:00Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 1,
-      "pages": 1
-    }
-  }
-}
-```
-
-#### 13.2 創建筆記審核記錄
-**接口地址**: `POST /api/admin/post-audit`
-**需要認證**: 是
-
-**請求參數**:
-| 參數 | 類型 | 必填 | 說明 |
-|------|------|------|------|
-| target_id | int | 是 | 筆記ID |
-| content | string | 是 | 審核原因 |
-| status | int | 否 | 審核狀態（0=待審核，1=已通過，2=已拒絕） |
-
-**響應範例**:
-```json
-{
-  "code": 200,
-  "message": "筆記審核創建成功",
-  "data": {
-    "id": 1
-  }
-}
-```
-
-#### 13.3 審核通過
-**接口地址**: `PUT /api/admin/post-audit/{id}/approve`
-**需要認證**: 是
-
-**請求參數**:
-| 參數 | 類型 | 必填 | 說明 |
-|------|------|------|------|
-| id | int | 是 | 審核記錄ID |
-
-**響應範例**:
-```json
-{
-  "code": 200,
-  "message": "審核通過成功"
-}
-```
-
-#### 13.4 審核拒絕
-**接口地址**: `PUT /api/admin/post-audit/{id}/reject`
-**需要認證**: 是
-
-**請求參數**:
-| 參數 | 類型 | 必填 | 說明 |
-|------|------|------|------|
-| id | int | 是 | 審核記錄ID |
-| remark | string | 是 | 拒絕原因 |
-
-**響應範例**:
-```json
-{
-  "code": 200,
-  "message": "審核拒絕成功"
-}
-```
-
-#### 13.5 刪除審核記錄
-**接口地址**: `DELETE /api/admin/post-audit/{id}`
-**需要認證**: 是
-
-**請求參數**:
-| 參數 | 類型 | 必填 | 說明 |
-|------|------|------|------|
-| id | int | 是 | 審核記錄ID |
-
-**響應範例**:
-```json
-{
-  "code": 200,
-  "message": "筆記審核刪除成功"
-}
-```
-
-### 14. 監控管理
-
-#### 14.1 獲取系統活動監控
+#### 13.1 獲取系統活動監控
 **接口地址**: `GET /api/admin/monitor/activities`
 **需要認證**: 是
 

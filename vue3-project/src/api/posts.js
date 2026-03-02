@@ -56,7 +56,9 @@ function transformPostData(backendPost) {
       tags: backendPost.tags || [],
       createdAt: backendPost.created_at,
       userId: backendPost.user_id
-    }
+    },
+    // 笔记状态：0-已发布，1-草稿，2-待审核
+    status: backendPost.status
   }
 
   return transformedData;
@@ -72,7 +74,8 @@ export async function getPostList(params = {}) {
     searchTag,
     userId,
     type,
-    sort
+    sort,
+    status
   } = params
 
   try {
@@ -129,6 +132,13 @@ export async function getPostList(params = {}) {
 
         if (sort) {
           searchParams.append('sort', sort)
+        }
+
+        // 传递状态筛选参数
+        // status=all: 查询已发布(0)和待审核(2) - 用于笔记管理
+        // 不传或status=published: 只查询已发布(0) - 用于个人主页
+        if (status) {
+          searchParams.append('status', status)
         }
 
         response = await fetch(`${apiConfig.baseURL}/users/${userId}/posts?${searchParams.toString()}`, {
@@ -323,7 +333,8 @@ export async function getUserPosts(params = {}) {
       keyword,
       category,
       sort = 'created_at',
-      user_id
+      user_id,
+      status
     } = params
 
     const queryParams = {
@@ -333,7 +344,8 @@ export async function getUserPosts(params = {}) {
       type: 'posts',
       searchKeyword: keyword,
       category,
-      sort
+      sort,
+      status: status || 'all' // 笔记管理页面显示已发布(0)和待审核(2)的笔记
     }
 
     const response = await getPostList(queryParams)
@@ -412,7 +424,7 @@ export async function getDraftPosts(params = {}) {
       category,
       sort,
       user_id,
-      is_draft: 1 // 只获取草稿
+      status: 1 // 只获取草稿
     }
 
     // 过滤空值参数

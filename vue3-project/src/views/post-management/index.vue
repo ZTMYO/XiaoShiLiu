@@ -181,7 +181,8 @@ const loadPosts = async () => {
       keyword: searchKeyword.value,
       category: selectedCategory.value,
       sort: 'created_at',
-      user_id: userStore.userInfo.user_id // 只获取当前用户的笔记
+      user_id: userStore.userInfo.user_id, // 只获取当前用户的笔记
+      status: 'all' // 获取所有状态的笔记（已发布和待审核）
     }
 
     const response = await getUserPosts(params)

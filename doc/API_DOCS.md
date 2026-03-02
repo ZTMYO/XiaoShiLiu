@@ -668,13 +668,17 @@ Authorization: Bearer <your_jwt_token>
 **路径参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| id | int | 是 | 用户ID |
+| id | string | 是 | 用户小石榴号 |
 
 **请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | page | int | 否 | 页码，默认1 |
 | limit | int | 否 | 每页数量，默认20 |
+| status | string | 否 | 状态筛选，`all`=已发布和待审核，不传则只查询已发布 |
+| keyword | string | 否 | 搜索关键词（标题或内容） |
+| category | string | 否 | 分类ID筛选 |
+| sort | string | 否 | 排序字段（created_at, view_count, like_count等），默认created_at |
 
 **响应示例**:
 ```json
@@ -1198,7 +1202,7 @@ Authorization: Bearer <your_jwt_token>
 | page | int | 否 | 页码，默认1 |
 | limit | int | 否 | 每页数量，默认20 |
 | category | string | 否 | 分类ID筛选，支持"recommend"推荐频道 |
-| is_draft | int | 否 | 是否获取草稿，1=草稿，0=已发布（默认） |
+| status | int | 否 | 笔记状态筛选，0=已发布（审核通过），1=草稿，2=待审核（默认2） |
 | user_id | int | 否 | 用户ID筛选（查看草稿时会强制为当前用户） |
 
 **响应示例**:
@@ -1252,6 +1256,10 @@ Authorization: Bearer <your_jwt_token>
 |------|------|------|------|
 | id | int | 是 | 笔记ID |
 
+**权限说明**:
+- 已发布的笔记（status=0）：所有人可查看
+- 草稿（status=1）和待审核（status=2）的笔记：只有作者本人可以查看
+
 **说明**: 访问笔记详情会自动增加浏览量
 
 ### 3. 创建笔记
@@ -1268,7 +1276,7 @@ Authorization: Bearer <your_jwt_token>
 | images | array | 否 | 图片URL数组（图文笔记使用） |
 | video | object | 否 | 视频信息对象（视频笔记使用） |
 | tags | array | 否 | 标签名称数组（字符串数组） |
-| is_draft | boolean | 否 | 是否为草稿，默认false |
+| status | int | 否 | 笔记状态，0=发布（审核通过），1=草稿，2=待审核（默认2） |
 
 **video对象结构**:
 | 参数 | 类型 | 必填 | 说明 |
@@ -1288,7 +1296,7 @@ Authorization: Bearer <your_jwt_token>
     "https://example.com/image2.jpg"
   ],
   "tags": ["生活", "摄影", "分享"],
-  "is_draft": false
+  "status": 0
 }
 ```
 
@@ -1304,7 +1312,7 @@ Authorization: Bearer <your_jwt_token>
     "coverUrl": "https://img.example.com/video_cover.jpg"
   },
   "tags": ["生活", "视频", "分享"],
-  "is_draft": false
+  "status": 0
 }
 ```
 
@@ -1408,7 +1416,7 @@ Authorization: Bearer <your_jwt_token>
 | images | array | 否 | 图片URL数组（图文笔记使用） |
 | video | object | 否 | 视频信息对象（视频笔记使用） |
 | tags | array | 否 | 标签名称数组（字符串数组） |
-| is_draft | int | 否 | 是否为草稿，1=草稿，0=发布（默认0） |
+| status | int | 否 | 笔记状态，0=发布（审核通过），1=草稿，2=待审核（默认2） |
 
 **video对象结构**:
 | 参数 | 类型 | 必填 | 说明 |
@@ -1426,7 +1434,7 @@ Authorization: Bearer <your_jwt_token>
     "https://example.com/new_image1.jpg"
   ],
   "tags": ["生活", "日常", "分享"],
-  "is_draft": 0
+  "status": 0
 }
 ```
 
@@ -2891,25 +2899,97 @@ async function example() {
 | sortField | string | 否 | 排序字段（id, view_count, like_count, collect_count, comment_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 4.2 创建笔记
+#### 4.2 获取笔记详情
+**接口地址**: `GET /api/admin/posts/:id`
+**需要认证**: 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 笔记ID |
+
+**说明**: 管理员可查看所有状态的笔记
+
+#### 4.3 创建笔记
 **接口地址**: `POST /api/admin/posts`
 **需要认证**: 是
 
-#### 4.3 更新笔记
+#### 4.4 更新笔记
 **接口地址**: `PUT /api/admin/posts/:id`
 **需要认证**: 是
 
-#### 4.4 删除笔记
+#### 4.5 删除笔记
 **接口地址**: `DELETE /api/admin/posts/:id`
 **需要认证**: 是
 
-#### 4.5 批量删除笔记
+#### 4.6 批量删除笔记
 **接口地址**: `DELETE /api/admin/posts`
 **需要认证**: 是
 
-### 5. 评论管理
+### 5. 笔记审核管理
 
-#### 5.1 获取评论列表
+#### 5.1 获取待审核笔记列表
+**接口地址**: `GET /api/admin/posts-audit`
+**需要认证**: 是
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | int | 否 | 页码，默认1 |
+| limit | int | 否 | 每页数量，默认20 |
+| keyword | string | 否 | 搜索关键词（标题或内容） |
+| user_display_id | string | 否 | 按作者小石榴号筛选 |
+| category_id | int/string | 否 | 分类ID筛选，传"null"筛选未分类笔记 |
+
+**响应数据**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | int | 笔记ID |
+| title | string | 笔记标题 |
+| content | string | 笔记内容 |
+| type | int | 笔记类型：1-图文，2-视频 |
+| category | string | 分类名称 |
+| status | int | 笔记状态：2-待审核 |
+| user_display_id | string | 作者小石榴号 |
+| nickname | string | 作者昵称 |
+| tags | array | 标签列表 |
+| images | array | 图片URL列表 |
+| created_at | datetime | 创建时间 |
+
+#### 5.2 审核通过
+**接口地址**: `PUT /api/admin/posts-audit/:id/approve`
+**需要认证**: 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 笔记ID |
+
+**说明**: 将笔记状态更新为已发布（status=0），同时更新审核记录
+
+#### 5.3 拒绝发布
+**接口地址**: `PUT /api/admin/posts-audit/:id/reject`
+**需要认证**: 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 笔记ID |
+
+**说明**: 将笔记状态更新为草稿（status=1），同时更新审核记录
+
+#### 5.4 批量删除待审核笔记
+**接口地址**: `DELETE /api/admin/posts-audit`
+**需要认证**: 是
+
+**请求体**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| ids | array | 是 | 要删除的笔记ID数组 |
+
+### 6. 评论管理
+
+#### 6.1 获取评论列表
 **接口地址**: `GET /api/admin/comments`
 **需要认证**: 是
 
@@ -2924,7 +3004,7 @@ async function example() {
 | sortField | string | 否 | 排序字段（id, like_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 5.2 创建评论
+#### 6.2 创建评论
 **接口地址**: `POST /api/admin/comments`
 **需要认证**: 是
 
@@ -2936,7 +3016,7 @@ async function example() {
 | post_id | int | 是 | 笔记ID |
 | parent_id | int | 否 | 父评论ID（回复评论时使用） |
 
-#### 5.3 更新评论
+#### 6.3 更新评论
 **接口地址**: `PUT /api/admin/comments/:id`
 **需要认证**: 是
 
@@ -2945,11 +3025,11 @@ async function example() {
 |------|------|------|------|
 | content | string | 否 | 评论内容 |
 
-#### 5.4 删除评论
+#### 6.4 删除评论
 **接口地址**: `DELETE /api/admin/comments/:id`
 **需要认证**: 是
 
-#### 5.5 批量删除评论
+#### 6.5 批量删除评论
 **接口地址**: `DELETE /api/admin/comments`
 **需要认证**: 是
 
@@ -2958,13 +3038,13 @@ async function example() {
 |------|------|------|------|
 | ids | array | 是 | 评论ID数组 |
 
-#### 5.6 获取单个评论详情
+#### 6.6 获取单个评论详情
 **接口地址**: `GET /api/admin/comments/:id`
 **需要认证**: 是
 
-### 6. 标签管理
+### 7. 标签管理
 
-#### 6.1 获取标签列表
+#### 7.1 获取标签列表
 **接口地址**: `GET /api/admin/tags`
 **需要认证**: 是
 
@@ -2977,7 +3057,7 @@ async function example() {
 | sortField | string | 否 | 排序字段（id, use_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 6.2 创建标签
+#### 7.2 创建标签
 **接口地址**: `POST /api/admin/tags`
 **需要认证**: 是
 
@@ -2987,7 +3067,7 @@ async function example() {
 | name | string | 是 | 标签名称 |
 | description | string | 否 | 标签描述 |
 
-#### 6.3 更新标签
+#### 7.3 更新标签
 **接口地址**: `PUT /api/admin/tags/:id`
 **需要认证**: 是
 
@@ -2997,11 +3077,11 @@ async function example() {
 | name | string | 否 | 标签名称 |
 | description | string | 否 | 标签描述 |
 
-#### 6.4 删除标签
+#### 7.4 删除标签
 **接口地址**: `DELETE /api/admin/tags/:id`
 **需要认证**: 是
 
-#### 6.5 批量删除标签
+#### 7.5 批量删除标签
 **接口地址**: `DELETE /api/admin/tags`
 **需要认证**: 是
 
@@ -3010,13 +3090,13 @@ async function example() {
 |------|------|------|------|
 | ids | array | 是 | 标签ID数组 |
 
-#### 6.6 获取单个标签详情
+#### 7.6 获取单个标签详情
 **接口地址**: `GET /api/admin/tags/:id`
 **需要认证**: 是
 
-### 7. 认证审核管理
+### 8. 认证审核管理
 
-#### 7.1 获取认证申请列表
+#### 8.1 获取认证申请列表
 **接口地址**: `GET /api/admin/audit`
 **需要认证**: 是
 
@@ -3072,7 +3152,7 @@ async function example() {
 }
 ```
 
-#### 7.2 获取认证申请详情
+#### 8.2 获取认证申请详情
 **接口地址**: `GET /api/admin/audit/:id`
 **需要认证**: 是
 
@@ -3112,7 +3192,7 @@ async function example() {
 }
 ```
 
-#### 7.3 审核认证申请（通过）
+#### 8.3 审核认证申请（通过）
 **接口地址**: `PUT /api/admin/audit/:id/approve`
 **需要认证**: 是
 
@@ -3139,7 +3219,7 @@ async function example() {
 }
 ```
 
-#### 7.4 审核认证申请（拒绝）
+#### 8.4 审核认证申请（拒绝）
 **接口地址**: `PUT /api/admin/audit/:id/reject`
 **需要认证**: 是
 
@@ -3165,9 +3245,9 @@ async function example() {
 }
 ```
 
-### 8. 点赞管理
+### 9. 点赞管理
 
-#### 8.1 获取点赞列表
+#### 9.1 获取点赞列表
 **接口地址**: `GET /api/admin/likes`
 **需要认证**: 是
 
@@ -3181,7 +3261,7 @@ async function example() {
 | sortField | string | 否 | 排序字段（id, user_id, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 7.2 创建点赞
+#### 9.2 创建点赞
 **接口地址**: `POST /api/admin/likes`
 **需要认证**: 是
 
@@ -3192,7 +3272,7 @@ async function example() {
 | target_id | int | 是 | 目标ID（笔记ID或评论ID） |
 | target_type | int | 是 | 目标类型（1=笔记，2=评论） |
 
-#### 7.3 更新点赞
+#### 9.3 更新点赞
 **接口地址**: `PUT /api/admin/likes/:id`
 **需要认证**: 是
 
@@ -3201,11 +3281,11 @@ async function example() {
 |------|------|------|------|
 | target_type | int | 否 | 目标类型（1=笔记，2=评论） |
 
-#### 7.4 删除点赞
+#### 9.4 删除点赞
 **接口地址**: `DELETE /api/admin/likes/:id`
 **需要认证**: 是
 
-#### 7.5 批量删除点赞
+#### 9.5 批量删除点赞
 **接口地址**: `DELETE /api/admin/likes`
 **需要认证**: 是
 
@@ -3214,13 +3294,13 @@ async function example() {
 |------|------|------|------|
 | ids | array | 是 | 点赞ID数组 |
 
-#### 7.6 获取单个点赞详情
+#### 9.6 获取单个点赞详情
 **接口地址**: `GET /api/admin/likes/:id`
 **需要认证**: 是
 
-### 8. 收藏管理
+### 10. 收藏管理
 
-#### 8.1 获取收藏列表
+#### 10.1 获取收藏列表
 **接口地址**: `GET /api/admin/collections`
 **需要认证**: 是
 
@@ -3233,21 +3313,21 @@ async function example() {
 | sortBy | string | 否 | 排序字段（id, user_id, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 8.2 创建收藏
+#### 10.2 创建收藏
 **接口地址**: `POST /api/admin/collections`
 **需要认证**: 是
 
-#### 8.3 删除收藏
+#### 10.3 删除收藏
 **接口地址**: `DELETE /api/admin/collections/:id`
 **需要认证**: 是
 
-#### 8.4 批量删除收藏
+#### 10.4 批量删除收藏
 **接口地址**: `DELETE /api/admin/collections`
 **需要认证**: 是
 
-### 9. 关注管理
+### 11. 关注管理
 
-#### 9.1 获取关注列表
+#### 11.1 获取关注列表
 **接口地址**: `GET /api/admin/follows`
 **需要认证**: 是
 
@@ -3260,21 +3340,21 @@ async function example() {
 | sortField | string | 否 | 排序字段（id, follower_id, following_id, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 9.2 创建关注关系
+#### 11.2 创建关注关系
 **接口地址**: `POST /api/admin/follows`
 **需要认证**: 是
 
-#### 9.3 删除关注关系
+#### 11.3 删除关注关系
 **接口地址**: `DELETE /api/admin/follows/:id`
 **需要认证**: 是
 
-#### 9.4 批量删除关注关系
+#### 11.4 批量删除关注关系
 **接口地址**: `DELETE /api/admin/follows`
 **需要认证**: 是
 
-### 10. 通知管理
+### 12. 通知管理
 
-#### 10.1 获取通知列表
+#### 12.1 获取通知列表
 **接口地址**: `GET /api/admin/notifications`
 **需要认证**: 是
 
@@ -3289,25 +3369,25 @@ async function example() {
 | sortField | string | 否 | 排序字段（id, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 10.2 创建通知
+#### 12.2 创建通知
 **接口地址**: `POST /api/admin/notifications`
 **需要认证**: 是
 
-#### 10.3 更新通知
+#### 12.3 更新通知
 **接口地址**: `PUT /api/admin/notifications/:id`
 **需要认证**: 是
 
-#### 10.4 删除通知
+#### 12.4 删除通知
 **接口地址**: `DELETE /api/admin/notifications/:id`
 **需要认证**: 是
 
-#### 10.5 批量删除通知
+#### 12.5 批量删除通知
 **接口地址**: `DELETE /api/admin/notifications`
 **需要认证**: 是
 
-### 11. 会话管理
+### 13. 会话管理
 
-#### 11.1 获取会话列表
+#### 13.1 获取会话列表
 **接口地址**: `GET /api/admin/sessions`
 **需要认证**: 是
 
@@ -3321,19 +3401,19 @@ async function example() {
 | sortField | string | 否 | 排序字段（id, is_active, expires_at, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 11.2 创建会话
+#### 13.2 创建会话
 **接口地址**: `POST /api/admin/sessions`
 **需要认证**: 是
 
-#### 11.3 更新会话
+#### 13.3 更新会话
 **接口地址**: `PUT /api/admin/sessions/:id`
 **需要认证**: 是
 
-#### 11.4 删除会话
+#### 13.4 删除会话
 **接口地址**: `DELETE /api/admin/sessions/:id`
 **需要认证**: 是
 
-#### 11.5 批量删除会话
+#### 13.5 批量删除会话
 **接口地址**: `DELETE /api/admin/sessions`
 **需要认证**: 是
 

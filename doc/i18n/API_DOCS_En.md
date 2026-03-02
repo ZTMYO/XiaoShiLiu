@@ -917,7 +917,7 @@ General parameters for interfaces that support pagination:
 | page | Int | No | Page number, default 1 |
 | limit | Int | No | Number of items per page, default 20 |
 | category | String | No | Category ID filter, supports "recommend" for recommended channel |
-| is_draft | Int | No | Whether to get draft, 1=draft, 0=published (default) |
+| status | Int | No | Post status filter, 0=published, 1=draft, 2=pending review (default 0) |
 | user_id | Int | No | User ID filter (mandatory for viewing drafts) |
 
 **Response Example**:
@@ -986,7 +986,7 @@ General parameters for interfaces that support pagination:
 | category_id | int | No | Category ID |
 | images | array | No | Array of Image URLs |
 | tags | array | No | Array of Tag Names (string array) |
-| is_draft | boolean | No | Whether it is a draft, default false |
+| status | int | No | Post status, 0=published (approved), 1=draft, 2=pending review (default 2) |
 
 **Request Example**:
 ```json
@@ -999,7 +999,7 @@ General parameters for interfaces that support pagination:
     "https://example.com/image2.jpg"
   ],
   "tags": ["Life", "Photography", "Share"],
-  "is_draft": false
+  "status": 0
 }
 ```
 
@@ -2431,9 +2431,81 @@ Administrator interfaces use JWT authentication:
 **API Endpoint**: `DELETE /api/admin/posts`
 **Authentication Required**: Yes
 
-### 5. Comment Management
+#### 4.6 Get Record Detail
+**API Endpoint**: `GET /api/admin/posts/:id`
+**Authentication Required**: Yes
 
-#### 5.1 Obtain Comment List
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | int | Yes | Record ID |
+
+**Description**: Administrators can view records in all statuses (including drafts and pending review)
+
+### 5. Post Audit Management
+
+#### 5.1 Get Pending Review Records List
+**API Endpoint**: `GET /api/admin/posts-audit`
+**Authentication Required**: Yes
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| page | int | No | Page number, default 1 |
+| limit | int | No | Number of items per page, default 20 |
+| keyword | string | No | Search keyword (title or content) |
+| user_display_id | string | No | Filter by author Xiaoshiliu number |
+| category_id | int/string | No | Category ID filter, pass "null" to filter uncategorized records |
+
+**Response Data**:
+| Field | Type | Description |
+|-------|------|-------------|
+| id | int | Record ID |
+| title | string | Record title |
+| content | string | Record content |
+| type | int | Record type: 1-Image/Text, 2-Video |
+| category | string | Category name |
+| status | int | Record status: 2-Pending Review |
+| user_display_id | string | Author Xiaoshiliu number |
+| nickname | string | Author nickname |
+| tags | array | Tag list |
+| images | array | Image URL list |
+| created_at | datetime | Creation time |
+
+#### 5.2 Approve
+**API Endpoint**: `PUT /api/admin/posts-audit/:id/approve`
+**Authentication Required**: Yes
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | int | Yes | Record ID |
+
+**Description**: Update record status to published (status=0), and update audit record
+
+#### 5.3 Reject
+**API Endpoint**: `PUT /api/admin/posts-audit/:id/reject`
+**Authentication Required**: Yes
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | int | Yes | Record ID |
+
+**Description**: Update record status to draft (status=1), and update audit record
+
+#### 5.4 Batch Delete Pending Review Records
+**API Endpoint**: `DELETE /api/admin/posts-audit`
+**Authentication Required**: Yes
+
+**Request Body**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| ids | array | Yes | Array of record IDs to delete |
+
+### 6. Comment Management
+
+#### 6.1 Obtain Comment List
 **Interface Address**: `GET /api/admin/comments`
 **Authentication Required**: Yes
 
@@ -2448,7 +2520,7 @@ Administrator interfaces use JWT authentication:
 | sortField | string | No | Sorting field (id, like_count, created_at) |
 | sortOrder | string | No | Sorting direction (ASC, DESC) |
 
-#### 5.2 Create Comment
+#### 6.2 Create Comment
 
 **Interface Location**: `POST /api/admin/comments`
 **Authentication Required**: Yes
@@ -2461,7 +2533,7 @@ Administrator interfaces use JWT authentication:
 | post_id | int | Yes | Post ID |
 | parent_id | int | No | Parent comment ID (used when replying to a comment) |
 
-#### 5.3 Update Comment
+#### 6.3 Update Comment
 **Interface Location**: `PUT /api/admin/comments/:id`
 **Authentication Required**: Yes
 
@@ -2470,11 +2542,11 @@ Administrator interfaces use JWT authentication:
 |-----------|------|----------|-------------|
 | content | string | No | Comment content |
 
-#### 5.4 Delete Comment
+#### 6.4 Delete Comment
 **Interface Location**: `DELETE /api/admin/comments/:id`
 **Authentication Required**: Yes
 
-#### 5.5 Batch Delete Comments
+#### 6.5 Batch Delete Comments
 **Interface Location**: `DELETE /api/admin/comments`
 **Authentication Required**: Yes
 
@@ -2483,13 +2555,13 @@ Administrator interfaces use JWT authentication:
 |-----------|------|----------|-------------|
 | ids | array | Yes | Array of comment IDs |
 
-#### 5.6 Get Single Comment Details
+#### 6.6 Get Single Comment Details
 **Interface Location**: `GET /api/admin/comments/:id`
 **Authentication Required**: Yes
 
-### 6. Tag Management
+### 7. Tag Management
 
-#### 6.1 Get Tag List
+#### 7.1 Get Tag List
 **Interface Location**: `GET /api/admin/tags`
 **Authentication Required**: Yes
 
@@ -2502,7 +2574,7 @@ Administrator interfaces use JWT authentication:
 | sortField | string | No | Sorting field (id, use_count, created_at) |
 | sortOrder | string | No | Sorting direction (ASC, DESC) |
 
-#### 6.2 Create Tag
+#### 7.2 Create Tag
 **Interface Location**: `POST /api/admin/tags`
 **Authentication Required**: Yes
 
@@ -2512,7 +2584,7 @@ Administrator interfaces use JWT authentication:
 | name | string | Yes | Tag name |
 | description | string | No | Tag description |
 
-#### 6.3 Update Tag
+#### 7.3 Update Tag
 **Interface Location**: `PUT /api/admin/tags/:id`
 **Authentication Required**: Yes
 
@@ -2522,11 +2594,11 @@ Administrator interfaces use JWT authentication:
 | name | string | No | Tag name |
 | description | string | No | Tag description |
 
-#### 6.4 Delete Tag
+#### 7.4 Delete Tag
 **Interface Location**: `DELETE /api/admin/tags/:id`
 **Authentication Required**: Yes
 
-#### 6.5 Batch Delete Tags
+#### 7.5 Batch Delete Tags
 **Interface Location**: `DELETE /api/admin/tags`
 **Authentication Required**: Yes
 
@@ -2535,13 +2607,13 @@ Administrator interfaces use JWT authentication:
 |-----------|------|----------|-------------|
 | ids | array | Yes | Array of tag IDs |
 
-#### 6.6 Get Single Tag Details
+#### 7.6 Get Single Tag Details
 **Interface Location**: `GET /api/admin/tags/:id`
 **Authentication Required**: Yes
 
-### 7. Certificate Audit Management
+### 8. Certificate Audit Management
 
-#### 7.1 Get Certificate Application List
+#### 8.1 Get Certificate Application List
 **Interface Location**: `GET /api/admin/audit`
 **Authentication Required**: Yes
 
@@ -2598,7 +2670,7 @@ Administrator interfaces use JWT authentication:
 }
 ```
 
-#### 7.2 Obtain Verification Application Details
+#### 8.2 Obtain Verification Application Details
 **Interface Location**: `GET /api/admin/audit/:id`
 **Authentication Required**: Yes
 
@@ -2638,7 +2710,7 @@ Administrator interfaces use JWT authentication:
 }
 ```
 
-#### 7.3 Verify Verification Application (Approve)
+#### 8.3 Verify Verification Application (Approve)
 **Interface Location**: `PUT /api/admin/audit/:id/approve`
 **Authentication Required**: Yes
 
@@ -2659,7 +2731,7 @@ Administrator interfaces use JWT authentication:
 }
 ```
 
-#### 7.4 Verify Verification Application (Reject)
+#### 8.4 Verify Verification Application (Reject)
 **Interface Location**: `PUT /api/admin/audit/:id/reject`
 **Authentication Required**: Yes
 
@@ -2922,135 +2994,9 @@ Administrator interfaces use JWT authentication:
 **API Endpoint**: `PUT /api/auth/admin/admins/:id/status`
 **Authentication Required**: Yes (JWT)
 
-### 13. Post Audit Management
+### 13. Monitoring Management
 
-#### 13.1 Get Post Audit List
-**API Endpoint**: `GET /api/admin/post-audit`
-**Authentication Required**: Yes
-
-**Request Parameters**:
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| page | int | No | Page number, default 1 |
-| limit | int | No | Number of items per page, default 20 |
-| title | string | No | Post title search |
-| user_display_id | string | No | User Xiaoshiliu number search |
-| status | int | No | Audit status filter (0=pending, 1=approved, 2=rejected) |
-| sortField | string | No | Sorting field (audit_id, created_at, audit_time, status) |
-| sortOrder | string | No | Sorting direction (ASC, DESC) |
-
-**Response Example**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "items": [
-      {
-        "audit_id": 1,
-        "id": 1,
-        "title": "Test Post",
-        "user_display_id": "user123",
-        "user_nickname": "Test User",
-        "category": "Life",
-        "type": 1,
-        "tags": [
-          { "id": 1, "name": "Test" },
-          { "id": 2, "name": "Life" }
-        ],
-        "content": "Test content",
-        "images": ["https://example.com/image1.jpg"],
-        "status": 0,
-        "created_at": "2026-02-27T10:00:00Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 1,
-      "pages": 1
-    }
-  }
-}
-```
-
-#### 13.2 Create Post Audit Record
-**API Endpoint**: `POST /api/admin/post-audit`
-**Authentication Required**: Yes
-
-**Request Parameters**:
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| target_id | int | Yes | Post ID |
-| content | string | Yes | Audit reason |
-| status | int | No | Audit status (0=pending, 1=approved, 2=rejected) |
-
-**Response Example**:
-```json
-{
-  "code": 200,
-  "message": "Post audit created successfully",
-  "data": {
-    "id": 1
-  }
-}
-```
-
-#### 13.3 Approve Audit
-**API Endpoint**: `PUT /api/admin/post-audit/{id}/approve`
-**Authentication Required**: Yes
-
-**Request Parameters**:
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| id | int | Yes | Audit record ID |
-
-**Response Example**:
-```json
-{
-  "code": 200,
-  "message": "Audit approved successfully"
-}
-```
-
-#### 13.4 Reject Audit
-**API Endpoint**: `PUT /api/admin/post-audit/{id}/reject`
-**Authentication Required**: Yes
-
-**Request Parameters**:
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| id | int | Yes | Audit record ID |
-| remark | string | Yes | Rejection reason |
-
-**Response Example**:
-```json
-{
-  "code": 200,
-  "message": "Audit rejected successfully"
-}
-```
-
-#### 13.5 Delete Audit Record
-**API Endpoint**: `DELETE /api/admin/post-audit/{id}`
-**Authentication Required**: Yes
-
-**Request Parameters**:
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| id | int | Yes | Audit record ID |
-
-**Response Example**:
-```json
-{
-  "code": 200,
-  "message": "Post audit deleted successfully"
-}
-```
-
-### 14. Monitoring Management
-
-#### 14.1 Obtain System Activity Monitoring
+#### 13.1 Obtain System Activity Monitoring
 **API Endpoint**: `GET /api/admin/monitor/activities`
 **Authentication Required**: Yes
 

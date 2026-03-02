@@ -63,8 +63,8 @@ router.get('/', optionalAuth, async (req, res) => {
         }
       }
 
-      // 添加is_draft条件，确保只搜索已发布的笔记
-      whereConditions.push('p.is_draft = 0');
+            // 添加status条件，确保只搜索已发布的笔记
+      whereConditions.push('p.status = 0');
 
       // 根据type添加内容类型过滤
       if (type === 'posts') {
@@ -156,7 +156,7 @@ router.get('/', optionalAuth, async (req, res) => {
       let tagStats = [];
       if (keyword.trim()) {
         // 构建仅基于keyword的搜索条件（包括标题、内容、用户名、小石榴号、标签名称），并确保只统计已激活的笔记
-        const keywordWhereClause = 'WHERE p.is_draft = 0 AND (p.title LIKE ? OR p.content LIKE ? OR u.nickname LIKE ? OR u.user_id LIKE ? OR EXISTS (SELECT 1 FROM post_tags pt2 JOIN tags t2 ON pt2.tag_id = t2.id WHERE pt2.post_id = p.id AND t2.name LIKE ?))';
+        const keywordWhereClause = 'WHERE p.status = 0 AND (p.title LIKE ? OR p.content LIKE ? OR u.nickname LIKE ? OR u.user_id LIKE ? OR EXISTS (SELECT 1 FROM post_tags pt2 JOIN tags t2 ON pt2.tag_id = t2.id WHERE pt2.post_id = p.id AND t2.name LIKE ?))';
         const keywordParams = [`%${keyword}%`, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`];
 
         // 获取keyword搜索结果中的标签统计
@@ -211,7 +211,7 @@ router.get('/', optionalAuth, async (req, res) => {
       // 搜索用户
       const [userRows] = await pool.execute(
         `SELECT u.id, u.user_id, u.nickname, u.avatar, u.bio, u.location, u.follow_count, u.fans_count, u.like_count, u.created_at, u.verified,
-                (SELECT COUNT(*) FROM posts WHERE user_id = u.id AND is_draft = 0) as post_count
+                (SELECT COUNT(*) FROM posts WHERE user_id = u.id AND status = 0) as post_count
          FROM users u
          WHERE u.nickname LIKE ? OR u.user_id LIKE ? 
          ORDER BY u.created_at DESC 

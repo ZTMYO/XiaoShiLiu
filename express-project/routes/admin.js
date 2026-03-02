@@ -17,7 +17,7 @@ const postsCrudConfig = {
   table: 'posts',
   name: '笔记',
   requiredFields: ['user_id', 'title', 'content'],
-  updateFields: ['title', 'content', 'category_id', 'view_count', 'is_draft'],
+  updateFields: ['title', 'content', 'category_id', 'view_count', 'status'],
   cascadeRules: [
     { table: 'post_images', field: 'post_id' },
     { table: 'post_tags', field: 'post_id' },
@@ -33,7 +33,7 @@ const postsCrudConfig = {
       operator: '=',
       transform: (value) => parseInt(value) // 将字符串转换为数字
     },
-    is_draft: {
+    status: {
       operator: '=',
       transform: (value) => parseInt(value) // 将字符串转换为数字
     }
@@ -404,7 +404,7 @@ const postsCrudConfig = {
       const [postResult] = await pool.execute(`
         SELECT p.id, p.user_id, p.title, p.content, p.type, p.category_id, c.name as category,
                p.view_count, p.like_count, p.collect_count, p.comment_count,
-               p.is_draft, p.created_at,
+               p.status, p.created_at,
                u.nickname, COALESCE(u.user_id, CONCAT('user', LPAD(u.id, 3, '0'))) as user_display_id
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
@@ -480,9 +480,9 @@ const postsCrudConfig = {
         params.push(req.query.type)
       }
 
-      if (req.query.is_draft !== undefined && req.query.is_draft !== '') {
-        whereClause += whereClause ? ' AND p.is_draft = ?' : ' WHERE p.is_draft = ?'
-        params.push(req.query.is_draft)
+      if (req.query.status !== undefined && req.query.status !== '') {
+        whereClause += whereClause ? ' AND p.status = ?' : ' WHERE p.status = ?'
+        params.push(req.query.status)
       }
 
       // 获取总数
@@ -521,7 +521,7 @@ const postsCrudConfig = {
       const dataQuery = `
         SELECT p.id, p.user_id, p.title, p.content, p.type, p.category_id, c.name as category,
                p.view_count, p.like_count, p.collect_count, p.comment_count,
-               p.is_draft, p.created_at,
+               p.status, p.created_at,
                u.nickname, COALESCE(u.user_id, CONCAT('user', LPAD(u.id, 3, '0'))) as user_display_id
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
@@ -561,6 +561,199 @@ const postsCrudConfig = {
 }
 
 const postsHandlers = createCrudHandlers(postsCrudConfig)
+
+// 笔记审核相关API
+
+// 获取待审核笔记列表
+router.get('/posts-audit', adminAuth, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 20
+    const offset = (page - 1) * limit
+
+    // 搜索条件
+    let whereClause = 'WHERE p.status = 2' // 只获取待审核笔记
+    const params = []
+
+    if (req.query.keyword) {
+      whereClause += ' AND (p.title LIKE ? OR p.content LIKE ?)'
+      params.push(`%${req.query.keyword}%`, `%${req.query.keyword}%`)
+    }
+
+    if (req.query.user_display_id) {
+      whereClause += ' AND u.user_id LIKE ?'
+      params.push(`%${req.query.user_display_id}%`)
+    }
+
+    if (req.query.category_id) {
+      if (req.query.category_id === 'null') {
+        whereClause += ' AND p.category_id IS NULL'
+      } else {
+        whereClause += ' AND p.category_id = ?'
+        params.push(req.query.category_id)
+      }
+    }
+
+    // 获取总数
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM posts p 
+      LEFT JOIN users u ON p.user_id = u.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      ${whereClause}
+    `
+    const [countResult] = await pool.execute(countQuery, params)
+    const total = countResult[0].total
+
+    // 排序处理
+    const allowedSortFields = {
+      'id': 'p.id',
+      'title': 'p.title',
+      'view_count': 'p.view_count',
+      'like_count': 'p.like_count',
+      'collect_count': 'p.collect_count',
+      'comment_count': 'p.comment_count',
+      'created_at': 'p.created_at',
+      'nickname': 'u.nickname'
+    }
+    
+    const allowedSortOrders = {
+      'asc': 'ASC',
+      'desc': 'DESC'
+    }
+    
+    const validSortField = allowedSortFields[req.query.sortField] || 'p.created_at'
+    const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
+    const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
+
+    // 获取数据
+    const dataQuery = `
+      SELECT p.id, p.user_id, p.title, p.content, p.type, p.category_id, c.name as category,
+             p.view_count, p.like_count, p.collect_count, p.comment_count,
+             p.status, p.created_at,
+             u.nickname, COALESCE(u.user_id, CONCAT('user', LPAD(u.id, 3, '0'))) as user_display_id
+      FROM posts p
+      LEFT JOIN users u ON p.user_id = u.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      ${whereClause}
+      ${orderClause}
+      LIMIT ? OFFSET ?
+    `
+    const [posts] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
+
+    // 为每个笔记获取图片信息和标签信息
+    for (let post of posts) {
+      const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [String(post.id)])
+      post.images = images.map(img => img.image_url)
+
+      // 获取笔记标签
+      const [tags] = await pool.execute(`
+        SELECT t.id, t.name 
+        FROM tags t 
+        INNER JOIN post_tags pt ON t.id = pt.tag_id 
+        WHERE pt.post_id = ?
+      `, [String(post.id)])
+      post.tags = tags
+    }
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: {
+        data: posts,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    })
+  } catch (error) {
+    console.error('获取待审核笔记列表失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '获取待审核笔记列表失败'
+    })
+  }
+})
+
+// 审核通过
+router.put('/posts-audit/:id/approve', adminAuth, async (req, res) => {
+  try {
+    const postId = req.params.id
+    const adminId = req.user.adminId
+
+    // 检查笔记是否存在
+    const [postResult] = await pool.execute('SELECT id FROM posts WHERE id = ?', [String(postId)])
+    if (postResult.length === 0) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        code: RESPONSE_CODES.NOT_FOUND,
+        message: '笔记不存在'
+      })
+    }
+
+    // 更新笔记状态为已发布
+    await pool.execute('UPDATE posts SET status = 0 WHERE id = ?', [String(postId)])
+
+    // 更新audit表中的审核记录
+    await pool.execute(
+      'UPDATE audit SET status = 1, audit_time = NOW(), admin_id = ? WHERE type = 3 AND target_id = ?',
+      [adminId, String(postId)]
+    )
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: '审核通过成功'
+    })
+  } catch (error) {
+    console.error('审核通过失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '审核通过失败'
+    })
+  }
+})
+
+// 拒绝发布
+router.put('/posts-audit/:id/reject', adminAuth, async (req, res) => {
+  try {
+    const postId = req.params.id
+    const adminId = req.user.adminId
+
+    // 检查笔记是否存在
+    const [postResult] = await pool.execute('SELECT id FROM posts WHERE id = ?', [String(postId)])
+    if (postResult.length === 0) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        code: RESPONSE_CODES.NOT_FOUND,
+        message: '笔记不存在'
+      })
+    }
+
+    // 更新笔记状态为草稿
+    await pool.execute('UPDATE posts SET status = 1 WHERE id = ?', [String(postId)])
+
+    // 更新audit表中的审核记录
+    await pool.execute(
+      'UPDATE audit SET status = 2, audit_time = NOW(), admin_id = ? WHERE type = 3 AND target_id = ?',
+      [adminId, String(postId)]
+    )
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: '拒绝发布成功'
+    })
+  } catch (error) {
+    console.error('拒绝发布失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '拒绝发布失败'
+    })
+  }
+})
+
+router.post('/posts-audit', adminAuth, postsHandlers.create)
+router.delete('/posts-audit', adminAuth, postsHandlers.deleteMany)
 
 // 注册 Posts CRUD 路由
 router.post('/posts', adminAuth, postsHandlers.create)
@@ -2228,7 +2421,7 @@ router.get('/monitor/activities', adminAuth, async (req, res) => {
       `SELECT p.id, p.title, p.created_at, u.user_id, u.nickname, u.avatar, 'post_publish' as type
        FROM posts p
        LEFT JOIN users u ON p.user_id = u.id
-       WHERE p.is_draft = 0
+       WHERE p.status = 0
        ORDER BY p.created_at DESC
        LIMIT ?`,
       ['10']

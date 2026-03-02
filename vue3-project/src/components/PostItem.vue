@@ -59,6 +59,10 @@
       </div>
       <div class="date-row">
         <span class="date">{{ formatDate(post.originalData?.createdAt || post.created_at) }}</span>
+        <!-- 审核状态标签 -->
+        <span v-if="post.status !== undefined" class="status-tag" :class="getStatusClass(post.status)">
+          {{ getStatusText(post.status) }}
+        </span>
       </div>
     </div>
   </div>
@@ -147,6 +151,26 @@ const handleDelete = () => {
 // 查看笔记详情 - 触发view事件而不是跳转
 const goToPostDetail = (event) => {
   emit('view', props.post, event)
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  const statusMap = {
+    0: '已发布',
+    1: '草稿',
+    2: '待审核'
+  }
+  return statusMap[status] || '未知'
+}
+
+// 获取状态样式类
+const getStatusClass = (status) => {
+  const classMap = {
+    0: 'status-published',
+    1: 'status-draft',
+    2: 'status-pending'
+  }
+  return classMap[status] || 'status-unknown'
 }
 </script>
 
@@ -293,6 +317,41 @@ const goToPostDetail = (event) => {
 
 .date {
   font-size: 0.8rem;
+}
+
+/* 审核状态标签样式 */
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+.status-published {
+  background: #e6f7e6;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.status-draft {
+  background: #f5f5f5;
+  color: #999;
+  border: 1px solid #d9d9d9;
+}
+
+.status-pending {
+  background: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
+}
+
+.status-unknown {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #d9d9d9;
 }
 
 .action-btn {

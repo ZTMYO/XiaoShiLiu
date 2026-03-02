@@ -15,12 +15,12 @@ router.get('/', optionalAuth, async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
     const category = req.query.category;
-    const isDraft = req.query.is_draft !== undefined ? parseInt(req.query.is_draft) : 0;
+    const status = req.query.status !== undefined ? parseInt(req.query.status) : 0;
     const userId = req.query.user_id ? parseInt(req.query.user_id) : null;
     const type = req.query.type ? parseInt(req.query.type) : null;
     const currentUserId = req.user ? req.user.id : null;
 
-    if (isDraft === 1) {
+    if (status === 1) {
       if (!currentUserId) {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({ code: RESPONSE_CODES.UNAUTHORIZED, message: '查看草稿需要登录' });
       }
@@ -31,9 +31,9 @@ router.get('/', optionalAuth, async (req, res) => {
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
         LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.is_draft = ? AND p.user_id = ?
+        WHERE p.status = ? AND p.user_id = ?
       `;
-      let queryParams = [isDraft.toString(), forcedUserId.toString()];
+      let queryParams = [status.toString(), forcedUserId.toString()];
 
       if (category) {
         query += ` AND p.category_id = ?`;
@@ -83,10 +83,10 @@ router.get('/', optionalAuth, async (req, res) => {
 
       // 获取草稿总数
       const [countResult] = await pool.execute(
-        'SELECT COUNT(*) as total FROM posts p WHERE p.is_draft = ? AND p.user_id = ?' +
+        'SELECT COUNT(*) as total FROM posts p WHERE p.status = ? AND p.user_id = ?' +
         (category ? ' AND p.category_id = ?' : '') +
         (type ? ' AND p.type = ?' : ''),
-        [isDraft.toString(), forcedUserId.toString(), ...(category ? [category] : []), ...(type ? [type] : [])]
+        [status.toString(), forcedUserId.toString(), ...(category ? [category] : []), ...(type ? [type] : [])]
       );
       const total = countResult[0].total;
       const pages = Math.ceil(total / limit);
@@ -111,15 +111,15 @@ router.get('/', optionalAuth, async (req, res) => {
       FROM posts p
       LEFT JOIN users u ON p.user_id = u.id
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.is_draft = ?
+      WHERE p.status = ?
     `;
-    let queryParams = [isDraft.toString()];
+    let queryParams = [status.toString()];
 
     // 特殊处理推荐频道：热度新鲜度评分前20%的笔记按分数排序
     if (category === 'recommend') {
       // 先获取总笔记数计算20%的数量
-      let countQuery = 'SELECT COUNT(*) as total FROM posts WHERE is_draft = ?';
-      let countParams = [isDraft.toString()];
+      let countQuery = 'SELECT COUNT(*) as total FROM posts WHERE status = ?';
+      let countParams = [status.toString()];
 
       if (type) {
         countQuery += ' AND type = ?';
@@ -129,8 +129,8 @@ router.get('/', optionalAuth, async (req, res) => {
       const totalPosts = totalCountResult[0].total;
       const recommendLimit = Math.ceil(totalPosts * 0.2);
       // 推荐算法：70%热度+30%新鲜度评分，新发布24小时内的笔记获得新鲜度加分，筛选前20%按分数排序
-      let innerWhere = 'p.is_draft = ?';
-      let innerParams = [isDraft.toString()];
+      let innerWhere = 'p.status = ?';
+      let innerParams = [status.toString()];
       if (type) {
         innerWhere += ' AND p.type = ?';
         innerParams.push(type);
@@ -191,7 +191,7 @@ router.get('/', optionalAuth, async (req, res) => {
       }
 
       query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
-      queryParams = [isDraft.toString(), ...additionalParams, limit.toString(), offset.toString()];
+      queryParams = [status.toString(), ...additionalParams, limit.toString(), offset.toString()];
     }
     const [rows] = await pool.execute(query, queryParams);
 
@@ -245,8 +245,8 @@ router.get('/', optionalAuth, async (req, res) => {
     let total;
     if (category === 'recommend') {
       // 推荐频道的总数限制为总笔记数的20%
-      let countQuery = 'SELECT COUNT(*) as total FROM posts WHERE is_draft = ?';
-      let countParams = [isDraft.toString()];
+      let countQuery = 'SELECT COUNT(*) as total FROM posts WHERE status = ?';
+      let countParams = [status.toString()];
 
       if (type) {
         countQuery += ' AND type = ?';
@@ -257,12 +257,12 @@ router.get('/', optionalAuth, async (req, res) => {
       const totalPosts = totalCountResult[0].total;
       total = Math.ceil(totalPosts * 0.2);
     } else {
-      let countQuery = 'SELECT COUNT(*) as total FROM posts WHERE is_draft = ?';
-      let countParams = [isDraft.toString()];
+      let countQuery = 'SELECT COUNT(*) as total FROM posts WHERE status = ?';
+      let countParams = [status.toString()];
       let countWhereConditions = [];
 
       if (category) {
-        countQuery = 'SELECT COUNT(*) as total FROM posts p LEFT JOIN categories c ON p.category_id = c.id WHERE p.is_draft = ?';
+        countQuery = 'SELECT COUNT(*) as total FROM posts p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = ?';
         countWhereConditions.push('p.category_id = ?');
         countParams.push(category);
       }
@@ -325,6 +325,16 @@ router.get('/:id', optionalAuth, async (req, res) => {
     }
 
     const post = rows[0];
+
+    // 检查笔记状态权限
+    // status: 0=已发布, 1=草稿, 2=待审核
+    // 只有已发布的笔记可以公开访问，草稿和待审核的笔记只有作者本人可以查看
+    if (post.status !== 0) {
+      // 未发布的笔记，检查是否是作者本人
+      if (!currentUserId || currentUserId !== post.user_id) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ code: RESPONSE_CODES.NOT_FOUND, message: '笔记不存在' });
+      }
+    }
 
     // 根据帖子类型获取对应的媒体文件
     if (post.type === 1) {
@@ -391,7 +401,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 // 创建笔记
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { title, content, category_id, images, video, tags, is_draft, type } = req.body;
+    const { title, content, category_id, images, video, tags, status, type } = req.body;
     const userId = req.user.id;
     const postType = type || 1; // 默认为图文类型
 
@@ -401,13 +411,13 @@ router.post('/', authenticateToken, async (req, res) => {
     console.log('内容长度:', content ? content.length : 0);
     console.log('分类ID:', category_id);
     console.log('发布类型:', postType);
-    console.log('是否草稿:', is_draft);
+    console.log('笔记状态:', status);
     console.log('图片数量:', images ? images.length : 0);
     console.log('视频数据:', video ? JSON.stringify(video) : 'null');
     console.log('标签:', tags);
 
     // 验证必填字段：发布时要求标题和内容，草稿时不强制要求
-    if (!is_draft && (!title || !content)) {
+    if (status !== 1 && (!title || !content)) {
       console.log('❌ 验证失败: 标题或内容为空');
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '发布时标题和内容不能为空' });
     }
@@ -421,11 +431,11 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '无效的发布类型' });
     }
 
-    // 插入笔记
+        // 插入笔记
     console.log('📝 开始插入笔记到数据库...');
     const [result] = await pool.execute(
-      'INSERT INTO posts (user_id, title, content, category_id, is_draft, type) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, title || '', sanitizedContent, category_id || null, is_draft ? 1 : 0, postType]
+      'INSERT INTO posts (user_id, title, content, category_id, status, type) VALUES (?, ?, ?, ?, ?, ?)',
+      [userId, title || '', sanitizedContent, category_id || null, (status !== undefined ? status : 2).toString(), postType]
     );
 
     const postId = result.insertId;
@@ -507,8 +517,8 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
-    // 处理@用户通知（仅在发布笔记时，不是草稿时）
-    if (!is_draft && content && hasMentions(content)) {
+        // 处理@用户通知（仅在发布笔记时，不是草稿时）
+    if (status !== 1 && content && hasMentions(content)) {
       const mentionedUsers = extractMentionedUsers(content);
 
       for (const mentionedUser of mentionedUsers) {
@@ -540,6 +550,19 @@ router.post('/', authenticateToken, async (req, res) => {
 
     console.log(`✅ 创建笔记成功 - 用户ID: ${userId}, 笔记ID: ${postId}, 类型: ${postType}`);
 
+    // 如果笔记状态为待审核(status=2)，在audit表中添加审核记录
+    if (status === 2) {
+      try {
+        await pool.execute(
+          'INSERT INTO audit (type, target_id, content, status) VALUES (?, ?, ?, ?)',
+          [3, postId, title || '笔记审核', 0]
+        );
+        console.log(`✅ 审核记录创建成功 - 笔记ID: ${postId}`);
+      } catch (error) {
+        console.error('❌ 创建审核记录失败:', error);
+      }
+    }
+
     res.json({
       code: RESPONSE_CODES.SUCCESS,
       message: '发布成功',
@@ -566,12 +589,12 @@ router.get('/search', optionalAuth, async (req, res) => {
 
     console.log(`🔍 搜索笔记 - 关键词: ${keyword}, 页码: ${page}, 每页: ${limit}, 当前用户ID: ${currentUserId}`);
 
-    // 搜索笔记：支持标题和内容搜索（只搜索已激活的笔记）
+        // 搜索笔记：支持标题和内容搜索（只搜索已通过的笔记）
     const [rows] = await pool.execute(
       `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.id as author_auto_id, u.location, u.verified
        FROM posts p
        LEFT JOIN users u ON p.user_id = u.id
-       WHERE p.is_draft = 0 AND (p.title LIKE ? OR p.content LIKE ?)
+       WHERE p.status = 0 AND (p.title LIKE ? OR p.content LIKE ?)
        ORDER BY p.created_at DESC
        LIMIT ? OFFSET ?`,
       [`%${keyword}%`, `%${keyword}%`, limit.toString(), offset.toString()]
@@ -609,10 +632,10 @@ router.get('/search', optionalAuth, async (req, res) => {
       }
     }
 
-    // 获取总数（只统计已激活的笔记）
+        // 获取总数（只统计已通过的笔记）
     const [countResult] = await pool.execute(
       `SELECT COUNT(*) as total FROM posts 
-       WHERE is_draft = 0 AND (title LIKE ? OR content LIKE ?)`,
+       WHERE status = 0 AND (title LIKE ? OR content LIKE ?)`,
       [`%${keyword}%`, `%${keyword}%`]
     );
     const total = countResult[0].total;
@@ -783,12 +806,12 @@ router.post('/:id/collect', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const postId = req.params.id;
-    const { title, content, category_id, images, video, tags, is_draft } = req.body;
+    const { title, content, category_id, images, video, tags, status } = req.body;
     const userId = req.user.id;
 
-    // 验证必填字段：如果不是草稿（is_draft=0），则要求标题、内容和分类不能为空
-    if (!is_draft && (!title || !content || !category_id)) {
-      console.log('验证失败 - 必填字段缺失:', { title, content, category_id, is_draft });
+        // 验证必填字段：如果不是草稿（status=2），则要求标题、内容和分类不能为空
+    if (status !== 1 && (!title || !content || !category_id)) {
+      console.log('验证失败 - 必填字段缺失:', { title, content, category_id, status });
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '发布时标题、内容和分类不能为空' });
     }
     const sanitizedContent = content ? sanitizeContent(content) : '';
@@ -809,15 +832,15 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const postType = postRows[0].type;
 
-    // 在更新之前获取原始笔记信息（用于对比@用户变化）
-    const [originalPostRows] = await pool.execute('SELECT is_draft, content FROM posts WHERE id = ?', [postId.toString()]);
-    const wasOriginallyDraft = originalPostRows.length > 0 && originalPostRows[0].is_draft === 1;
+        // 在更新之前获取原始笔记信息（用于对比@用户变化）
+    const [originalPostRows] = await pool.execute('SELECT status, content FROM posts WHERE id = ?', [postId.toString()]);
+    const wasOriginallyDraft = originalPostRows.length > 0 && originalPostRows[0].status === 1;
     const originalContent = originalPostRows.length > 0 ? originalPostRows[0].content : '';
 
-    // 更新笔记基本信息
+        // 更新笔记基本信息
     await pool.execute(
-      'UPDATE posts SET title = ?, content = ?, category_id = ?, is_draft = ? WHERE id = ?',
-      [title || '', sanitizedContent, category_id || null, (is_draft ? 1 : 0).toString(), postId.toString()]
+      'UPDATE posts SET title = ?, content = ?, category_id = ?, status = ? WHERE id = ?',
+      [title || '', sanitizedContent, category_id || null, (status !== undefined ? status : 2).toString(), postId.toString()]
     );
 
     // 根据笔记类型处理媒体文件
@@ -952,8 +975,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       }
     }
 
-    // 处理@用户通知的逻辑
-    if (!is_draft && content) { // 只有在发布状态下才处理@通知
+        // 处理@用户通知的逻辑
+    if (status !== 1 && content) { // 只有在发布状态下才处理@通知
       // 获取新内容中的@用户
       const newMentionedUsers = hasMentions(content) ? extractMentionedUsers(content) : [];
       const newMentionedUserIds = new Set(newMentionedUsers.map(user => user.userId));

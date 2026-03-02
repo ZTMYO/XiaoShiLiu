@@ -21,7 +21,7 @@ router.get('/search', optionalAuth, async (req, res) => {
     // 搜索用户：支持昵称和小石榴号搜索
     const [rows] = await pool.execute(
       `SELECT u.id, u.user_id, u.nickname, u.avatar, u.bio, u.location, u.follow_count, u.fans_count, u.like_count, u.created_at, u.verified,
-              (SELECT COUNT(*) FROM posts WHERE user_id = u.id AND is_draft = 0) as post_count
+              (SELECT COUNT(*) FROM posts WHERE user_id = u.id AND status = 0) as post_count
        FROM users u
        WHERE u.nickname LIKE ? OR u.user_id LIKE ? 
        ORDER BY u.created_at DESC 
@@ -245,6 +245,7 @@ router.get('/:id/posts', optionalAuth, async (req, res) => {
     const category = req.query.category;
     const keyword = req.query.keyword;
     const sort = req.query.sort || 'created_at';
+    const statusFilter = req.query.status; // 状态筛选参数
 
     // 始终通过小石榴号查找对应的数字ID
     const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
@@ -254,8 +255,19 @@ router.get('/:id/posts', optionalAuth, async (req, res) => {
     const userId = userRows[0].id;
 
     // 构建查询条件
-    let whereConditions = ['p.user_id = ?', 'p.is_draft = 0'];
+    let whereConditions = ['p.user_id = ?'];
     let queryParams = [userId.toString()];
+
+    // 根据status参数决定查询哪些状态
+    // status=all: 查询已发布(0)和待审核(2) - 用于笔记管理
+    // status=published: 只查询已发布(0) - 用于个人主页
+    // 默认: 只查询已发布(0)
+    if (statusFilter === 'all') {
+      whereConditions.push('p.status IN (0, 2)');
+    } else {
+      // 默认只查询已发布的笔记
+      whereConditions.push('p.status = 0');
+    }
 
     if (category) {
       whereConditions.push('p.category_id = ?');
@@ -377,7 +389,7 @@ router.get('/:id/collections', optionalAuth, async (req, res) => {
        FROM collections c
        LEFT JOIN posts p ON c.post_id = p.id
        LEFT JOIN users u ON p.user_id = u.id
-       WHERE c.user_id = ? AND p.is_draft = 0
+       WHERE c.user_id = ? AND p.status = 0
        ORDER BY c.created_at DESC
        LIMIT ? OFFSET ?`,
       [userId.toString(), limit.toString(), offset.toString()]
@@ -428,7 +440,7 @@ router.get('/:id/collections', optionalAuth, async (req, res) => {
     }
 
     const [countResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM collections c LEFT JOIN posts p ON c.post_id = p.id WHERE c.user_id = ? AND p.is_draft = 0',
+      'SELECT COUNT(*) as total FROM collections c LEFT JOIN posts p ON c.post_id = p.id WHERE c.user_id = ? AND p.status = 0',
       [userId.toString()]
     );
     const total = countResult[0].total;
@@ -474,7 +486,7 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
        FROM likes l
        LEFT JOIN posts p ON l.target_id = p.id
        LEFT JOIN users u ON p.user_id = u.id
-       WHERE l.user_id = ? AND l.target_type = 1 AND p.is_draft = 0
+       WHERE l.user_id = ? AND l.target_type = 1 AND p.status = 0
        ORDER BY l.created_at DESC
        LIMIT ? OFFSET ?`,
       [userId.toString(), limit.toString(), offset.toString()]
@@ -525,7 +537,7 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
     }
 
     const [countResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM likes l LEFT JOIN posts p ON l.target_id = p.id WHERE l.user_id = ? AND l.target_type = 1 AND p.is_draft = 0',
+      'SELECT COUNT(*) as total FROM likes l LEFT JOIN posts p ON l.target_id = p.id WHERE l.user_id = ? AND l.target_type = 1 AND p.status = 0',
       [userId.toString()]
     );
     const total = countResult[0].total;
@@ -734,7 +746,7 @@ router.get('/:id/following', optionalAuth, async (req, res) => {
     const [rows] = await pool.execute(
       `SELECT u.id, u.user_id, u.nickname, u.avatar, u.bio, u.location, u.follow_count, u.fans_count, u.like_count, u.created_at, u.verified,
               f.created_at as followed_at,
-              (SELECT COUNT(*) FROM posts WHERE user_id = u.id AND is_draft = 0) as post_count
+              (SELECT COUNT(*) FROM posts WHERE user_id = u.id AND status = 0) as post_count
        FROM follows f
        LEFT JOIN users u ON f.following_id = u.id
        WHERE f.follower_id = ?
@@ -829,7 +841,7 @@ router.get('/:id/followers', optionalAuth, async (req, res) => {
     const [rows] = await pool.execute(
       `SELECT u.id, u.user_id, u.nickname, u.avatar, u.bio, u.location, u.follow_count, u.fans_count, u.like_count, u.created_at, u.verified,
               f.created_at as followed_at,
-              (SELECT COUNT(*) FROM posts WHERE user_id = u.id AND is_draft = 0) as post_count
+              (SELECT COUNT(*) FROM posts WHERE user_id = u.id AND status = 0) as post_count
        FROM follows f
        LEFT JOIN users u ON f.follower_id = u.id
        WHERE f.following_id = ?
@@ -919,7 +931,7 @@ router.get('/:id/mutual-follows', optionalAuth, async (req, res) => {
     // 查询互关用户
     const [rows] = await pool.execute(
       `SELECT u.id, u.user_id, u.nickname, u.avatar, u.bio, u.location, u.follow_count, u.fans_count, u.like_count, u.created_at, u.verified,
-              (SELECT COUNT(*) FROM posts WHERE user_id = u.id AND is_draft = 0) as post_count
+              (SELECT COUNT(*) FROM posts WHERE user_id = u.id AND status = 0) as post_count
        FROM users u
        WHERE u.id IN (
          SELECT f1.following_id 
@@ -1035,13 +1047,13 @@ router.get('/:id/stats', async (req, res) => {
 
     // 获取笔记数量
     const [postCount] = await pool.execute(
-      'SELECT COUNT(*) as count FROM posts WHERE user_id = ? AND is_draft = 0',
+      'SELECT COUNT(*) as count FROM posts WHERE user_id = ? AND status = 0',
       [userId.toString()]
     );
 
     // 获取该用户发布的笔记被收藏的总数量
     const [collectCount] = await pool.execute(
-      'SELECT COUNT(*) as count FROM collections c JOIN posts p ON c.post_id = p.id WHERE p.user_id = ? AND p.is_draft = 0',
+      'SELECT COUNT(*) as count FROM collections c JOIN posts p ON c.post_id = p.id WHERE p.user_id = ? AND p.status = 0',
       [userId.toString()]
     );
 

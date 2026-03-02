@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `posts` (
   `collect_count` int(11) DEFAULT 0 COMMENT '收藏数',
   `comment_count` int(11) DEFAULT 0 COMMENT '评论数',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
-  `is_draft` tinyint(1) DEFAULT 1 COMMENT '是否为草稿：1-草稿，0-已发布',
+  `status` tinyint(1) DEFAULT 2 COMMENT '笔记状态：0-发布（审核通过），1-草稿，2-待审核',
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_category_id` (`category_id`),

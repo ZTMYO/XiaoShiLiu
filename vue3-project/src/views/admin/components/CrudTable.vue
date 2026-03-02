@@ -1013,7 +1013,7 @@ const closeImageModal = () => {
 const showImageGallery = async (postId) => {
   loadingGallery.value = postId
   try {
-    const response = await fetch(`${apiConfig.baseURL}/posts/${postId}`, {
+    const response = await fetch(`${apiConfig.baseURL}/admin/posts/${postId}`, {
       headers: getAuthHeaders()
     })
     const result = await response.json()
@@ -1052,7 +1052,7 @@ const showMediaGallery = async (item) => {
     // 视频笔记，显示视频播放器
     loadingGallery.value = item.id
     try {
-      const response = await fetch(`${apiConfig.baseURL}/posts/${item.id}`, {
+      const response = await fetch(`${apiConfig.baseURL}/admin/posts/${item.id}`, {
         headers: getAuthHeaders()
       })
       const result = await response.json()

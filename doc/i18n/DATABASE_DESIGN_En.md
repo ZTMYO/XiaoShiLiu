@@ -73,7 +73,7 @@ Database structure design for the Xiaoshiliu-style image-text community project 
 | title | VARCHAR(200) | Title | Post title |
 | content | TEXT | Content | Post description |
 | category_id | INT | Category ID | Foreign key to categories table, nullable |
-| is_draft | TINYINT(1) | Is Draft | 1-Draft, 0-Published, default 1 |
+| status | TINYINT(1) | Post Status | 0-Published (approved), 1-Draft, 2-Pending review, default 2 |
 | view_count | BIGINT | View Count | Statistics field, default 0 |
 | like_count | INT | Like Count | Statistics field, default 0 |
 | collect_count | INT | Collection Count | Statistics field, default 0 |
