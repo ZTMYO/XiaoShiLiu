@@ -1,6 +1,17 @@
 <template>
   <CrudTable title="笔记审核" entity-name="笔记" api-endpoint="/admin/posts-audit" :columns="columns" :form-fields="formFields"
-    :search-fields="searchFields" :custom-actions="customActions" @custom-action="handleCustomAction" />
+    :search-fields="searchFields" :custom-actions="customActions" @custom-action="handleCustomAction">
+    <template #cell-preview="{ item }">
+      <div>
+        <span class="content-link" @click="openPreview(item, $event)" title="查看笔记预览">预览</span>
+      </div>
+    </template>
+  </CrudTable>
+
+  <div v-if="showPreview" class="audit-detailcard-readonly">
+    <DetailCard :item="previewItem" :click-position="previewClickPosition" :page-mode="false"
+      :disable-auto-fetch="true" @close="closePreview" />
+  </div>
 
   <!-- 消息提示 -->
   <MessageToast v-if="showToast" :message="toastMessage" :type="toastType" @close="handleToastClose" />
@@ -14,12 +25,10 @@
 <script setup>
 import { computed, ref } from 'vue'
 import CrudTable from './components/CrudTable.vue'
+import DetailCard from '@/components/DetailCard.vue'
 import MessageToast from '@/components/MessageToast.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { apiConfig } from '@/config/api'
-
-// 声明组件事件
-const emit = defineEmits(['closeFilter'])
 
 // 消息提示状态
 const showToast = ref(false)
@@ -82,16 +91,12 @@ const getAuthHeaders = () => {
 // 表格列定义
 const columns = [
   { key: 'id', label: 'ID', sortable: true },
-  { key: 'title', label: '标题', type: 'content', sortable: false },
-  { key: 'user_display_id', label: '小石榴号', type: 'user-link', sortable: false },
-  { key: 'category', label: '分类', sortable: false },
-  { key: 'type', label: '类型', type: 'mapped', map: { 1: '图文', 2: '视频' }, sortable: false },
-  { key: 'status', label: '状态', sortable: false, type: 'mapped', map: { 0: '已发布', 1: '草稿', 2: '待审核' } },
-  { key: 'content', label: '内容', type: 'content', sortable: false },
-  { key: 'tags', label: '标签', type: 'tags', sortable: false },
-  { key: 'images', label: '媒体', type: 'image-gallery', sortable: false },
-  { key: 'created_at', label: '发布时间', type: 'date', sortable: true }
+  { key: 'preview', label: '预览', type: 'slot', sortable: false }
 ]
+
+const showPreview = ref(false)
+const previewItem = ref(null)
+const previewClickPosition = ref({ x: 0, y: 0 })
 
 // 表单字段定义
 const formFields = computed(() => [
@@ -166,8 +171,81 @@ const handleCustomAction = async ({ action, item }) => {
     showMessage('操作失败', 'error')
   }
 }
+
+// 打开预览
+const openPreview = async (item, event) => {
+  try {
+    previewClickPosition.value = {
+      x: event?.clientX || 0,
+      y: event?.clientY || 0
+    }
+
+    const response = await fetch(`${apiConfig.baseURL}/admin/posts/${item.id}`, {
+      headers: getAuthHeaders()
+    })
+    const result = await response.json()
+    if (result.code === 200) {
+      previewItem.value = result.data
+      showPreview.value = true
+    } else {
+      showMessage('获取笔记详情失败: ' + result.message, 'error')
+    }
+  } catch (error) {
+    console.error('获取笔记详情失败:', error)
+    showMessage('获取笔记详情失败', 'error')
+  }
+}
+
+// 关闭预览
+const closePreview = () => {
+  showPreview.value = false
+  previewItem.value = null
+}
 </script>
 
 <style scoped>
-/* 状态样式 */
+/* 审核预览：只读模式（不改DetailCard源码，直接在此处禁用交互） */
+.audit-detailcard-readonly :deep(.footer-actions) {
+  display: none;
+}
+
+.audit-detailcard-readonly :deep(.author-avatar),
+.audit-detailcard-readonly :deep(.author-name),
+.audit-detailcard-readonly :deep(.user-hover-card-trigger),
+.audit-detailcard-readonly :deep(.comment-avatar),
+.audit-detailcard-readonly :deep(.comment-username),
+.audit-detailcard-readonly :deep(.reply-username) {
+  pointer-events: none;
+}
+
+.audit-detailcard-readonly :deep(button),
+.audit-detailcard-readonly :deep(input),
+.audit-detailcard-readonly :deep(textarea),
+.audit-detailcard-readonly :deep(.follow-btn),
+.audit-detailcard-readonly :deep(.follow-button),
+.audit-detailcard-readonly :deep(.like-button),
+.audit-detailcard-readonly :deep(.collect-button),
+.audit-detailcard-readonly :deep(.comment-reply),
+.audit-detailcard-readonly :deep(.reply-reply),
+.audit-detailcard-readonly :deep(.comment-delete-btn),
+.audit-detailcard-readonly :deep(.toggle-replies-btn),
+.audit-detailcard-readonly :deep(.sort-menu),
+.audit-detailcard-readonly :deep(.sort-option),
+.audit-detailcard-readonly :deep(.comment-replay-icon),
+.audit-detailcard-readonly :deep(.reply-replay-icon) {
+  pointer-events: none;
+}
+
+.audit-detailcard-readonly :deep(.close-btn) {
+  pointer-events: auto;
+}
+
+.audit-detailcard-readonly :deep(.nav-btn),
+.audit-detailcard-readonly :deep(.mobile-nav-btn),
+.audit-detailcard-readonly :deep(.slider-image),
+.audit-detailcard-readonly :deep(.mobile-slider-image),
+.audit-detailcard-readonly :deep(.image-zoomable),
+.audit-detailcard-readonly :deep(video) {
+  pointer-events: auto;
+}
 </style>

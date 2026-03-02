@@ -114,7 +114,10 @@
               <input type="checkbox" :value="item.id" v-model="selectedItems" />
             </td>
             <td v-for="column in columns" :key="column.key">
-              <span v-if="column.type === 'image'">
+              <slot v-if="column.type === 'slot'" :name="`cell-${column.key}`" :item="item" :column="column">
+                <span>{{ item[column.key] || '-' }}</span>
+              </slot>
+              <span v-else-if="column.type === 'image'">
                 <img :src="item[column.key] || defaultAvatar" alt="图片" class="table-image" @click="showImageModal(item[column.key] || defaultAvatar)"
                   @error="handleImageError" />
               </span>
@@ -196,6 +199,7 @@
               </template>
             </td>
           </tr>
+
         </tbody>
       </table>
     </div>
@@ -1711,9 +1715,31 @@ const handleCustomAction = (action, item) => {
   line-height: 1.4;
 }
 
+:deep(.truncated-content),
+:deep(.content-link),
+:deep(.user-link),
+:deep(.post-link),
+:deep(.comment-link) {
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s;
+  display: inline-block;
+  max-width: 80px;
+  word-wrap: break-word;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
 .truncated-content:hover,
 .content-link:hover,
 .user-link:hover {
+  color: var(--primary-color);
+}
+
+:deep(.truncated-content:hover),
+:deep(.content-link:hover),
+:deep(.user-link:hover) {
   color: var(--primary-color);
 }
 

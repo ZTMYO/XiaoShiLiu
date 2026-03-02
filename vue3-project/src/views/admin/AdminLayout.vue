@@ -268,7 +268,7 @@ const menuItems = [
   { path: '/admin/api-docs', title: 'API文档', icon: 'data' },
   { path: '/admin/monitor', title: '动态监控', icon: 'monitor' },
   { path: '/admin/users', title: '用户管理', icon: 'user' },
-  {path: '/admin/post-audit', title: '笔记审核', icon: 'tick' },
+  { path: '/admin/post-audit', title: '笔记审核', icon: 'audit' },
   { path: '/admin/posts', title: '笔记管理', icon: 'post' },
   { path: '/admin/comments', title: '评论管理', icon: 'chat' },
   { path: '/admin/categories', title: '分类管理', icon: 'category' },

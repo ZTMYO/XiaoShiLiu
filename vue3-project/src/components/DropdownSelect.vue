@@ -79,7 +79,7 @@ const { lock, unlock } = useScrollLock()
 
 // 计算当前选中的选项
 const selectedOption = computed(() => {
-  if (!props.modelValue) return null
+  if (props.modelValue === null || props.modelValue === undefined) return null
 
   return props.options.find(option => {
     if (typeof option === 'object') {
@@ -109,7 +109,7 @@ const getOptionKey = (option) => {
 
 // 判断选项是否被选中
 const isSelected = (option) => {
-  if (!props.modelValue) return false
+  if (props.modelValue === null || props.modelValue === undefined) return false
 
   if (typeof option === 'object') {
     return option[props.valueKey] === props.modelValue

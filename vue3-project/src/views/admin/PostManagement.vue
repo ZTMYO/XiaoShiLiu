@@ -32,7 +32,17 @@ const columns = [
   { key: 'user_display_id', label: '小石榴号', type: 'user-link', sortable: false },
   { key: 'category', label: '分类', sortable: false },
   { key: 'type', label: '类型', type: 'mapped', map: { 1: '图文', 2: '视频' }, sortable: false },
-  { key: 'status', label: '状态', sortable: false, type: 'mapped', map: { 0: '已发布', 1: '草稿', 2: '待审核' } },
+  {
+    key: 'status',
+    label: '状态',
+    type: 'status',
+    sortable: false,
+    statusMap: {
+      0: { text: '已发布', class: 'status-published' },
+      1: { text: '草稿', class: 'status-draft' },
+      2: { text: '待审核', class: 'status-pending' }
+    }
+  },
   { key: 'content', label: '内容', type: 'content', sortable: false },
   { key: 'tags', label: '标签', type: 'tags', sortable: false },
   { key: 'images', label: '媒体', type: 'image-gallery', sortable: false },
@@ -71,7 +81,7 @@ const formFields = computed(() => {
       type: 'select',
       required: true,
       options: [
-        { value: 0, label: '发布（审核通过）' },
+        { value: 0, label: '已发布' },
         { value: 1, label: '草稿' },
         { value: 2, label: '待审核' }
       ],
@@ -129,3 +139,9 @@ const searchFields = computed(() => [
   { key: 'user_display_id', label: '作者小石榴号', placeholder: '搜索作者小石榴号' }
 ])
 </script>
+
+<style scoped>
+:deep(.status-pending) {
+  color: #f39c12;
+}
+</style>

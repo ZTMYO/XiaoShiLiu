@@ -63,7 +63,8 @@
               <div v-if="field.maxLength" class="char-count">{{ getPlainTextLength(formData[field.key] || '') }}/{{
                 field.maxLength }}</div>
             </div>
-            <DropdownSelect v-else-if="field.type === 'select'" :model-value="formData[field.key] || ''"
+            <DropdownSelect v-else-if="field.type === 'select'"
+              :model-value="formData[field.key] !== undefined && formData[field.key] !== null ? formData[field.key] : ''"
               @change="handleSelectChange(field.key, $event)" :options="field.options"
               :placeholder="field.required ? '请选择' : '请选择（可选）'" label-key="label" value-key="value" min-width="200px" />
             <input v-else-if="field.type === 'number'" :value="formData[field.key] || ''"
@@ -133,7 +134,8 @@
             <div v-else-if="field.type === 'video-upload'" class="video-upload-field">
               <!-- 视频上传组件 -->
               <VideoUpload :ref="el => setVideoUploadRef(field.key, el)" :model-value="formData[field.key]"
-                @update:model-value="handleVideoUploadChange" @error="handleVideoUploadError" @change="handleVideoChange" />
+                @update:model-value="handleVideoUploadChange" @error="handleVideoUploadError"
+                @change="handleVideoChange" />
             </div>
 
           </div>
@@ -687,28 +689,28 @@ const getButtonText = () => {
   if (props.loading || isSubmitting.value) {
     return '提交中...'
   }
-  
+
   // 检查是否有新图片需要上传
   if (hasNewImages.value && !uploadCompleted.value) {
     return '上传'
   }
-  
+
   // 检查是否有新视频需要上传
   if (hasNewVideo.value && !videoUploadCompleted.value) {
     return '上传'
   }
-  
+
   // 检查是否只有自定义封面需要上传
   const videoUploadRef = videoUploadRefs.value['video_upload']
-  const hasCustomCoverOnly = videoUploadRef && 
-    videoUploadRef.customCoverFile && 
-    !hasNewVideo.value && 
+  const hasCustomCoverOnly = videoUploadRef &&
+    videoUploadRef.customCoverFile &&
+    !hasNewVideo.value &&
     !videoUploadCompleted.value
-    
+
   if (hasCustomCoverOnly) {
     return '上传'
   }
-  
+
   return props.confirmText
 }
 
@@ -776,9 +778,9 @@ const handleSubmit = async () => {
 
   // 检查是否只有封面需要上传（没有新视频但有自定义封面）
   const videoUploadRef = videoUploadRefs.value['video_upload']
-  const hasCustomCoverOnly = videoUploadRef && 
-    videoUploadRef.customCoverFile && 
-    !hasNewVideo.value && 
+  const hasCustomCoverOnly = videoUploadRef &&
+    videoUploadRef.customCoverFile &&
+    !hasNewVideo.value &&
     !videoUploadCompleted.value
 
   if (hasCustomCoverOnly) {
@@ -824,7 +826,7 @@ const handleCoverOnlyUpload = async () => {
 
     // 上传封面到图床
     const coverUrl = await videoUploadRef.uploadCustomCover()
-    
+
     if (coverUrl) {
       // 更新表单数据中的封面URL，但不构造video对象
       const processedData = { ...props.formData }
@@ -1022,7 +1024,7 @@ const handleFormSubmit = async () => {
 
     // 视频数据处理：只对包含视频相关字段的表单进行处理
     const hasVideoFields = processedData.hasOwnProperty('video_url') || processedData.hasOwnProperty('video_upload')
-    
+
     if (hasVideoFields) {
       // 移除临时的video_upload对象，但保留video对象用于后端清理旧文件
       if (processedData.video_upload) {
@@ -1033,7 +1035,7 @@ const handleFormSubmit = async () => {
       if (processedData.video_url) {
         // 检查是否有新的视频文件上传
         const hasNewVideoFile = hasNewVideo.value && videoUploadCompleted.value;
-        
+
         if (hasNewVideoFile) {
           // 有新视频文件上传，构造完整的video对象用于文件清理
           processedData.video = {
@@ -1816,5 +1818,4 @@ defineExpose({
 .video-upload-field {
   width: 100%;
 }
-
 </style>
