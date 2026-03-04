@@ -90,8 +90,11 @@ const getAuthHeaders = () => {
 
 // 表格列定义
 const columns = [
-  { key: 'id', label: 'ID', sortable: true },
-  { key: 'preview', label: '预览', type: 'slot', sortable: false }
+  { key: 'id', label: 'ID', type: 'post-link', sortable: true },
+  { key: 'user_display_id', label: '小石榴号', type: 'user-link', sortable: false },
+  { key: 'nickname', label: '用户昵称', sortable: false },
+  { key: 'preview', label: '预览', type: 'slot', sortable: false },
+  { key: 'created_at', label: '发起时间', type: 'date', sortable: true }
 ]
 
 const showPreview = ref(false)
