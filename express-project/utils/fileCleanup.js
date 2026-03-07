@@ -11,16 +11,17 @@ function extractLocalFilePath(url) {
   try {
     if (!url || typeof url !== 'string') return null;
     
-    // 检查是否是本地文件URL
-    const baseUrl = config.upload.video.local.baseUrl;
-    const uploadDir = config.upload.video.local.uploadDir;
-    
-    if (url.startsWith(baseUrl)) {
-      // 提取相对路径
-      const relativePath = url.replace(`${baseUrl}/`, '');
-      // 构建绝对路径
-      const absolutePath = path.join(process.cwd(), relativePath);
-      return absolutePath;
+    // 检查是否是API路径格式（/api/files/...）
+    if (url.startsWith('/api/files/')) {
+      const match = url.match(/^\/api\/files\/(images|videos)\/(.+)$/);
+      if (match) {
+        const [, type, filename] = match;
+        const uploadDir = type === 'images' 
+          ? config.upload.image.local.uploadDir 
+          : config.upload.video.local.uploadDir;
+        const absolutePath = path.join(process.cwd(), uploadDir, filename);
+        return absolutePath;
+      }
     }
     
     return null;

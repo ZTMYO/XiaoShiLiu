@@ -431,6 +431,45 @@ const apiGroups = ref([
     ]
   },
   {
+    name: '文件访问接口',
+    apis: [
+      {
+        method: 'GET',
+        path: '/api/files/images/:filename',
+        title: '获取图片文件',
+        description: '通过API路由访问本地存储的图片文件，支持浏览器缓存',
+        auth: false,
+        expanded: false,
+        params: [
+          { name: 'filename', type: 'string', required: true, description: '图片文件名' }
+        ],
+        example: `// 成功响应：返回图片文件二进制数据
+// 失败响应：
+{
+  "code": 404,
+  "message": "文件访问失败"
+}`
+      },
+      {
+        method: 'GET',
+        path: '/api/files/videos/:filename',
+        title: '获取视频文件',
+        description: '通过API路由访问本地存储的视频文件，支持流式传输和浏览器缓存',
+        auth: false,
+        expanded: false,
+        params: [
+          { name: 'filename', type: 'string', required: true, description: '视频文件名' }
+        ],
+        example: `// 成功响应：返回视频文件二进制数据
+// 失败响应：
+{
+  "code": 404,
+  "message": "文件访问失败"
+}`
+      }
+    ]
+  },
+  {
     name: '用户相关接口',
     apis: [
       {
