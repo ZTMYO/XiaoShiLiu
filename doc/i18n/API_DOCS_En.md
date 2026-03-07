@@ -917,7 +917,7 @@ General parameters for interfaces that support pagination:
 | page | Int | No | Page number, default 1 |
 | limit | Int | No | Number of items per page, default 20 |
 | category | String | No | Category ID filter, supports "recommend" for recommended channel |
-| status | Int | No | Post status filter, 0=published, 1=draft, 2=pending review (default 0) |
+| status | Int | No | Post status filter, 0=published, 1=draft, 2=pending review, 3=review rejected (default 0) |
 | user_id | Int | No | User ID filter (mandatory for viewing drafts) |
 
 **Response Example**:
@@ -986,7 +986,7 @@ General parameters for interfaces that support pagination:
 | category_id | int | No | Category ID |
 | images | array | No | Array of Image URLs |
 | tags | array | No | Array of Tag Names (string array) |
-| status | int | No | Post status, 0=published (approved), 1=draft, 2=pending review (default 2) |
+| status | int | No | Post status, 0=published (approved), 1=draft, 2=pending review, 3=review rejected (default 2) |
 
 **Request Example**:
 ```json

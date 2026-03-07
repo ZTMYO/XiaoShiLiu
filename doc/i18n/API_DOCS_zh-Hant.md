@@ -1038,7 +1038,7 @@ Authorization: Bearer <your_jwt_token>
 | page | int | 否 | 頁碼，預設1 |
 | limit | int | 否 | 每頁數量，預設20 |
 | category | string | 否 | 分類ID過濾，支持"recommend"推薦頻道 |
-| status | int | 否 | 筆記狀態篩選，0=已發布，1=草稿，2=待審核（預設0） |
+| status | int | 否 | 筆記狀態篩選，0=已發布，1=草稿，2=待審核，3=審核未通過（預設0） |
 | user_id | int | 否 | 用戶ID過濾（查看草稿時會強制為當前用戶） |
 
 **回應範例**:
@@ -1106,7 +1106,7 @@ Authorization: Bearer <your_jwt_token>
 | category_id | int | 否 | 分類ID |
 | images | array | 否 | 圖片URL陣列 |
 | tags | array | 否 | 標籤名稱陣列（字串陣列） |
-| status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核（預設2） |
+| status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核，3=審核未通過（預設2） |
 
 **請求範例**:
 ```json

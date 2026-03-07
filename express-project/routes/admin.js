@@ -730,8 +730,8 @@ router.put('/posts-audit/:id/reject', adminAuth, async (req, res) => {
       })
     }
 
-    // 更新笔记状态为草稿
-    await pool.execute('UPDATE posts SET status = 1 WHERE id = ?', [String(postId)])
+    // 审核未通过时设置为审核未通过状态
+    await pool.execute('UPDATE posts SET status = 3 WHERE id = ?', [String(postId)])
 
     // 更新audit表中的审核记录
     await pool.execute(

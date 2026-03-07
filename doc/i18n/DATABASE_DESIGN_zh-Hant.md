@@ -74,7 +74,7 @@
 | title | VARCHAR(200) | 標題 | 筆記標題 |
 | content | TEXT | 內容 | 筆記描述 |
 | category_id | INT | 分類ID | 外鍵關聯categories表，可為空 |
-| status | TINYINT(1) | 筆記狀態 | 0-發佈（審核通過），1-草稿，2-待審核，預設2 |
+| status | TINYINT(1) | 筆記狀態 | 0-發佈（審核通過），1-草稿，2-待審核，3-審核未通過，預設2 |
 | view_count | BIGINT | 瀏覽量 | 統計欄位，預設0 |
 | like_count | INT | 按讚數 | 統計欄位，預設0 |
 | collect_count | INT | 收藏數 | 統計欄位，預設0 |
