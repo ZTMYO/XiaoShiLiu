@@ -51,7 +51,7 @@ async function saveImageToLocal(fileBuffer, filename, mimetype) {
     fs.writeFileSync(filePath, fileBuffer);
 
     // 返回访问URL
-    const url = `${config.upload.image.local.baseUrl}/${config.upload.image.local.uploadDir}/${uniqueFilename}`;
+    const url = `/api/files/images/${uniqueFilename}`;
     return {
       success: true,
       url: url
@@ -110,7 +110,7 @@ async function saveVideoToLocal(fileBuffer, filename, mimetype) {
     fs.writeFileSync(filePath, fileBuffer);
 
     // 返回访问URL和文件路径
-    const url = `${config.upload.video.local.baseUrl}/${config.upload.video.local.uploadDir}/${uniqueFilename}`;
+    const url = `/api/files/videos/${uniqueFilename}`;
     return {
       success: true,
       url: url,

@@ -1732,6 +1732,71 @@ General parameters for interfaces that support pagination:
 
 ---
 
+## File Access Interface
+
+### 1. Get Image File
+**Interface Address**: `GET /api/files/images/:filename`
+**Authentication Required**: No
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filename  | string | Yes     | Image filename |
+
+**Description**:
+- Access locally stored image files through API routes
+- Supported formats: jpg, jpeg, png, gif, webp
+- Automatically sets the correct Content-Type response header
+- Supports browser caching (Cache-Control: public, max-age=31536000)
+
+**Response**:
+- Success: Returns image file binary data
+- Failure: Returns JSON format error information
+
+**Error Example**:
+```json
+{
+  "code": 404,
+  "message": "File access failed"
+}
+```
+
+### 2. Get Video File
+**Interface Address**: `GET /api/files/videos/:filename`
+**Authentication Required**: No
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filename  | string | Yes     | Video filename |
+
+**Description**:
+- Access locally stored video files through API routes
+- Supported formats: mp4, avi, mov, wmv, flv, mkv
+- Automatically sets the correct Content-Type response header
+- Supports browser caching (Cache-Control: public, max-age=31536000)
+
+**Response**:
+- Success: Returns video file binary data
+- Failure: Returns JSON format error information
+
+**Error Example**:
+```json
+{
+  "code": 404,
+  "message": "File access failed"
+}
+```
+
+**Security Features**:
+- Prevents path traversal attacks
+- File type validation, only allows specific formats
+- File existence check to avoid non-existent file requests
+- File size limit to prevent oversized files from affecting server performance
+
+
+---
+
 ## Interactive Related Interfaces
 
 ### 1. Like/Unlike
