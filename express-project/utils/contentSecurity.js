@@ -85,11 +85,11 @@ const sanitizeContent = (content) => {
     return placeholder
   })
 
-  // 4. 保护安全的<img>标签（只允许http/https协议）
+  // 4. 保护安全的<img>标签（允许http/https协议和本地相对路径）
   const imgTags = []
-  processedContent = processedContent.replace(/<img[^>]*src="(https?:\/\/[^"]*)"[^>]*>/gi, (match, src) => {
-    // 验证URL是否安全
-    if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
+  processedContent = processedContent.replace(/<img[^>]*src="([^"]*)"[^>]*>/gi, (match, src) => {
+    // 验证URL是否安全：允许http/https绝对路径和/api/开头的相对路径
+    if (src && (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/api/'))) {
       const placeholder = `__IMG_TAG_${imgTags.length}__`
       const escapedSrc = src.replace(/"/g, '&quot;').replace(/'/g, '&#39;')
       imgTags.push(`<img src="${escapedSrc}" alt="图片" class="comment-image" />`)
