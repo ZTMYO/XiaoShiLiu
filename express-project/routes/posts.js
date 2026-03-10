@@ -327,7 +327,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
     const post = rows[0];
 
     // 检查笔记状态权限
-    // status: 0=已发布, 1=草稿, 2=待审核, 3=审核未通过
+    // status: 0=已发布, 1=草稿, 2=待审核, 3=未过审
     // 只有已发布的笔记可以公开访问，其他状态的笔记只有作者本人可以查看
     if (post.status !== 0) {
       // 未发布的笔记，检查是否是作者本人

@@ -1202,7 +1202,7 @@ Authorization: Bearer <your_jwt_token>
 | page | int | 否 | 页码，默认1 |
 | limit | int | 否 | 每页数量，默认20 |
 | category | string | 否 | 分类ID筛选，支持"recommend"推荐频道 |
-| status | int | 否 | 笔记状态筛选，0=已发布（审核通过），1=草稿，2=待审核，3=审核未通过（默认2） |
+| status | int | 否 | 笔记状态筛选，0=已发布（审核通过），1=草稿，2=待审核，3=未过审（默认2） |
 | user_id | int | 否 | 用户ID筛选（查看草稿时会强制为当前用户） |
 
 **响应示例**:

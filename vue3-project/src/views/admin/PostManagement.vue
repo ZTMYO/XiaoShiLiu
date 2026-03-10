@@ -40,7 +40,8 @@ const columns = [
     statusMap: {
       0: { text: '已发布', class: 'status-published' },
       1: { text: '草稿', class: 'status-draft' },
-      2: { text: '待审核', class: 'status-pending' }
+      2: { text: '待审核', class: 'status-pending' },
+      3: { text: '未过审', class: 'status-unpassed' }
     }
   },
   { key: 'content', label: '内容', type: 'content', sortable: false },
@@ -83,9 +84,10 @@ const formFields = computed(() => {
       options: [
         { value: 0, label: '已发布' },
         { value: 1, label: '草稿' },
-        { value: 2, label: '待审核' }
+        { value: 2, label: '待审核' },
+        { value: 3, label: '未过审' }
       ],
-      description: '0=发布, 1=草稿, 2=待审核'
+      description: '0=发布, 1=草稿, 2=待审核, 3=未过审'
     },
     { key: 'view_count', label: '浏览量', type: 'number', required: false, placeholder: '请输入浏览量', min: 0 },
     { key: 'tags', label: '标签', type: 'tags', maxTags: 10 }
@@ -133,7 +135,8 @@ const searchFields = computed(() => [
       { value: '', label: '全部状态' },
       { value: '0', label: '已发布' },
       { value: '1', label: '草稿' },
-      { value: '2', label: '待审核' }
+      { value: '2', label: '待审核' },
+      { value: '3', label: '未过审' }
     ]
   },
   { key: 'user_display_id', label: '作者小石榴号', placeholder: '搜索作者小石榴号' }
@@ -143,5 +146,9 @@ const searchFields = computed(() => [
 <style scoped>
 :deep(.status-pending) {
   color: #f39c12;
+}
+
+:deep(.status-unpassed) {
+  color: #e74c3c;
 }
 </style>

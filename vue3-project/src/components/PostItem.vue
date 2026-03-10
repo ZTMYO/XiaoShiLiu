@@ -159,7 +159,7 @@ const getStatusText = (status) => {
     0: '已发布',
     1: '草稿',
     2: '待审核',
-    3: '审核未通过'
+    3: '未过审'
   }
   return statusMap[status] || '未知'
 }
