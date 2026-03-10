@@ -32,6 +32,7 @@ const uploadRoutes = require('./routes/upload');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
 const categoriesRoutes = require('./routes/categories');
+const filesRoutes = require('./routes/files');
 
 const app = express();
 
@@ -51,9 +52,6 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));  // 显式处理OPTIONS请求
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// 静态文件服务 - 提供uploads目录的文件访问
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 健康检查路由
 app.get('/api/health', (req, res) => {
@@ -78,6 +76,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoriesRoutes);
+app.use('/api/files', filesRoutes);
 
 // 错误处理中间件
 app.use((err, req, res, next) => {

@@ -158,7 +158,8 @@ const getStatusText = (status) => {
   const statusMap = {
     0: '已发布',
     1: '草稿',
-    2: '待审核'
+    2: '待审核',
+    3: '审核未通过'
   }
   return statusMap[status] || '未知'
 }
@@ -168,7 +169,8 @@ const getStatusClass = (status) => {
   const classMap = {
     0: 'status-published',
     1: 'status-draft',
-    2: 'status-pending'
+    2: 'status-pending',
+    3: 'status-rejected'
   }
   return classMap[status] || 'status-unknown'
 }
@@ -346,6 +348,12 @@ const getStatusClass = (status) => {
   background: #fff7e6;
   color: #fa8c16;
   border: 1px solid #ffd591;
+}
+
+.status-rejected {
+  background: #fff1f0;
+  color: #ff4d4f;
+  border: 1px solid #ffccc7;
 }
 
 .status-unknown {

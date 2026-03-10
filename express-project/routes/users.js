@@ -259,11 +259,11 @@ router.get('/:id/posts', optionalAuth, async (req, res) => {
     let queryParams = [userId.toString()];
 
     // 根据status参数决定查询哪些状态
-    // status=all: 查询已发布(0)和待审核(2) - 用于笔记管理
+    // status=all: 查询已发布(0)、待审核(2)和审核未通过(3) - 用于笔记管理
     // status=published: 只查询已发布(0) - 用于个人主页
     // 默认: 只查询已发布(0)
     if (statusFilter === 'all') {
-      whereConditions.push('p.status IN (0, 2)');
+      whereConditions.push('p.status IN (0, 2, 3)');
     } else {
       // 默认只查询已发布的笔记
       whereConditions.push('p.status = 0');

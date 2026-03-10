@@ -917,7 +917,7 @@ General parameters for interfaces that support pagination:
 | page | Int | No | Page number, default 1 |
 | limit | Int | No | Number of items per page, default 20 |
 | category | String | No | Category ID filter, supports "recommend" for recommended channel |
-| status | Int | No | Post status filter, 0=published, 1=draft, 2=pending review (default 0) |
+| status | Int | No | Post status filter, 0=published, 1=draft, 2=pending review, 3=review rejected (default 0) |
 | user_id | Int | No | User ID filter (mandatory for viewing drafts) |
 
 **Response Example**:
@@ -986,7 +986,7 @@ General parameters for interfaces that support pagination:
 | category_id | int | No | Category ID |
 | images | array | No | Array of Image URLs |
 | tags | array | No | Array of Tag Names (string array) |
-| status | int | No | Post status, 0=published (approved), 1=draft, 2=pending review (default 2) |
+| status | int | No | Post status, 0=published (approved), 1=draft, 2=pending review, 3=review rejected (default 2) |
 
 **Request Example**:
 ```json
@@ -1728,6 +1728,71 @@ General parameters for interfaces that support pagination:
 }
 ```
 
+
+
+---
+
+## File Access Interface
+
+### 1. Get Image File
+**Interface Address**: `GET /api/files/images/:filename`
+**Authentication Required**: No
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filename  | string | Yes     | Image filename |
+
+**Description**:
+- Access locally stored image files through API routes
+- Supported formats: jpg, jpeg, png, gif, webp
+- Automatically sets the correct Content-Type response header
+- Supports browser caching (Cache-Control: public, max-age=31536000)
+
+**Response**:
+- Success: Returns image file binary data
+- Failure: Returns JSON format error information
+
+**Error Example**:
+```json
+{
+  "code": 404,
+  "message": "File access failed"
+}
+```
+
+### 2. Get Video File
+**Interface Address**: `GET /api/files/videos/:filename`
+**Authentication Required**: No
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filename  | string | Yes     | Video filename |
+
+**Description**:
+- Access locally stored video files through API routes
+- Supported formats: mp4, avi, mov, wmv, flv, mkv
+- Automatically sets the correct Content-Type response header
+- Supports browser caching (Cache-Control: public, max-age=31536000)
+
+**Response**:
+- Success: Returns video file binary data
+- Failure: Returns JSON format error information
+
+**Error Example**:
+```json
+{
+  "code": 404,
+  "message": "File access failed"
+}
+```
+
+**Security Features**:
+- Prevents path traversal attacks
+- File type validation, only allows specific formats
+- File existence check to avoid non-existent file requests
+- File size limit to prevent oversized files from affecting server performance
 
 
 ---

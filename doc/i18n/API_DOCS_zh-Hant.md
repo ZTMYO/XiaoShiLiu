@@ -1038,7 +1038,7 @@ Authorization: Bearer <your_jwt_token>
 | page | int | 否 | 頁碼，預設1 |
 | limit | int | 否 | 每頁數量，預設20 |
 | category | string | 否 | 分類ID過濾，支持"recommend"推薦頻道 |
-| status | int | 否 | 筆記狀態篩選，0=已發布，1=草稿，2=待審核（預設0） |
+| status | int | 否 | 筆記狀態篩選，0=已發布，1=草稿，2=待審核，3=審核未通過（預設0） |
 | user_id | int | 否 | 用戶ID過濾（查看草稿時會強制為當前用戶） |
 
 **回應範例**:
@@ -1106,7 +1106,7 @@ Authorization: Bearer <your_jwt_token>
 | category_id | int | 否 | 分類ID |
 | images | array | 否 | 圖片URL陣列 |
 | tags | array | 否 | 標籤名稱陣列（字串陣列） |
-| status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核（預設2） |
+| status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核，3=審核未通過（預設2） |
 
 **請求範例**:
 ```json
@@ -1918,6 +1918,71 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
+
+
+---
+
+## 檔案存取接口
+
+### 1. 獲取圖片檔案
+**接口地址**: `GET /api/files/images/:filename`
+**需要認證**: 否
+
+**路徑參數**:
+| 參數 | 型態 | 必填 | 說明 |
+|------|------|------|------|
+| filename | string | 是 | 圖片檔案名 |
+
+**說明**:
+- 透過 API 路由存取本地儲存的圖片檔案
+- 支援格式: jpg, jpeg, png, gif, webp
+- 自動設定正確的 Content-Type 回應標頭
+- 支援瀏覽器快取（Cache-Control: public, max-age=31536000）
+
+**回應**:
+- 成功: 回傳圖片檔案二進位數據
+- 失敗: 回傳 JSON 格式的錯誤資訊
+
+**錯誤範例**:
+```json
+{
+  "code": 404,
+  "message": "檔案存取失敗"
+}
+```
+
+### 2. 獲取影片檔案
+**接口地址**: `GET /api/files/videos/:filename`
+**需要認證**: 否
+
+**路徑參數**:
+| 參數 | 型態 | 必填 | 說明 |
+|------|------|------|------|
+| filename | string | 是 | 影片檔案名 |
+
+**說明**:
+- 透過 API 路由存取本地儲存的影片檔案
+- 支援格式: mp4, avi, mov, wmv, flv, mkv
+- 自動設定正確的 Content-Type 回應標頭
+- 支援瀏覽器快取（Cache-Control: public, max-age=31536000）
+
+**回應**:
+- 成功: 回傳影片檔案二進位數據
+- 失敗: 回傳 JSON 格式的錯誤資訊
+
+**錯誤範例**:
+```json
+{
+  "code": 404,
+  "message": "檔案存取失敗"
+}
+```
+
+**安全特性**:
+- 防範路徑遍歷攻擊（Path Traversal）
+- 檔案類型驗證，只允許特定格式的檔案
+- 檔案存在性檢查，避免不存在的檔案請求
+- 檔案大小限制，防止過大檔案影響服務器性能
 
 
 ---
