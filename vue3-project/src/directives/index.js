@@ -67,6 +67,11 @@ class StuckItemManager {
     }
   }
 
+  clearAll() {
+    this.pendingItems.clear()
+    this.stopChecking()
+  }
+
   startChecking() {
     if (this.checkInterval || this.isChecking) return
 
@@ -146,7 +151,7 @@ class StuckItemManager {
   }
 }
 
-const stuckItemManager = new StuckItemManager()
+export const stuckItemManager = new StuckItemManager()
 
 // 立即加载图片函数（用于首屏图片）
 const loadImageImmediately = (el, src) => {

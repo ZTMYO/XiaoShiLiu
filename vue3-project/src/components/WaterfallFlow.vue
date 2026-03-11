@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/auth'
 import { getPostList } from '@/api/posts.js'
 import defaultAvatar from '@/assets/imgs/avatar.png'
 import defaultPlaceholder from '@/assets/imgs/未加载.png'
+import { stuckItemManager } from '@/directives/index.js'
 
 const props = defineProps({
     refreshKey: {
@@ -495,11 +496,13 @@ function handleResize() {
 
 // 刷新时重新生成内容
 watch(() => props.refreshKey, async () => {
+    stuckItemManager.clearAll()
     await initContent()
 })
 
 // 监听分类变化
 watch(() => props.category, async () => {
+    stuckItemManager.clearAll()
     await initContent()
 })
 
