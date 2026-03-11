@@ -4,6 +4,7 @@ const { HTTP_STATUS, RESPONSE_CODES, ERROR_MESSAGES } = require('../constants');
 const { pool } = require('../config/config');
 const { optionalAuth, authenticateToken } = require('../middleware/auth');
 const NotificationHelper = require('../utils/notificationHelper');
+const { sanitizeContent } = require('../utils/contentSecurity');
 
 // 搜索用户（必须放在 /:id 之前）
 router.get('/search', optionalAuth, async (req, res) => {
@@ -1112,7 +1113,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     let updateValues = [];
 
     updateFields.push('nickname = ?');
-    updateValues.push(nickname.trim());
+    updateValues.push(sanitizeContent(nickname.trim()));
 
     if (avatar !== undefined) {
       updateFields.push('avatar = ?');
@@ -1121,7 +1122,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     if (bio !== undefined) {
       updateFields.push('bio = ?');
-      updateValues.push(bio || '');
+      updateValues.push(sanitizeContent(bio || ''));
     }
 
     if (location !== undefined) {
