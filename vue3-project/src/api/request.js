@@ -1,6 +1,7 @@
 import axios from 'axios'
 import apiConfig from '@/config/api.js'
 import { HTTP_STATUS, ERROR_MESSAGES } from '@/config/constants.js'
+import messageManager from '@/utils/messageManager.js'
 
 // 创建axios实例
 const request = axios.create({
@@ -103,6 +104,14 @@ request.interceptors.response.use(
               // 没有token，说明是未登录状态，不需要跳转
               errorMessage = ERROR_MESSAGES.UNAUTHORIZED
             }
+          }
+          break
+        case HTTP_STATUS.TOO_MANY_REQUESTS:
+          errorMessage = ERROR_MESSAGES.TOO_MANY_REQUESTS
+          try {
+            messageManager.warning(errorMessage)
+          } catch (e) {
+            console.warn('Failed to show rate limit toast:', e)
           }
           break
         case HTTP_STATUS.FORBIDDEN:

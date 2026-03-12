@@ -11,6 +11,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const config = require('./config/config');
 const { HTTP_STATUS, RESPONSE_CODES } = require('./constants');
 // 导入自动解封功能
@@ -35,6 +36,27 @@ const categoriesRoutes = require('./routes/categories');
 const filesRoutes = require('./routes/files');
 
 const app = express();
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const authLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // 中间件配置
 // CORS配置
@@ -64,6 +86,9 @@ app.get('/api/health', (req, res) => {
 });
 
 // 路由配置
+app.use('/api', apiLimiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/upload', uploadLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/posts', postsRoutes);
