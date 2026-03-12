@@ -107,7 +107,7 @@ router.post('/single', authenticateToken, upload.single('file'), async (req, res
 // 多图片上传到图床
 router.post('/multiple', authenticateToken, upload.array('files', 9), async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0) {
+    if (!Array.isArray(req.files) || req.files.length === 0) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
         success: false, 
         data: null, 
@@ -115,10 +115,12 @@ router.post('/multiple', authenticateToken, upload.array('files', 9), async (req
       });
     }
 
+    const files = req.files;
+
     const uploadResults = [];
     const errors = [];
 
-    for (const file of req.files) {
+    for (const file of files) {
       const result = await uploadFile(
         file.buffer,
         file.originalname,
@@ -152,7 +154,7 @@ router.post('/multiple', authenticateToken, upload.array('files', 9), async (req
       data: {
         uploaded: uploadResults,
         errors,
-        total: req.files.length,
+        total: files.length,
         successCount: uploadResults.length,
         errorCount: errors.length
       },
@@ -174,7 +176,7 @@ router.post('/video', authenticateToken, videoUpload.fields([
   { name: 'thumbnail', maxCount: 1 }
 ]), async (req, res) => {
   try {
-    if (!req.files || !req.files.file || !req.files.file[0]) {
+    if (!req.files || !Array.isArray(req.files.file) || !req.files.file[0]) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
         code: RESPONSE_CODES.VALIDATION_ERROR, 
         message: '没有上传视频文件' 
@@ -182,7 +184,7 @@ router.post('/video', authenticateToken, videoUpload.fields([
     }
 
     const videoFile = req.files.file[0];
-    const thumbnailFile = req.files.thumbnail ? req.files.thumbnail[0] : null;
+    const thumbnailFile = Array.isArray(req.files.thumbnail) ? req.files.thumbnail[0] : null;
 
     console.log(`视频上传开始 - 用户ID: ${req.user.id}, 视频文件: ${videoFile.originalname}`);
     if (thumbnailFile) {
