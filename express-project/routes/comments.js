@@ -197,7 +197,7 @@ router.post('/', authenticateToken, async (req, res) => {
             }
           }
         } catch (error) {
-          console.error(`处理@用户通知失败 - 用户: ${mentionedUser.userId}:`, error);
+          console.error('处理@用户通知失败 - 用户: %s:', mentionedUser.userId, error);
         }
       }
     }
@@ -215,7 +215,7 @@ router.post('/', authenticateToken, async (req, res) => {
     commentData.liked = false; // 新创建的评论默认未点赞
     commentData.reply_count = 0; // 新创建的评论默认无回复
 
-    console.log(`创建评论成功 - 用户ID: ${userId}, 评论ID: ${commentId}`);
+    console.log('创建评论成功 - 用户ID: %s, 评论ID: %s', userId, commentId);
 
     res.json({
       code: RESPONSE_CODES.SUCCESS,
@@ -320,7 +320,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     // 根据实际删除的评论数量更新笔记的评论计数
     await pool.execute('UPDATE posts SET comment_count = comment_count - ? WHERE id = ?', [deletedCount.toString(), comment.post_id.toString()]);
 
-    console.log(`删除评论成功 - 用户ID: ${userId}, 评论ID: ${commentId}`);
+    console.log('删除评论成功 - 用户ID: %s, 评论ID: %s', userId, commentId);
 
     res.json({
       code: RESPONSE_CODES.SUCCESS,
