@@ -543,7 +543,7 @@ router.post('/', authenticateToken, async (req, res) => {
             }
           }
         } catch (error) {
-          console.error(`处理@用户通知失败 - 用户: ${mentionedUser.userId}:`, error);
+          console.error('处理@用户通知失败 - 用户: %s:', mentionedUser.userId, error);
         }
       }
     }
@@ -1012,7 +1012,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
             });
           }
         } catch (error) {
-          console.error(`删除@用户通知失败 - 用户: ${mentionedUserId}:`, error);
+          console.error('删除@用户通知失败 - 用户: %s:', mentionedUserId, error);
         }
       }
 
@@ -1037,11 +1037,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
               await NotificationHelper.insertNotification(pool, mentionNotificationData);
 
-              console.log(`添加@通知 - 笔记ID: ${postId}, 用户: ${mentionedUserId}`);
+              console.log('添加@通知 - 笔记ID: %s, 用户: %s', postId, mentionedUserId);
             }
           }
         } catch (error) {
-          console.error(`处理@用户通知失败 - 用户: ${mentionedUserId}:`, error);
+          console.error('处理@用户通知失败 - 用户: %s:', mentionedUserId, error);
         }
       }
     }
