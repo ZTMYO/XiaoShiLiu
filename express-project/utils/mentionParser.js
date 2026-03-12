@@ -13,7 +13,7 @@ function extractMentionedUsers(text) {
   
   const mentionedUsers = []
   
-  // 匹配HTML格式的mention链接（避免使用可能引发灾难性回溯的复杂正则，改为确定性的字符串扫描）
+  // 匹配HTML格式的mention链接
   let searchIndex = 0
   while (true) {
     const aStart = text.indexOf('<a', searchIndex)
@@ -50,19 +50,36 @@ function extractMentionedUsers(text) {
     searchIndex = aClose + closeTag.length
   }
   
-  // 兼容旧格式[@nickname:user_id]
-  const mentionRegex = /\[@([^:]+):([^\]]+)\]/g
-  let match
-  
-  while ((match = mentionRegex.exec(text)) !== null) {
-    const [, nickname, userId] = match
+  // 兼容旧格式[@nickname:user_id] —— 替换正则为字符串查找
+  let oldFormatIndex = 0
+  while (true) {
+    // 查找旧格式的起始位置 [@
+    const start = text.indexOf('[@', oldFormatIndex)
+    if (start === -1) break
+
+    // 查找冒号和闭合括号
+    const colon = text.indexOf(':', start + 2)
+    const end = text.indexOf(']', colon + 1)
+    
+    // 格式不完整则跳过
+    if (colon === -1 || end === -1) {
+      oldFormatIndex = start + 2
+      continue
+    }
+
+    // 提取昵称和用户ID
+    const nickname = text.slice(start + 2, colon).trim()
+    const userId = text.slice(colon + 1, end).trim()
+    
     // 避免重复添加
-    if (!mentionedUsers.some(user => user.userId === userId)) {
+    if (nickname && userId && !mentionedUsers.some(user => user.userId === userId)) {
       mentionedUsers.push({
         nickname,
         userId
       })
     }
+
+    oldFormatIndex = end + 1
   }
   
   return mentionedUsers
@@ -81,9 +98,8 @@ function hasMentions(text) {
     return true
   }
 
-  // 检查[@nickname:user_id]格式（兼容旧格式）
-  const mentionRegex = /\[@([^:]+):([^\]]+)\]/
-  return mentionRegex.test(text)
+  // 检查[@nickname:user_id]格式（兼容旧格式）—— 替换正则为字符串查找
+  return text.includes('[@') && text.includes(':') && text.includes(']')
 }
 
 module.exports = {

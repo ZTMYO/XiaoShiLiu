@@ -3,6 +3,8 @@
  * 统一管理通知类型和随机文字
  */
 
+const crypto = require('crypto');
+
 class NotificationHelper {
   // 通知类型定义
   static TYPES = {
@@ -87,7 +89,7 @@ class NotificationHelper {
     if (!titles || titles.length === 0) {
       return '有新的通知';
     }
-    return titles[Math.floor(Math.random() * titles.length)];
+    return titles[crypto.randomInt(titles.length)];
   }
 
   /**
