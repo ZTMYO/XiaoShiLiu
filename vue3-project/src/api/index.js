@@ -278,18 +278,18 @@ import * as videoUploadApi from './video.js'
 
 // 图片上传API（保持向后兼容）
 export const uploadApi = {
-  // 上传图片（后端接口）
+  // 上传图片（后端接口）疑似废弃
   uploadImage(file) {
     const formData = new FormData()
-    formData.append('image', file)
-    return request.post('/upload/image', formData, {
+    formData.append('file', file)
+    return request.post('/upload/single', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
   },
 
-  // 批量上传图片（后端接口）
+  // 批量上传图片（后端接口）疑似废弃
   uploadImages(files) {
     const formData = new FormData()
     files.forEach(file => {
