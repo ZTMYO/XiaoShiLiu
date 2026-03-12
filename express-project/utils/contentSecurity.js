@@ -56,18 +56,47 @@ const sanitizeContent = (content) => {
   if (!content) return ''
 
   // 1. 提取、验证并保护mention链接
-  const mentionLinkRegex = /<a[^>]*class="[^"]*mention-link[^"]*"[^>]*>@[^<]*<\/a>/g
   const mentionLinks = []
-  let processedContent = content.replace(mentionLinkRegex, (match) => {
-    const cleanedLink = validateAndCleanMentionLink(match)
-    if (cleanedLink) {
-      const placeholder = `__MENTION_LINK_${mentionLinks.length}__`
-      mentionLinks.push(cleanedLink)
-      return placeholder
+  let processedContent = ''
+  let cursor = 0
+  while (cursor < content.length) {
+    const aStart = content.indexOf('<a', cursor)
+    if (aStart === -1) {
+      processedContent += content.slice(cursor)
+      break
     }
-    // 验证失败，保持原样让后续步骤转义
-    return match
-  })
+
+    processedContent += content.slice(cursor, aStart)
+
+    const aEnd = content.indexOf('>', aStart)
+    if (aEnd === -1) {
+      processedContent += content.slice(aStart)
+      break
+    }
+
+    const closeTag = '</a>'
+    const aClose = content.indexOf(closeTag, aEnd + 1)
+    if (aClose === -1) {
+      processedContent += content.slice(aStart)
+      break
+    }
+
+    const fullLink = content.slice(aStart, aClose + closeTag.length)
+    if (fullLink.includes('mention-link')) {
+      const cleanedLink = validateAndCleanMentionLink(fullLink)
+      if (cleanedLink) {
+        const placeholder = `__MENTION_LINK_${mentionLinks.length}__`
+        mentionLinks.push(cleanedLink)
+        processedContent += placeholder
+      } else {
+        processedContent += fullLink
+      }
+    } else {
+      processedContent += fullLink
+    }
+
+    cursor = aClose + closeTag.length
+  }
 
   // 2. 保护换行符
   const lineBreaks = []
@@ -88,6 +117,10 @@ const sanitizeContent = (content) => {
   // 4. 保护安全的<img>标签（允许http/https协议和本地相对路径）
   const imgTags = []
   processedContent = processedContent.replace(/<img[^>]*src="([^"]*)"[^>]*>/gi, (match, src) => {
+    if (/\son\w+\s*=/i.test(match) || /javascript\s*:/i.test(match)) {
+      return match
+    }
+
     // 验证URL是否安全：允许http/https绝对路径和/api/开头的相对路径
     if (src && (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/api/'))) {
       const placeholder = `__IMG_TAG_${imgTags.length}__`

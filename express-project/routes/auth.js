@@ -10,6 +10,39 @@ const svgCaptcha = require('svg-captcha');
 const path = require('path');
 const fs = require('fs');
 
+function isValidEmail(email) {
+  if (typeof email !== 'string') return false;
+  if (email.length < 3 || email.length > 320) return false;
+  if (/\s/.test(email)) return false;
+
+  const atIndex = email.indexOf('@');
+  if (atIndex <= 0 || atIndex !== email.lastIndexOf('@')) return false;
+
+  const local = email.slice(0, atIndex);
+  const domain = email.slice(atIndex + 1);
+  if (local.length < 1 || local.length > 64) return false;
+  if (domain.length < 1 || domain.length > 255) return false;
+  if (!domain.includes('.')) return false;
+  if (domain.startsWith('.') || domain.endsWith('.')) return false;
+  if (domain.includes('..')) return false;
+
+  for (let i = 0; i < local.length; i++) {
+    const c = local.charCodeAt(i);
+    const isAlphaNum = (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
+    const isAllowedSymbol = "!#$%&'*+/=?^_`{|}~.-".includes(local[i]);
+    if (!isAlphaNum && !isAllowedSymbol) return false;
+  }
+
+  for (let i = 0; i < domain.length; i++) {
+    const c = domain.charCodeAt(i);
+    const isAlphaNum = (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
+    const isAllowedSymbol = domain[i] === '-' || domain[i] === '.';
+    if (!isAlphaNum && !isAllowedSymbol) return false;
+  }
+
+  return true;
+}
+
 // 存储验证码的临时对象
 const captchaStore = new Map();
 // 存储邮箱验证码的临时对象
@@ -123,8 +156,7 @@ router.post('/send-email-code', async (req, res) => {
     }
 
     // 验证邮箱格式
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '邮箱格式不正确' });
     }
 
@@ -185,8 +217,7 @@ router.post('/bind-email', authenticateToken, async (req, res) => {
     }
 
     // 验证邮箱格式
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '邮箱格式不正确' });
     }
 
@@ -253,8 +284,7 @@ router.post('/send-reset-code', async (req, res) => {
     }
 
     // 验证邮箱格式
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '邮箱格式不正确' });
     }
 
@@ -493,8 +523,7 @@ router.post('/register', async (req, res) => {
     // 邮件功能启用时才验证邮箱
     if (isEmailEnabled) {
       // 验证邮箱格式
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      if (!isValidEmail(email)) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '邮箱格式不正确' });
       }
 
