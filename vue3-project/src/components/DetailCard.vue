@@ -1261,13 +1261,20 @@ const toggleLike = async (willBeLiked) => {
     const currentLikeCount = currentState.likeCount
 
     // 使用全局store的点赞方法，传递当前状态
-    await likeStore.togglePostLike(props.item.id, currentLiked, currentLikeCount)
+    const result = await likeStore.togglePostLike(props.item.id, currentLiked, currentLikeCount)
 
-    // 触发点赞事件，传递笔记ID和新的点赞状态
-    emit('like', {
-      postId: props.item.id,
-      liked: !currentLiked
-    })
+    if (result.success) {
+      showMessage(result.liked ? '点赞成功' : '取消点赞成功', 'success')
+
+      // 触发点赞事件，传递笔记ID和新的点赞状态
+      emit('like', {
+        postId: props.item.id,
+        liked: result.liked
+      })
+    } else {
+      console.error('点赞操作失败:', result.error)
+      showMessage('操作失败，请重试', 'error')
+    }
   } catch (error) {
     console.error('点赞操作失败:', error)
     showMessage('操作失败，请重试', 'error')
