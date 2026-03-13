@@ -531,12 +531,21 @@ class DatabaseInitializer {
 async function waitForExit() {
   console.log('\n按回车键退出...');
   return new Promise((resolve) => {
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.once('data', () => {
-      process.stdin.setRawMode(false);
-      resolve();
-    });
+    // 检查process.stdin.setRawMode是否存在
+    if (process.stdin.setRawMode) {
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+      process.stdin.once('data', () => {
+        process.stdin.setRawMode(false);
+        resolve();
+      });
+    } else {
+      // 如果setRawMode不可用，使用简单的超时退出
+      setTimeout(() => {
+        console.log('自动退出...');
+        resolve();
+      }, 2000);
+    }
   });
 }
 
