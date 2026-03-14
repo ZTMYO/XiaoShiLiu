@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import {
   getSavedTheme,
   setTheme as setThemeUtil,
@@ -56,6 +56,11 @@ export const useThemeStore = defineStore('theme', () => {
 
   // 初始化监听器
   mediaQuery.addEventListener('change', handleSystemThemeChange)
+
+  // 组件卸载时清理事件监听器
+  onUnmounted(() => {
+    mediaQuery.removeEventListener('change', handleSystemThemeChange)
+  })
 
   return {
     // 状态
