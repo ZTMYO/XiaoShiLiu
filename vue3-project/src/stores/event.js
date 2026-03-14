@@ -55,6 +55,11 @@ export const useEventStore = defineStore('event', () => {
     dispatchEvent('floating-btn-reload-request')
   }
 
+  // 组件卸载时自动清理所有事件监听器
+  onUnmounted(() => {
+    removeAllEventListeners()
+  })
+
   return {
     addEventListener,
     removeEventListener,
