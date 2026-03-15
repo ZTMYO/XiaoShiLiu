@@ -146,7 +146,10 @@ router.get('/:id', async (req, res) => {
     const userIdParam = req.params.id;
     // 只通过小石榴号(user_id)进行查找
     const [rows] = await pool.execute(
-      'SELECT id, user_id, nickname, avatar, bio, location, email, gender, zodiac_sign, mbti, education, major, interests, follow_count, fans_count, like_count, created_at, verified FROM users WHERE user_id = ?',
+      `SELECT u.id, u.user_id, u.nickname, u.avatar, u.bio, u.location, u.email, u.gender, u.zodiac_sign, u.mbti, u.education, u.major, u.interests, u.follow_count, u.fans_count, u.like_count, u.created_at, u.verified, uv.title as verified_title
+       FROM users u
+       LEFT JOIN user_verification uv ON u.id = uv.user_id AND uv.status = 1
+       WHERE u.user_id = ?`,
       [userIdParam]
     );
 
