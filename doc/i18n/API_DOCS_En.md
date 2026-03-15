@@ -621,33 +621,27 @@ General parameters for interfaces that support pagination:
 **Request Parameters**:
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| type | integer | Yes | Verification Type: 1-Individual Verification, 2-Enterprise Verification |
-| real_name | string | Yes | Real Name/Enterprise Name |
+| type | integer | Yes | Verification Type: 1=Official Verification, 2=Individual Verification |
+| real_name | string | Yes | Real Name/Organization Name |
 | id_card | string | Yes | ID Card Number/Business License Number |
-| id_card_front | string | Yes | ID Card Front/Business License Image URL |
-| id_card_back | string | No | ID Card Back Image URL (required for individual verification) |
-| business_license | string | No | Business License Image URL (required for enterprise verification) |
-| contact_phone | string | Yes | Contact Phone |
-| contact_email | string | Yes | Contact Email |
-| description | string | No | Application Description |
+| contact_name | string | No | Contact Name (required for official verification) |
+| contact_phone | string | No | Contact Phone |
+| title | string | No | Verification Title (Individual=Occupation/Identity, Official=Organization Name) |
+| description | string | No | Verification Reason |
 
 **Response Example**:
 ```json
 {
   "code": 200,
-  "message": "Verification application submitted successfully, please wait for review",
+  "message": "Verification application submitted successfully, please wait patiently for review",
   "data": {
-    "id": 1,
-    "user_id": 1,
-    "type": 1,
-    "status": 0,
-    "created_at": "2025-01-02T00:00:00.000Z"
+    "verificationId": 1
   }
 }
 ```
 
 ### 17. Get Verification Application Status
-**API Endpoint**: `GET /api/users/verification`
+**API Endpoint**: `GET /api/users/verification/status`
 **Authentication Required**: Yes
 
 **Response Example**:
@@ -657,16 +651,13 @@ General parameters for interfaces that support pagination:
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": 1,
-    "type": 1,
+    "type": 2,
+    "status": 0,
     "real_name": "Zhang San",
     "id_card": "110101199001011234",
-    "id_card_front": "https://example.com/id_front.jpg",
-    "id_card_back": "https://example.com/id_back.jpg",
+    "contact_name": null,
     "contact_phone": "13800138000",
-    "contact_email": "zhangsan@example.com",
-    "description": "Application for individual verification",
-    "status": 0,
+    "title": "Student",
     "audit_time": null,
     "remark": null,
     "created_at": "2025-01-02T00:00:00.000Z"
@@ -680,7 +671,7 @@ General parameters for interfaces that support pagination:
 - `2`: Rejected
 
 ### 18. Withdraw Verification Application
-**API Endpoint**: `DELETE /api/users/verification`
+**API Endpoint**: `DELETE /api/users/verification/revoke`
 **Authentication Required**: Yes
 
 **Function Description**:
@@ -692,7 +683,7 @@ General parameters for interfaces that support pagination:
 ```json
 {
   "code": 200,
-  "message": "Certification application recall successful"
+  "message": "Verification application has been withdrawn"
 }
 ```
 

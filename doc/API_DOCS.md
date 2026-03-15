@@ -906,33 +906,27 @@ Authorization: Bearer <your_jwt_token>
 **请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| type | int | 是 | 认证类型：1-个人认证，2-企业认证 |
-| real_name | string | 是 | 真实姓名/企业名称 |
+| type | int | 是 | 认证类型：1=官方认证，2=个人认证 |
+| real_name | string | 是 | 真实姓名/机构名称 |
 | id_card | string | 是 | 身份证号/营业执照号 |
-| id_card_front | string | 是 | 身份证正面/营业执照图片URL |
-| id_card_back | string | 否 | 身份证背面图片URL（个人认证必填） |
-| business_license | string | 否 | 营业执照图片URL（企业认证必填） |
+| contact_name | string | 否 | 联系人姓名（官方认证必填） |
 | contact_phone | string | 否 | 联系电话 |
-| contact_email | string | 否 | 联系邮箱 |
-| description | string | 否 | 申请说明 |
+| title | string | 否 | 认证称号（个人=职业/身份，官方=机构名称） |
+| description | string | 否 | 认证理由 |
 
 **响应示例**:
 ```json
 {
   "code": 200,
-  "message": "认证申请提交成功，请等待审核",
+  "message": "认证申请提交成功，请耐心等待审核",
   "data": {
-    "id": 1,
-    "user_id": 1,
-    "type": 1,
-    "status": 0,
-    "created_at": "2025-01-02T00:00:00.000Z"
+    "verificationId": 1
   }
 }
 ```
 
 ### 17. 获取认证申请状态
-**接口地址**: `GET /api/users/verification`
+**接口地址**: `GET /api/users/verification/status`
 **需要认证**: 是
 
 **响应示例**:
@@ -942,16 +936,13 @@ Authorization: Bearer <your_jwt_token>
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": 1,
-    "type": 1,
+    "type": 2,
+    "status": 0,
     "real_name": "张三",
     "id_card": "110101199001011234",
-    "id_card_front": "https://example.com/id_front.jpg",
-    "id_card_back": "https://example.com/id_back.jpg",
+    "contact_name": null,
     "contact_phone": "13800138000",
-    "contact_email": "zhangsan@example.com",
-    "description": "申请个人认证",
-    "status": 0,
+    "title": "学生",
     "audit_time": null,
     "remark": null,
     "created_at": "2025-01-02T00:00:00.000Z"
@@ -965,7 +956,7 @@ Authorization: Bearer <your_jwt_token>
 - `2`: 已拒绝
 
 ### 18. 撤回认证申请
-**接口地址**: `DELETE /api/users/verification`
+**接口地址**: `DELETE /api/users/verification/revoke`
 **需要认证**: 是
 
 **功能说明**:
@@ -977,7 +968,7 @@ Authorization: Bearer <your_jwt_token>
 ```json
 {
   "code": 200,
-  "message": "认证申请撤回成功"
+  "message": "认证申请已撤回"
 }
 ```
 

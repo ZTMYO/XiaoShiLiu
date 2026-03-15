@@ -229,7 +229,37 @@
 - KEY `idx_user_id` (`user_id`)
 - KEY `idx_status` (`status`)
 
+### 16. 用戶認證表 (user_verification)
+
+| 欄位名 | 類型 | 說明 | 備註 |
+|--------|------|------|------|
+| id | BIGINT | 主鍵ID | 主鍵，自增 |
+| user_id | BIGINT | 使用者ID | 外鍵關聯users，唯一（一個使用者只能有一條認證記錄） |
+| type | TINYINT | 認證類型 | 1=官方認證 2=個人認證 |
+| status | TINYINT | 認證狀態 | 0=待審核 1=已通過 2=已拒絕，預設0 |
+| real_name | VARCHAR(200) | 真實姓名/機構名稱 | 個人=真實姓名 官方=機構全稱 |
+| id_card | VARCHAR(18) | 身份證號/營業執照號 | 個人=身份證號 官方=統一社會信用代碼 |
+| contact_name | VARCHAR(50) | 聯繫人姓名 | 個人選填 官方必填 |
+| contact_phone | VARCHAR(20) | 聯繫電話 | 個人選填 官方必填 |
+| title | VARCHAR(100) | 認證稱號 | 個人=職業/身份 官方=機構稱號 |
+| description | TEXT | 認證理由 | 使用者提交認證時填寫的理由，可為空 |
+| created_at | TIMESTAMP | 建立時間 | 建立時間 |
+
+**索引：**
+- PRIMARY KEY (`id`)
+- UNIQUE KEY `uk_user_id` (`user_id`)
+- KEY `idx_type` (`type`)
+- KEY `idx_status` (`status`)
+
+**外鍵：**
+- CONSTRAINT `user_verification_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+
+**說明：**
+- 認證審核狀態與審核表(audit)保持同步，便於快速查詢使用者認證狀態
+- 使用者提交認證申請時，在audit表建立審核記錄(type=1或2)，target_id關聯本表id
+- 審核完成後更新本表status欄位
+
 ---
 
-*最後更新: 2026年2月27日*
-*資料庫版本: 1.0.4*
+*最後更新: 2026年3月15日*
+*資料庫版本: 1.0.5*

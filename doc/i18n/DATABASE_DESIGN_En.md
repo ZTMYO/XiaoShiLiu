@@ -228,7 +228,37 @@ Database structure design for the Xiaoshiliu-style image-text community project 
 - KEY `idx_user_id` (`user_id`)
 - KEY `idx_status` (`status`)
 
+### 16. User Verification Table (user_verification)
+
+| Field Name | Type | Description | Notes |
+|------------|------|-------------|-------|
+| id | BIGINT | Primary Key ID | Primary key, auto-increment |
+| user_id | BIGINT | User ID | Foreign key to users, unique (one user can only have one verification record) |
+| type | TINYINT | Verification Type | 1=Official verification 2=Individual verification |
+| status | TINYINT | Verification Status | 0=Pending 1=Approved 2=Rejected, default 0 |
+| real_name | VARCHAR(200) | Real Name/Organization Name | Individual=Real name Official=Organization full name |
+| id_card | VARCHAR(18) | ID Card/Business License Number | Individual=ID card number Official=Unified Social Credit Code |
+| contact_name | VARCHAR(50) | Contact Name | Optional for individual, required for official |
+| contact_phone | VARCHAR(20) | Contact Phone | Optional for individual, required for official |
+| title | VARCHAR(100) | Verification Title | Individual=Occupation/Identity Official=Organization title |
+| description | TEXT | Verification Reason | Reason filled by user when submitting verification, nullable |
+| created_at | TIMESTAMP | Creation Time | Creation time |
+
+**Indexes:**
+- PRIMARY KEY (`id`)
+- UNIQUE KEY `uk_user_id` (`user_id`)
+- KEY `idx_type` (`type`)
+- KEY `idx_status` (`status`)
+
+**Foreign Keys:**
+- CONSTRAINT `user_verification_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+
+**Notes:**
+- Verification audit status is synchronized with the audit table for quick query of user verification status
+- When user submits verification application, an audit record is created in the audit table (type=1 or 2), with target_id referencing this table's id
+- This table's status field is updated after audit completion
+
 ---
 
-*Last Updated: February 27, 2026*
-*Database Version: 1.0.4*
+*Last Updated: March 15, 2026*
+*Database Version: 1.0.5*

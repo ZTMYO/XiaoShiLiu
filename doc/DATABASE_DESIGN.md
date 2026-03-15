@@ -220,7 +220,6 @@
 | admin_id | BIGINT | 审核人ID | 外键关联admin，可为空 |
 | type | TINYINT | 审核类型 | 1-官方认证，2-个人认证，3-笔记审核，4-评论审核 |
 | target_id | BIGINT | 目标ID | 根据type不同，对应用户ID、笔记ID或评论ID |
-| content | TEXT | 审核内容 | 待审核的具体内容 |
 | remark | TEXT | 审核备注 | 审核人填写的备注信息，可为空 |
 | created_at | TIMESTAMP | 创建时间 | 提交审核时间 |
 | audit_time | TIMESTAMP | 审核时间 | 完成审核时间，可为空 |
@@ -247,4 +246,34 @@
 
 **外键：**
 - CONSTRAINT `user_ban_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+
+### 17. 用户认证表 (user_verification)
+
+| 字段名 | 类型 | 说明 | 备注 |
+|--------|------|------|------|
+| id | BIGINT | 主键ID | 主键，自增 |
+| user_id | BIGINT | 用户ID | 外键关联users，唯一（一个用户只能有一条认证记录） |
+| type | TINYINT | 认证类型 | 1=官方认证 2=个人认证 |
+| status | TINYINT | 认证状态 | 0=待审核 1=已通过 2=已拒绝，默认0 |
+| real_name | VARCHAR(200) | 真实姓名/机构名称 | 个人=真实姓名 官方=机构全称 |
+| id_card | VARCHAR(18) | 身份证号/营业执照号 | 个人=身份证号 官方=统一社会信用代码 |
+| contact_name | VARCHAR(50) | 联系人姓名 | 个人选填 官方必填 |
+| contact_phone | VARCHAR(20) | 联系电话 | 个人选填 官方必填 |
+| title | VARCHAR(100) | 认证称号 | 个人=职业/身份 官方=机构称号 |
+| description | TEXT | 认证理由 | 用户提交认证时填写的理由，可为空 |
+| created_at | TIMESTAMP | 创建时间 | 创建时间 |
+
+**索引：**
+- PRIMARY KEY (`id`)
+- UNIQUE KEY `uk_user_id` (`user_id`)
+- KEY `idx_type` (`type`)
+- KEY `idx_status` (`status`)
+
+**外键：**
+- CONSTRAINT `user_verification_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+
+**说明：**
+- 认证审核状态与审核表(audit)保持同步，便于快速查询用户认证状态
+- 用户提交认证申请时，在audit表创建审核记录(type=1或2)，target_id关联本表id
+- 审核完成后更新本表status字段
 

@@ -742,33 +742,27 @@ Authorization: Bearer <your_jwt_token>
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| type | 整數 | 是 | 認證類型：1-個人認證，2-企業認證 |
-| real_name | 字串 | 是 | 真實姓名/企業名稱 |
-| id_card | 字串 | 是 | 身份证號/營業執照號 |
-| id_card_front | 字串 | 是 | 身份证正面/營業執照圖片URL |
-| id_card_back | 字串 | 否 | 身份证背面圖片URL（個人認證必填） |
-| business_license | 字串 | 否 | 營業執照圖片URL（企業認證必填） |
-| contact_phone | 字串 | 是 | 聯繫電話 |
-| contact_email | 字串 | 是 | 聯繫郵箱 |
-| description | 字串 | 否 | 申請說明 |
+| type | 整數 | 是 | 認證類型：1=官方認證，2=個人認證 |
+| real_name | 字串 | 是 | 真實姓名/機構名稱 |
+| id_card | 字串 | 是 | 身份證號/營業執照號 |
+| contact_name | 字串 | 否 | 聯繫人姓名（官方認證必填） |
+| contact_phone | 字串 | 否 | 聯繫電話 |
+| title | 字串 | 否 | 認證稱號（個人=職業/身份，官方=機構名稱） |
+| description | 字串 | 否 | 認證理由 |
 
 **回應範例**:
 ```json
 {
   "code": 200,
-  "message": "認證申請提交成功，請等待審核",
+  "message": "認證申請提交成功，請耐心等待審核",
   "data": {
-    "id": 1,
-    "user_id": 1,
-    "type": 1,
-    "status": 0,
-    "created_at": "2025-01-02T00:00:00.000Z"
+    "verificationId": 1
   }
 }
 ```
 
 ### 17. 获取認證申請狀態
-**接口地址**: `GET /api/users/verification`
+**接口地址**: `GET /api/users/verification/status`
 **需要認證**: 是
 
 **回應範例**:
@@ -778,16 +772,13 @@ Authorization: Bearer <your_jwt_token>
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": 1,
-    "type": 1,
+    "type": 2,
+    "status": 0,
     "real_name": "張三",
     "id_card": "110101199001011234",
-    "id_card_front": "https://example.com/id_front.jpg",
-    "id_card_back": "https://example.com/id_back.jpg",
+    "contact_name": null,
     "contact_phone": "13800138000",
-    "contact_email": "zhangsan@example.com",
-    "description": "申請個人認證",
-    "status": 0,
+    "title": "學生",
     "audit_time": null,
     "remark": null,
     "created_at": "2025-01-02T00:00:00.000Z"
@@ -801,7 +792,7 @@ Authorization: Bearer <your_jwt_token>
 - `2`: 已拒絕
 
 ### 18. 撤回認證申請
-**接口地址**: `DELETE /api/users/verification`
+**接口地址**: `DELETE /api/users/verification/revoke`
 **需要認證**: 是
 
 **功能說明**:
@@ -813,7 +804,7 @@ Authorization: Bearer <your_jwt_token>
 ```json
 {
   "code": 200,
-  "message": "認證申請撤回成功"
+  "message": "認證申請已撤回"
 }
 ```
 
