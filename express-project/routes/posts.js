@@ -554,8 +554,8 @@ router.post('/', authenticateToken, async (req, res) => {
     if (status === 2) {
       try {
         await pool.execute(
-          'INSERT INTO audit (type, target_id, content, status) VALUES (?, ?, ?, ?)',
-          [3, postId, title || '笔记审核', 0]
+          'INSERT INTO audit (type, target_id, status) VALUES (?, ?, ?)',
+          [3, postId, 0]
         );
         console.log(`✅ 审核记录创建成功 - 笔记ID: ${postId}`);
       } catch (error) {

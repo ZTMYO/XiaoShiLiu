@@ -802,7 +802,10 @@ router.get('/me', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     const [userRows] = await pool.execute(
-      'SELECT id, user_id, nickname, avatar, bio, location, email, follow_count, fans_count, like_count, is_active, created_at, gender, zodiac_sign, mbti, education, major, interests,verified FROM users WHERE id = ?',
+      `SELECT u.id, u.user_id, u.nickname, u.avatar, u.bio, u.location, u.email, u.follow_count, u.fans_count, u.like_count, u.is_active, u.created_at, u.gender, u.zodiac_sign, u.mbti, u.education, u.major, u.interests, u.verified, uv.title as verified_title
+       FROM users u
+       LEFT JOIN user_verification uv ON u.id = uv.user_id AND uv.status = 1
+       WHERE u.id = ?`,
       [userId.toString()]
     );
 

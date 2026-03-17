@@ -272,62 +272,6 @@ const selectVerificationType = (type) => {
   form.type = type
 }
 
-// 生成认证内容HTML
-const generateContentHtml = () => {
-  if (form.type === 2) {
-    // 个人认证
-    return `
-      <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif;">
-        <caption style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">个人认证申请</caption>
-        <tr>
-          <td style=" font-weight: bold; width: 30%;">真实姓名</td>
-          <td>${form.personalInfo.realName}</td>
-        </tr>
-        <tr>
-          <td style=" font-weight: bold;">身份证号</td>
-          <td>${form.personalInfo.idCard}</td>
-        </tr>
-        <tr>
-          <td style=" font-weight: bold;">职业/身份</td>
-          <td>${form.personalInfo.occupation}</td>
-        </tr>
-        <tr>
-          <td style=" font-weight: bold;">认证理由</td>
-          <td>${form.personalInfo.reason}</td>
-        </tr>
-      </table>
-    `
-  } else if (form.type === 1) {
-    // 官方认证
-    return `
-      <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif;">
-        <caption style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">官方认证申请</caption>
-        <tr>
-          <td style=" font-weight: bold; width: 30%;">机构/企业名称</td>
-          <td>${form.officialInfo.organizationName}</td>
-        </tr>
-        <tr>
-          <td style=" font-weight: bold;">统一社会信用代码</td>
-          <td>${form.officialInfo.creditCode}</td>
-        </tr>
-        <tr>
-          <td style=" font-weight: bold;">联系人姓名</td>
-          <td>${form.officialInfo.contactName}</td>
-        </tr>
-        <tr>
-          <td style=" font-weight: bold;">联系电话</td>
-          <td>${form.officialInfo.contactPhone}</td>
-        </tr>
-        <tr>
-          <td style=" font-weight: bold;">认证理由</td>
-          <td>${form.officialInfo.reason}</td>
-        </tr>
-      </table>
-    `
-  }
-  return ''
-}
-
 // 提交认证申请
 const handleSubmitVerification = async () => {
   // 基础验证
@@ -381,7 +325,29 @@ const handleSubmitVerification = async () => {
   loading.value = true
 
   try {
-    const contentHtml = generateContentHtml()
+    let requestBody
+
+    if (form.type === 2) {
+      // 个人认证
+      requestBody = {
+        type: form.type,
+        real_name: form.personalInfo.realName,
+        id_card: form.personalInfo.idCard,
+        title: form.personalInfo.occupation,
+        description: form.personalInfo.reason
+      }
+    } else if (form.type === 1) {
+      // 官方认证
+      requestBody = {
+        type: form.type,
+        real_name: form.officialInfo.organizationName,
+        id_card: form.officialInfo.creditCode,
+        contact_name: form.officialInfo.contactName,
+        contact_phone: form.officialInfo.contactPhone,
+        title: form.officialInfo.organizationName,
+        description: form.officialInfo.reason
+      }
+    }
 
     const response = await fetch('/api/users/verification', {
       method: 'POST',
@@ -389,10 +355,7 @@ const handleSubmitVerification = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userStore.token}`
       },
-      body: JSON.stringify({
-        type: form.type,
-        content: contentHtml
-      })
+      body: JSON.stringify(requestBody)
     })
 
     const result = await response.json()

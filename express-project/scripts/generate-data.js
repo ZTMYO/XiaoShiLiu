@@ -357,8 +357,8 @@ class DataGenerator {
       // 草稿不创建审核记录
       if (post.status !== 1) {
         await connection.execute(
-          'INSERT INTO audit (type, target_id, content, status) VALUES (?, ?, ?, ?)',
-          [3, postId, post.title || '笔记审核', 0]
+          'INSERT INTO audit (type, target_id, status) VALUES (?, ?, ?)',
+          [3, postId, 0]
         );
       }
       

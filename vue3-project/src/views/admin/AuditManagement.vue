@@ -94,7 +94,12 @@ const columns = [
       2: { text: '个人认证', class: 'type-personal' }
     }
   },
-  { key: 'content', label: '认证内容', type: 'content', sortable: false },
+  { key: 'real_name', label: '真实姓名/机构名称', sortable: false },
+  { key: 'id_card', label: '身份证号/信用代码', sortable: false },
+  { key: 'contact_name', label: '联系人', sortable: false },
+  { key: 'contact_phone', label: '联系电话', sortable: false },
+  { key: 'title', label: '认证称号', sortable: false },
+  { key: 'description', label: '认证理由', sortable: false },
   {
     key: 'status',
     label: '审核状态',
@@ -106,13 +111,12 @@ const columns = [
       2: { text: '已拒绝', class: 'status-rejected' }
     }
   },
-  { key: 'created_at', label: '申请时间', type: 'date', sortable: true },
-  { key: 'audit_time', label: '审核时间', type: 'date', sortable: true }
+  { key: 'created_at', label: '申请时间', type: 'date', sortable: true }
 ]
 
 // 表单字段定义
 const formFields = computed(() => [
-  { key: 'target_id', label: '用户ID', type: 'number', required: true, placeholder: '请输入用户ID' },
+  { key: 'user_id', label: '用户ID', type: 'number', required: true, placeholder: '请输入用户ID' },
   {
     key: 'type',
     label: '认证类型',
@@ -123,7 +127,12 @@ const formFields = computed(() => [
       { value: 2, label: '个人认证' }
     ]
   },
-  { key: 'content', label: '认证内容', type: 'textarea', required: true, placeholder: '请输入认证相关内容' },
+  { key: 'real_name', label: '真实姓名/机构名称', type: 'text', required: true, placeholder: '请输入真实姓名或机构名称' },
+  { key: 'id_card', label: '身份证号/信用代码', type: 'text', required: true, placeholder: '请输入身份证号或统一信用代码' },
+  { key: 'contact_name', label: '联系人姓名', type: 'text', required: false, placeholder: '请输入联系人姓名' },
+  { key: 'contact_phone', label: '联系电话', type: 'text', required: false, placeholder: '请输入联系电话' },
+  { key: 'title', label: '认证称号', type: 'text', required: false, placeholder: '请输入认证称号' },
+  { key: 'description', label: '认证理由', type: 'textarea', required: false, placeholder: '请输入认证理由', rows: 3 },
   {
     key: 'status',
     label: '审核状态',

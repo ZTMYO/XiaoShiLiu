@@ -256,7 +256,6 @@ CREATE TABLE IF NOT EXISTS `audit` (
   `admin_id` bigint(20) DEFAULT NULL COMMENT '审核人ID（管理员ID）',
   `type` tinyint(4) NOT NULL COMMENT '审核类型：1-用户个人审核，2-用户官方审核，3-内容审核，4-评论审核',
   `target_id` bigint(20) NOT NULL COMMENT '目标ID：根据type不同，对应用户ID、笔记ID或评论ID',
-  `content` text NOT NULL COMMENT '审核内容',
   `remark` text DEFAULT NULL COMMENT '审核备注',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `audit_time` timestamp NULL DEFAULT NULL COMMENT '审核时间',
@@ -271,7 +270,27 @@ CREATE TABLE IF NOT EXISTS `audit` (
   CONSTRAINT `audit_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审核表';
 
--- 17. 用户封禁表
+-- 17. 用户认证表
+CREATE TABLE IF NOT EXISTS `user_verification` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `type` tinyint(4) NOT NULL COMMENT '认证类型：1=官方认证 2=个人认证',
+  `status` tinyint(4) DEFAULT 0 COMMENT '认证状态：0=待审核 1=已通过 2=已拒绝',
+  `real_name` varchar(200) NOT NULL COMMENT '真实姓名/机构名称',
+  `id_card` varchar(18) NOT NULL COMMENT '身份证号/信用代码',
+  `contact_name` varchar(50) DEFAULT NULL COMMENT '联系人姓名',
+  `contact_phone` varchar(20) DEFAULT NULL COMMENT '联系电话',
+  `title` varchar(100) DEFAULT NULL COMMENT '认证称号',
+  `description` text DEFAULT NULL COMMENT '认证理由',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_id` (`user_id`),
+  KEY `idx_type` (`type`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `user_verification_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户认证表';
+
+-- 18. 用户封禁表
 CREATE TABLE IF NOT EXISTS `user_ban` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '封禁记录ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',

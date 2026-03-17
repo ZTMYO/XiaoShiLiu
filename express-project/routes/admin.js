@@ -2502,33 +2502,42 @@ router.get('/monitor/activities', adminAuth, async (req, res) => {
 
 // 认证管理 CRUD 配置
 const auditCrudConfig = {
-  table: 'audit',
+  table: 'user_verification',
   name: '认证管理',
-  requiredFields: ['type', 'target_id', 'content'],
-  updateFields: ['type', 'target_id', 'content', 'status', 'audit_time', 'admin_id', 'remark'],
+  requiredFields: ['user_id', 'type', 'real_name', 'id_card'],
+  updateFields: ['type', 'status', 'real_name', 'id_card', 'contact_name', 'contact_phone', 'title', 'description'],
   searchFields: {
-    target_id: { operator: '=' },
+    user_id: { operator: '=' },
     type: { operator: '=' },
     status: { operator: '=' },
     user_display_id: { operator: '=' }
   },
-  allowedSortFields: ['id', 'created_at', 'audit_time', 'status'],
+  allowedSortFields: ['id', 'created_at', 'status'],
   defaultOrderBy: 'created_at DESC',
 
-  // 自定义查询，根据type关联不同表
+  // 创建后在audit表添加审核记录
+  afterCreate: async (id, data, req) => {
+    const { user_id, type } = data
+    await pool.execute(
+      'INSERT INTO audit (type, target_id, status, created_at) VALUES (?, ?, 0, NOW())',
+      [type.toString(), user_id.toString()]
+    )
+  },
+
+  // 自定义查询，从user_verification表获取数据
   customQueries: {
     getList: async (req) => {
       const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC', ...filters } = req.query
       const offset = (page - 1) * limit
 
       // 构建查询条件
-      let whereClause = 'WHERE 1=1 AND a.type IN (1, 2)'
+      let whereClause = 'WHERE 1=1'
       const queryParams = []
 
       // 处理筛选条件
-      if (filters.target_id) {
-        whereClause += ` AND a.target_id = ?`
-        queryParams.push(filters.target_id)
+      if (filters.user_id) {
+        whereClause += ` AND uv.user_id = ?`
+        queryParams.push(filters.user_id)
       }
 
       if (filters.user_display_id) {
@@ -2537,47 +2546,49 @@ const auditCrudConfig = {
       }
 
       if (filters.type) {
-        whereClause += ` AND a.type = ?`
+        whereClause += ` AND uv.type = ?`
         queryParams.push(filters.type)
       }
 
       if (filters.status !== undefined && filters.status !== '') {
-        whereClause += ` AND a.status = ?`
+        whereClause += ` AND uv.status = ?`
         queryParams.push(parseInt(filters.status))
       }
 
       // 构建排序
-      const validSortFields = ['id', 'created_at', 'audit_time', 'status']
+      const validSortFields = ['id', 'created_at', 'status']
       const sortField = validSortFields.includes(sortBy) ? sortBy : 'created_at'
       const order = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC'
 
-      // 查询数据 - 只处理用户认证审核
+      // 查询数据
       const dataQuery = `
         SELECT 
-          a.id,
-          a.target_id,          
-          a.type,
-          a.content,
-          a.remark,
-          a.status,
-          a.admin_id,
-          a.created_at,
-          a.audit_time,
+          uv.id,
+          uv.user_id,
+          uv.type,
+          uv.status,
+          uv.real_name,
+          uv.id_card,
+          uv.contact_name,
+          uv.contact_phone,
+          uv.title,
+          uv.description,
+          uv.created_at,
           u.user_id as user_display_id,
           u.nickname,
           u.avatar
-        FROM audit a
-        LEFT JOIN users u ON a.target_id = u.id
+        FROM user_verification uv
+        LEFT JOIN users u ON uv.user_id = u.id
         ${whereClause}
-        ORDER BY a.${sortField} ${order}
+        ORDER BY uv.${sortField} ${order}
         LIMIT ? OFFSET ?
       `
 
       // 查询总数
       const countQuery = `
         SELECT COUNT(*) as total
-        FROM audit a
-        LEFT JOIN users u ON a.target_id = u.id
+        FROM user_verification uv
+        LEFT JOIN users u ON uv.user_id = u.id
         ${whereClause}
       `
 
@@ -2601,21 +2612,23 @@ const auditCrudConfig = {
 
       const query = `
         SELECT 
-          a.id,
-          a.target_id,
-          a.type,
-          a.content,
-          a.remark,
-          a.status,
-          a.admin_id,
-          a.created_at,
-          a.audit_time,
+          uv.id,
+          uv.user_id,
+          uv.type,
+          uv.status,
+          uv.real_name,
+          uv.id_card,
+          uv.contact_name,
+          uv.contact_phone,
+          uv.title,
+          uv.description,
+          uv.created_at,
           u.user_id as user_display_id,
           u.nickname,
           u.avatar
-        FROM audit a
-        LEFT JOIN users u ON a.target_id = u.id
-        WHERE a.id = ? AND a.type IN (1, 2)
+        FROM user_verification uv
+        LEFT JOIN users u ON uv.user_id = u.id
+        WHERE uv.id = ?
       `
 
       const result = await pool.query(query, [id])
@@ -2680,28 +2693,34 @@ router.put('/audit/:id/approve', adminAuth, async (req, res) => {
     const { remark } = req.body
     const adminId = req.user.id
 
-    // 获取审核记录信息
-    const [auditResult] = await pool.query('SELECT type, target_id FROM audit WHERE id = ?', [id])
-    if (auditResult.length === 0) {
+    // 获取认证记录信息
+    const [verificationResult] = await pool.query('SELECT user_id, type FROM user_verification WHERE id = ?', [id])
+    if (verificationResult.length === 0) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         code: RESPONSE_CODES.ERROR,
-        message: '审核记录不存在'
+        message: '认证记录不存在'
       })
     }
 
-    const { target_id , type } = auditResult[0]
+    const { user_id, type } = verificationResult[0]
 
     // 开始事务
     await pool.query('START TRANSACTION')
 
     try {
-      // 更新审核状态为通过，记录审核人和备注
-      await pool.query('UPDATE audit SET status = 1, audit_time = NOW(), admin_id = ?, remark = ? WHERE id = ?',[adminId, remark || null, id])
+      // 更新认证状态为通过 (1)
+      await pool.query('UPDATE user_verification SET status = 1 WHERE id = ?', [id])
 
       // 根据认证类型更新用户的verified字段
       // type: 1-官方认证, 2-个人认证
       const verifiedValue = type === 1 ? 1 : (type === 2 ? 2 : 0)
-      await pool.query('UPDATE users SET verified = ? WHERE id = ?', [verifiedValue, target_id])
+      await pool.query('UPDATE users SET verified = ? WHERE id = ?', [verifiedValue, user_id])
+
+      // 更新audit表中的审核记录
+      await pool.query(
+        'UPDATE audit SET status = 1, admin_id = ?, audit_time = NOW() WHERE type = ? AND target_id = ? AND status = 0',
+        [adminId, type, user_id]
+      )
 
       // 提交事务
       await pool.query('COMMIT')
@@ -2732,26 +2751,32 @@ router.put('/audit/:id/reject', adminAuth, async (req, res) => {
     const { remark } = req.body
     const adminId = req.user.id
 
-    // 获取审核记录信息
-    const [auditResult] = await pool.query('SELECT type, target_id FROM audit WHERE id = ?', [id])
-    if (auditResult.length === 0) {
+    // 获取认证记录信息
+    const [verificationResult] = await pool.query('SELECT user_id, type FROM user_verification WHERE id = ?', [id])
+    if (verificationResult.length === 0) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         code: RESPONSE_CODES.ERROR,
-        message: '审核记录不存在'
+        message: '认证记录不存在'
       })
     }
 
-    const { target_id } = auditResult[0]
+    const { user_id, type } = verificationResult[0]
 
     // 开始事务
     await pool.query('START TRANSACTION')
 
     try {
-      // 更新审核状态为拒绝，记录审核人和备注
-      await pool.query('UPDATE audit SET status = 2, audit_time = NOW(), admin_id = ?, remark = ? WHERE id = ?',[adminId, remark || null, id])
+      // 更新认证状态为拒绝 (2)
+      await pool.query('UPDATE user_verification SET status = 2 WHERE id = ?', [id])
 
       // 拒绝认证申请时，将用户的verified字段设置为0（未认证）
-      await pool.query('UPDATE users SET verified = 0 WHERE id = ?', [target_id])
+      await pool.query('UPDATE users SET verified = 0 WHERE id = ?', [user_id])
+
+      // 更新audit表中的审核记录
+      await pool.query(
+        'UPDATE audit SET status = 2, admin_id = ?, audit_time = NOW() WHERE type = ? AND target_id = ? AND status = 0',
+        [adminId, type, user_id]
+      )
 
       // 提交事务
       await pool.query('COMMIT')
