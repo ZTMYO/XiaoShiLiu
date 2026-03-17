@@ -46,7 +46,7 @@
 
     <div class="upload-tips">
       <p>• 最多上传{{ maxImages }}张图片</p>
-      <p>• 支持 JPG、PNG 格式</p>
+      <p>• 支持 JPG、PNG、GIF 格式</p>
       <p>• 单张图片不超过5MB</p>
       <p class="drag-tip">• <span class="desktop-tip">拖拽图片可调整顺序</span><span class="mobile-tip">长按图片可拖拽排序</span></p>
     </div>
@@ -454,6 +454,12 @@ const getAllImageData = async () => {
 // 压缩图片
 const compressImage = (file, maxSizeMB = 0.8, quality = 0.4) => {
   return new Promise((resolve) => {
+    // 对于GIF文件，不进行压缩，直接返回原文件
+    if (file.type === 'image/gif') {
+      resolve(file)
+      return
+    }
+    
     // 对于800KB以下的文件不进行压缩
     if (file.size <= maxSizeMB * 1024 * 1024) {
       resolve(file)

@@ -3,6 +3,12 @@ import request from './request'
 // 压缩图片函数
 const compressImage = (file, maxSizeMB = 0.8, quality = 0.4) => {
   return new Promise((resolve) => {
+    // 对于GIF文件，不进行压缩，直接返回原文件
+    if (file.type === 'image/gif') {
+      resolve(file)
+      return
+    }
+    
     // 对于800KB以下的文件不进行压缩
     if (file.size <= maxSizeMB * 1024 * 1024) {
       resolve(file)
@@ -183,7 +189,7 @@ export async function uploadCroppedImage(blob, options = {}) {
 export function validateImageFile(file, options = {}) {
   const {
     maxSize = 5 * 1024 * 1024,
-    allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
   } = options
 
   if (!file) return { valid: false, error: '请选择文件' }
