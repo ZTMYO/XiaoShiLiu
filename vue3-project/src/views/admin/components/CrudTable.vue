@@ -163,7 +163,7 @@
                   {{ item[column.key] }}
                 </span>
               </span>
-              <span v-else-if="column.type === 'content' && item[column.key]">
+              <span v-else-if="column.type === 'content' && (item[column.key] || typeof column.getDetailContent === 'function')">
                 <span class="content-link" @click="showDetail(item, column)" :title="'查看' + column.label">
                   {{ column.label }}
                 </span>
@@ -994,7 +994,11 @@ const closeModals = () => {
 
 const showDetail = (item, column) => {
   detailTitle.value = `查看${column.label} - ${props.entityName} ID: ${item.id}`
-  detailContent.value = item[column.key] || ''
+  if (typeof column.getDetailContent === 'function') {
+    detailContent.value = column.getDetailContent(item) || ''
+  } else {
+    detailContent.value = item[column.key] || ''
+  }
   showDetailModal.value = true
 }
 
