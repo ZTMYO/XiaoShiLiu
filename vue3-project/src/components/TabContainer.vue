@@ -26,6 +26,9 @@ const sliderLeft = ref(0)
 const sliderWidth = ref(0)
 
 function tabSelected(item) {
+    // 如果点击的是当前已激活的tab，不执行任何操作
+    if (activeId.value === item.id) return
+
     activeId.value = item.id
     emit('tab-change', item)
     updateSlider()
@@ -110,7 +113,7 @@ onMounted(() => {
                 }
             })
         })
-        
+
         visibilityObserver.observe(containerRef.value)
     }
 })
@@ -191,6 +194,18 @@ onUnmounted(() => {
 .tab-item:hover {
     background: var(--bg-color-secondary);
     color: var(--text-color-primary);
+}
+
+/* 移动端禁用 hover 效果，避免点击后样式残留 */
+@media (hover: none) {
+    .tab-item:hover {
+        background: transparent;
+        color: var(--text-color-secondary);
+    }
+
+    .tab-item.active:hover {
+        color: var(--text-color-primary);
+    }
 }
 
 .tab-item.active {

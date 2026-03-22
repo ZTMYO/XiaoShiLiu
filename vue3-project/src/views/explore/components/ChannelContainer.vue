@@ -83,8 +83,8 @@ function startChannelSwitch(item) {
     // 触发父组件的刷新动画
     emit('channel-reload')
 
-    // 立即执行路由跳转（发送请求）
-    router.push(`/explore${item.path}`).then(() => {
+    // 使用replace代替push，避免在浏览器历史记录中添加新条目
+    router.replace(`/explore${item.path}`).then(() => {
 
         // 设置动画计时器（1200ms）
         animationTimer.value = setTimeout(() => {

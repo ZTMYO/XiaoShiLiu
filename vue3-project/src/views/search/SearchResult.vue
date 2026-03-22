@@ -338,12 +338,21 @@ function handleTabChange(item) {
     // 这样确保第二个tab-container恢复到默认的"全部"状态
     if (item.id !== 'users') {
         selectedTag.value = ''
-        // 更新路由，移除tag参数
-        if (route.query.tag) {
-            const newQuery = { ...route.query }
-            delete newQuery.tag
-            router.replace({ query: newQuery })
-        }
+        // 更新路由，移除tag参数并更新tab参数
+        const newQuery = { ...route.query }
+        delete newQuery.tag
+        router.replace({
+            name: 'search_result_tab',
+            params: { tab: item.id },
+            query: newQuery
+        })
+    } else {
+        // 更新路由，更新tab参数
+        router.replace({
+            name: 'search_result_tab',
+            params: { tab: item.id },
+            query: route.query
+        })
     }
 
     if (item.id === 'users') {
@@ -483,6 +492,21 @@ watch(() => route.params.tab, (newTab) => {
     }
 }, { immediate: true })
 
+// 处理浏览器后退按钮
+const handlePopState = (event) => {
+    // 检查当前路径是否是搜索结果页面
+    if (route.path.startsWith('/search_result')) {
+        // 导航到全部标签，移除tag参数
+        const newQuery = { ...route.query }
+        delete newQuery.tag
+        router.replace({
+            name: 'search_result_tab',
+            params: { tab: 'all' },
+            query: newQuery
+        })
+    }
+}
+
 onMounted(() => {
     keyword.value = route.query.keyword || ''
     activeTab.value = route.params.tab || 'all'
@@ -506,12 +530,16 @@ onMounted(() => {
     }
 
     eventListenerKey = eventStore.addEventListener('floating-btn-reload-request', handleFloatingBtnReload)
+    // 添加popstate事件监听器
+    window.addEventListener('popstate', handlePopState)
 })
 
 onUnmounted(() => {
     if (eventListenerKey) {
         eventStore.removeEventListener(eventListenerKey)
     }
+    // 移除popstate事件监听器
+    window.removeEventListener('popstate', handlePopState)
 })
 </script>
 
