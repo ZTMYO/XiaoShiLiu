@@ -431,7 +431,7 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '无效的发布类型' });
     }
 
-        // 插入笔记
+    // 插入笔记
     console.log('📝 开始插入笔记到数据库...');
     const [result] = await pool.execute(
       'INSERT INTO posts (user_id, title, content, category_id, status, type) VALUES (?, ?, ?, ?, ?, ?)',
@@ -517,8 +517,8 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
-        // 处理@用户通知（仅在发布笔记时，不是草稿时）
-    if (status !== 1 && content && hasMentions(content)) {
+    // 处理@用户通知（仅在已发布状态时）
+    if (status === 0 && content && hasMentions(content)) {
       const mentionedUsers = extractMentionedUsers(content);
 
       for (const mentionedUser of mentionedUsers) {
@@ -589,7 +589,7 @@ router.get('/search', optionalAuth, async (req, res) => {
 
     console.log(`🔍 搜索笔记 - 关键词: ${keyword}, 页码: ${page}, 每页: ${limit}, 当前用户ID: ${currentUserId}`);
 
-        // 搜索笔记：支持标题和内容搜索（只搜索已通过的笔记）
+    // 搜索笔记：支持标题和内容搜索（只搜索已通过的笔记）
     const [rows] = await pool.execute(
       `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.id as author_auto_id, u.location, u.verified
        FROM posts p
@@ -632,7 +632,7 @@ router.get('/search', optionalAuth, async (req, res) => {
       }
     }
 
-        // 获取总数（只统计已通过的笔记）
+    // 获取总数（只统计已通过的笔记）
     const [countResult] = await pool.execute(
       `SELECT COUNT(*) as total FROM posts 
        WHERE status = 0 AND (title LIKE ? OR content LIKE ?)`,
@@ -809,7 +809,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const { title, content, category_id, images, video, tags, status } = req.body;
     const userId = req.user.id;
 
-        // 验证必填字段：如果不是草稿（status=2），则要求标题、内容和分类不能为空
+    // 验证必填字段：如果不是草稿（status=2），则要求标题、内容和分类不能为空
     if (status !== 1 && (!title || !content || !category_id)) {
       console.log('验证失败 - 必填字段缺失:', { title, content, category_id, status });
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '发布时标题、内容和分类不能为空' });
@@ -832,12 +832,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const postType = postRows[0].type;
 
-        // 在更新之前获取原始笔记信息（用于对比@用户变化）
+    // 在更新之前获取原始笔记信息（用于对比@用户变化）
     const [originalPostRows] = await pool.execute('SELECT status, content FROM posts WHERE id = ?', [postId.toString()]);
     const wasOriginallyDraft = originalPostRows.length > 0 && originalPostRows[0].status === 1;
     const originalContent = originalPostRows.length > 0 ? originalPostRows[0].content : '';
 
-        // 更新笔记基本信息
+    // 更新笔记基本信息
     await pool.execute(
       'UPDATE posts SET title = ?, content = ?, category_id = ?, status = ? WHERE id = ?',
       [title || '', sanitizedContent, category_id || null, (status !== undefined ? status : 2).toString(), postId.toString()]
@@ -847,16 +847,16 @@ router.put('/:id', authenticateToken, async (req, res) => {
     if (postType === 2) {
       // 视频笔记：检查是否有视频相关更新
       const hasVideoUpdate = video !== undefined || video_url !== undefined || cover_url !== undefined;
-      
+
       if (hasVideoUpdate) {
         // 获取原有视频记录
         const [oldVideoRows] = await pool.execute('SELECT video_url, cover_url FROM post_videos WHERE post_id = ?', [postId.toString()]);
         const oldVideoData = oldVideoRows.length > 0 ? oldVideoRows[0] : null;
-        
+
         let newVideoUrl = null;
         let newCoverUrl = null;
         let shouldCleanupVideo = false;
-        
+
         if (video && video.url) {
           // 有完整的video对象，说明是新上传的视频
           newVideoUrl = video.url;
@@ -873,23 +873,23 @@ router.put('/:id', authenticateToken, async (req, res) => {
           newCoverUrl = cover_url;
           shouldCleanupVideo = false; // 仅更新封面，不清理视频文件
         }
-        
+
         // 更新数据库记录
         if (newVideoUrl) {
           // 删除原有记录
           await pool.execute('DELETE FROM post_videos WHERE post_id = ?', [postId.toString()]);
-          
+
           // 插入新记录
           await pool.execute(
             'INSERT INTO post_videos (post_id, video_url, cover_url) VALUES (?, ?, ?)',
             [postId.toString(), newVideoUrl, newCoverUrl]
           );
-          
+
           // 只有在视频URL发生变化时才清理旧视频文件
           if (shouldCleanupVideo && oldVideoData) {
             const oldVideoUrls = [oldVideoData.video_url].filter(url => url);
             const oldCoverUrls = [oldVideoData.cover_url].filter(url => url && url !== newCoverUrl);
-            
+
             if (oldVideoUrls.length > 0 || oldCoverUrls.length > 0) {
               // 异步清理文件，不阻塞响应
               batchCleanupFiles(oldVideoUrls, oldCoverUrls).catch(error => {
@@ -936,7 +936,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     // 找出需要删除的标签（在旧标签中但不在新标签中）
     const tagsToRemove = oldTags.filter(tagName => !newTags.includes(tagName));
-    
+
     // 找出需要新增的标签（在新标签中但不在旧标签中）
     const tagsToAdd = newTags.filter(tagName => !oldTags.includes(tagName));
 
@@ -975,8 +975,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       }
     }
 
-        // 处理@用户通知的逻辑
-    if (status !== 1 && content) { // 只有在发布状态下才处理@通知
+    // 处理@用户通知的逻辑
+    if (status === 0 && content) { // 只有在已发布状态下才处理@通知
       // 获取新内容中的@用户
       const newMentionedUsers = hasMentions(content) ? extractMentionedUsers(content) : [];
       const newMentionedUserIds = new Set(newMentionedUsers.map(user => user.userId));
@@ -1106,7 +1106,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     if (videoRows.length > 0) {
       const videoUrls = videoRows.map(row => row.video_url).filter(url => url);
       const coverUrls = videoRows.map(row => row.cover_url).filter(url => url);
-      
+
       // 异步清理文件，不阻塞响应
       batchCleanupFiles(videoUrls, coverUrls).catch(error => {
         console.error('清理笔记关联视频文件失败:', error);
