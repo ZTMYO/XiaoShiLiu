@@ -94,8 +94,12 @@ function startTagSwitch(item) {
     delete query.tag
   }
 
-  // 立即执行路由跳转
-  router.push({ query }).then(() => {
+  // 立即执行路由跳转，确保使用search_result_tab路由并保持当前tab
+  router.push({
+    name: 'search_result_tab',
+    params: { tab: route.params.tab || 'all' },
+    query
+  }).then(() => {
     // 设置动画计时器（700ms，与explore保持一致）
     animationTimer.value = setTimeout(() => {
       // 动画结束
