@@ -45,12 +45,12 @@ const postsCrudConfig = {
 
   // 创建前的自定义验证和处理
   beforeCreate: async (data, req) => {
-    const { user_id, images, image_urls, tags } = data
+    const { user_id, images, image_urls, tags, video_upload, video, video_url, cover_url } = data
 
     // 检查用户是否存在
     const [userResult] = await pool.execute('SELECT id FROM users WHERE id = ?', [String(user_id)])
     if (userResult.length === 0) {
-      throw new Error('用户不存在')
+      return { isValid: false, message: '用户不存在' }
     }
 
     // 确保分类ID存在
@@ -58,12 +58,34 @@ const postsCrudConfig = {
       data.category_id = null
     }
 
-    return data
+    // 保存关联数据到req对象，供afterCreate使用
+    req._postData = {
+      images,
+      image_urls,
+      tags,
+      video_upload,
+      video,
+      video_url,
+      cover_url
+    }
+
+    // 删除不属于posts表的字段
+    delete data.image_urls
+    delete data.images
+    delete data.tags
+    delete data.video_upload
+    delete data.video
+    delete data.video_url
+    delete data.cover_url
+
+    return { isValid: true }
   },
 
   // 创建后的处理（处理图片和标签）
   afterCreate: async (postId, data, req) => {
-    const { images, image_urls, tags } = data
+    // 从req._postData获取关联数据（在beforeCreate中保存的）
+    const postData = req._postData || {}
+    const { images, image_urls, tags } = postData
     // 处理图片信息
     if (images !== undefined || image_urls !== undefined) {
       // 收集所有有效的图片URL
@@ -169,6 +191,15 @@ const postsCrudConfig = {
           [String(tagId)]
         )
       }
+    }
+
+    // 处理视频 - 存储到post_videos表
+    const { video_url, cover_url } = postData
+    if (video_url) {
+      await pool.execute(
+        'INSERT INTO post_videos (post_id, video_url, cover_url) VALUES (?, ?, ?)',
+        [String(postId), video_url, cover_url || null]
+      )
     }
   },
 
