@@ -71,7 +71,7 @@
             取消
           </button>
         </template>
-        <button @click="createItem" class="btn btn-primary">
+        <button v-if="showCreateButton" @click="createItem" class="btn btn-primary">
           <SvgIcon name="publish" />
           新增{{ entityName }}
         </button>
@@ -118,8 +118,8 @@
                 <span>{{ item[column.key] || '-' }}</span>
               </slot>
               <span v-else-if="column.type === 'image'">
-                <img :src="item[column.key] || defaultAvatar" alt="图片" class="table-image" @click="showImageModal(item[column.key] || defaultAvatar)"
-                  @error="handleImageError" />
+                <img :src="item[column.key] || defaultAvatar" alt="图片" class="table-image"
+                  @click="showImageModal(item[column.key] || defaultAvatar)" @error="handleImageError" />
               </span>
               <span v-else-if="column.type === 'image-gallery'">
                 <span v-if="loadingGallery === item.id" class="loading-text">
@@ -163,7 +163,8 @@
                   {{ item[column.key] }}
                 </span>
               </span>
-              <span v-else-if="column.type === 'content' && item[column.key]">
+              <span
+                v-else-if="column.type === 'content' && (item[column.key] || typeof column.getDetailContent === 'function')">
                 <span class="content-link" @click="showDetail(item, column)" :title="'查看' + column.label">
                   {{ column.label }}
                 </span>
@@ -322,6 +323,10 @@ const props = defineProps({
   customActions: {
     type: Array,
     default: () => []
+  },
+  showCreateButton: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -465,6 +470,7 @@ const resetFormData = () => {
 
   // 为笔记类型初始化必要的字段
   if (props.apiEndpoint === '/admin/posts') {
+    newFormData.type = 1  // 默认图文笔记类型，确保图片上传字段可见
     newFormData.image_urls = []
     newFormData.images = []
     newFormData.tags = []
@@ -994,7 +1000,11 @@ const closeModals = () => {
 
 const showDetail = (item, column) => {
   detailTitle.value = `查看${column.label} - ${props.entityName} ID: ${item.id}`
-  detailContent.value = item[column.key] || ''
+  if (typeof column.getDetailContent === 'function') {
+    detailContent.value = column.getDetailContent(item) || ''
+  } else {
+    detailContent.value = item[column.key] || ''
+  }
   showDetailModal.value = true
 }
 
@@ -1030,20 +1040,20 @@ const showImageGallery = async (postId) => {
       }))
       currentImages.value = images
       showImageCarouselVisible.value = true
-      } else {
-        console.error('获取笔记图片失败:', result.message)
-        const errorMessage = result.message || '获取笔记图片失败'
-        await showError(errorMessage)
-      }
-    } catch (error) {
-      console.error('获取笔记图片失败:', error)
-      if (error !== false) {
-        const errorMessage = error?.message || '获取笔记图片失败'
-        await showError(errorMessage)
-      }
-    } finally {
-      loadingGallery.value = null
+    } else {
+      console.error('获取笔记图片失败:', result.message)
+      const errorMessage = result.message || '获取笔记图片失败'
+      await showError(errorMessage)
     }
+  } catch (error) {
+    console.error('获取笔记图片失败:', error)
+    if (error !== false) {
+      const errorMessage = error?.message || '获取笔记图片失败'
+      await showError(errorMessage)
+    }
+  } finally {
+    loadingGallery.value = null
+  }
 }
 
 const closeImageCarousel = () => {

@@ -1388,8 +1388,8 @@ const handleShareMouseLeave = () => {
 
 // 处理标签点击
 const handleTagClick = (tag) => {
-  // 构建搜索页面URL
-  const searchUrl = `${window.location.origin}/search_result?tag=${encodeURIComponent(tag)}`
+  // 构建搜索页面URL，使用正确的路由格式
+  const searchUrl = `${window.location.origin}/search_result/all?tag=${encodeURIComponent(tag)}`
 
   // 在新标签页打开搜索页面
   window.open(searchUrl, '_blank')

@@ -1,6 +1,6 @@
 <template>
   <CrudTable title="笔记审核" entity-name="笔记" api-endpoint="/admin/posts-audit" :columns="columns" :form-fields="formFields"
-    :search-fields="searchFields" :custom-actions="customActions" @custom-action="handleCustomAction">
+    :search-fields="searchFields" :custom-actions="customActions" :show-create-button="false" @custom-action="handleCustomAction">
     <template #cell-preview="{ item }">
       <div>
         <span class="content-link" @click="openPreview(item, $event)" title="查看笔记预览">预览</span>

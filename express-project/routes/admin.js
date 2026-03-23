@@ -10,6 +10,8 @@ const {
   validateFollowData,
   validateNotificationData
 } = require('../utils/validationHelpers')
+const { extractMentionedUsers, hasMentions } = require('../utils/mentionParser')
+const NotificationHelper = require('../utils/notificationHelper')
 
 // 创建笔记
 // Posts CRUD 配置
@@ -43,12 +45,12 @@ const postsCrudConfig = {
 
   // 创建前的自定义验证和处理
   beforeCreate: async (data, req) => {
-    const { user_id, images, image_urls, tags } = data
+    const { user_id, images, image_urls, tags, video_upload, video, video_url, cover_url } = data
 
     // 检查用户是否存在
     const [userResult] = await pool.execute('SELECT id FROM users WHERE id = ?', [String(user_id)])
     if (userResult.length === 0) {
-      throw new Error('用户不存在')
+      return { isValid: false, message: '用户不存在' }
     }
 
     // 确保分类ID存在
@@ -56,12 +58,34 @@ const postsCrudConfig = {
       data.category_id = null
     }
 
-    return data
+    // 保存关联数据到req对象，供afterCreate使用
+    req._postData = {
+      images,
+      image_urls,
+      tags,
+      video_upload,
+      video,
+      video_url,
+      cover_url
+    }
+
+    // 删除不属于posts表的字段
+    delete data.image_urls
+    delete data.images
+    delete data.tags
+    delete data.video_upload
+    delete data.video
+    delete data.video_url
+    delete data.cover_url
+
+    return { isValid: true }
   },
 
   // 创建后的处理（处理图片和标签）
   afterCreate: async (postId, data, req) => {
-    const { images, image_urls, tags } = data
+    // 从req._postData获取关联数据（在beforeCreate中保存的）
+    const postData = req._postData || {}
+    const { images, image_urls, tags } = postData
     // 处理图片信息
     if (images !== undefined || image_urls !== undefined) {
       // 收集所有有效的图片URL
@@ -168,6 +192,15 @@ const postsCrudConfig = {
         )
       }
     }
+
+    // 处理视频 - 存储到post_videos表
+    const { video_url, cover_url } = postData
+    if (video_url) {
+      await pool.execute(
+        'INSERT INTO post_videos (post_id, video_url, cover_url) VALUES (?, ?, ?)',
+        [String(postId), video_url, cover_url || null]
+      )
+    }
   },
 
   // 更新前的处理
@@ -235,11 +268,11 @@ const postsCrudConfig = {
 
     // 处理视频更新 - 只要有任何视频相关字段就触发处理
     const hasVideoUpdate = data.video_url !== undefined || data.cover_url !== undefined || data.video !== undefined
-    
+
     if (hasVideoUpdate) {
       // 获取原有视频记录用于清理文件
       const [oldVideoRows] = await pool.execute('SELECT video_url, cover_url FROM post_videos WHERE post_id = ?', [String(postId)])
-      
+
       // 删除原有视频记录
       await pool.execute('DELETE FROM post_videos WHERE post_id = ?', [String(postId)])
 
@@ -248,7 +281,7 @@ const postsCrudConfig = {
         const { batchCleanupFiles } = require('../utils/fileCleanup')
         const oldVideoUrls = oldVideoRows.map(row => row.video_url).filter(url => url)
         const oldCoverUrls = oldVideoRows.map(row => row.cover_url).filter(url => url)
-        
+
         // 异步清理文件，不阻塞响应
         batchCleanupFiles(oldVideoUrls, oldCoverUrls).then(result => {
           // 文件清理完成
@@ -260,7 +293,7 @@ const postsCrudConfig = {
       // 插入新视频记录 - 优先使用video对象，然后是分离字段
       let videoUrl = null
       let coverUrl = null
-      
+
       if (data.video && data.video.url) {
         // FormModal传递的video对象格式
         videoUrl = data.video.url
@@ -270,7 +303,7 @@ const postsCrudConfig = {
         videoUrl = data.video_url
         coverUrl = data.cover_url || ''
       }
-      
+
       if (videoUrl) {
         await pool.execute(
           'INSERT INTO post_videos (post_id, video_url, cover_url) VALUES (?, ?, ?)',
@@ -507,12 +540,12 @@ const postsCrudConfig = {
         'created_at': 'p.created_at',
         'nickname': 'u.nickname'
       }
-      
+
       const allowedSortOrders = {
         'asc': 'ASC',
         'desc': 'DESC'
       }
-      
+
       const validSortField = allowedSortFields[req.query.sortField] || 'p.created_at'
       const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
       const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
@@ -616,12 +649,12 @@ router.get('/posts-audit', adminAuth, async (req, res) => {
       'created_at': 'p.created_at',
       'nickname': 'u.nickname'
     }
-    
+
     const allowedSortOrders = {
       'asc': 'ASC',
       'desc': 'DESC'
     }
-    
+
     const validSortField = allowedSortFields[req.query.sortField] || 'p.created_at'
     const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
     const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
@@ -695,6 +728,43 @@ router.put('/posts-audit/:id/approve', adminAuth, async (req, res) => {
 
     // 更新笔记状态为已发布
     await pool.execute('UPDATE posts SET status = 0 WHERE id = ?', [String(postId)])
+
+    // 检查笔记内容是否包含@用户，如果有，发送艾特通知
+    const [postContentResult] = await pool.execute('SELECT user_id, content FROM posts WHERE id = ?', [String(postId)])
+    if (postContentResult.length > 0) {
+      const { user_id: userId, content } = postContentResult[0]
+
+      // 处理@用户通知
+      if (content && hasMentions(content)) {
+        const mentionedUsers = extractMentionedUsers(content)
+
+        for (const mentionedUser of mentionedUsers) {
+          try {
+            // 根据小石榴号查找用户的自增ID
+            const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [mentionedUser.userId])
+
+            if (userRows.length > 0) {
+              const mentionedUserId = userRows[0].id
+
+              // 不给自己发通知
+              if (mentionedUserId !== userId) {
+                // 创建@用户通知
+                const mentionNotificationData = NotificationHelper.createNotificationData({
+                  userId: mentionedUserId,
+                  senderId: userId,
+                  type: NotificationHelper.TYPES.MENTION,
+                  targetId: postId
+                })
+
+                await NotificationHelper.insertNotification(pool, mentionNotificationData)
+              }
+            }
+          } catch (error) {
+            console.error('处理@用户通知失败 - 用户: %s:', mentionedUser.userId, error)
+          }
+        }
+      }
+    }
 
     // 更新audit表中的审核记录
     await pool.execute(
@@ -891,12 +961,12 @@ const commentsCrudConfig = {
         'created_at': 'c.created_at',
         'nickname': 'u.nickname'
       }
-      
+
       const allowedSortOrders = {
         'asc': 'ASC',
         'desc': 'DESC'
       }
-      
+
       const validSortField = allowedSortFields[req.query.sortField] || 'c.created_at'
       const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
       const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
@@ -1061,12 +1131,12 @@ const likesCrudConfig = {
         'user_id': 'l.user_id',
         'created_at': 'l.created_at'
       }
-      
+
       const allowedSortOrders = {
         'asc': 'ASC',
         'desc': 'DESC'
       }
-      
+
       const validSortField = allowedSortFields[req.query.sortField] || 'l.created_at'
       const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
       const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
@@ -1236,12 +1306,12 @@ const collectionsCrudConfig = {
         'user_id': 'c.user_id',
         'created_at': 'c.created_at'
       }
-      
+
       const allowedSortOrders = {
         'asc': 'ASC',
         'desc': 'DESC'
       }
-      
+
       const validSortField = allowedSortFields[req.query.sortField] || 'c.created_at'
       const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
       const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
@@ -1426,12 +1496,12 @@ const followsCrudConfig = {
         'following_id': 'f.following_id',
         'created_at': 'f.created_at'
       }
-      
+
       const allowedSortOrders = {
         'asc': 'ASC',
         'desc': 'DESC'
       }
-      
+
       const validSortField = allowedSortFields[req.query.sortField] || 'f.created_at'
       const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
       const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
@@ -1542,12 +1612,12 @@ const notificationsCrudConfig = {
         'id': 'n.id',
         'created_at': 'n.created_at'
       }
-      
+
       const allowedSortOrders = {
         'asc': 'ASC',
         'desc': 'DESC'
       }
-      
+
       const validSortField = allowedSortFields[req.query.sortField] || 'n.created_at'
       const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
       const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
@@ -1674,12 +1744,12 @@ const sessionsCrudConfig = {
         'expires_at': 's.expires_at',
         'created_at': 's.created_at'
       }
-      
+
       const allowedSortOrders = {
         'asc': 'ASC',
         'desc': 'DESC'
       }
-      
+
       const validSortField = allowedSortFields[req.query.sortField] || 's.created_at'
       const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
       const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
@@ -1784,12 +1854,12 @@ const adminSessionsCrudConfig = {
         'expires_at': 's.expires_at',
         'created_at': 's.created_at'
       }
-      
+
       const allowedSortOrders = {
         'asc': 'ASC',
         'desc': 'DESC'
       }
-      
+
       const validSortField = allowedSortFields[req.query.sortField] || 's.created_at'
       const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
       const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
@@ -1983,12 +2053,12 @@ const usersCrudConfig = {
         'like_count': 'u.like_count',
         'created_at': 'u.created_at'
       }
-      
+
       const allowedSortOrders = {
         'asc': 'ASC',
         'desc': 'DESC'
       }
-      
+
       const validSortField = allowedSortFields[req.query.sortField] || 'u.created_at'
       const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
       const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
@@ -2027,7 +2097,7 @@ const usersCrudConfig = {
             user.interests = null
           }
         }
-        
+
         // 合并封禁状态为完整状态文本
         if (user.ban_status === -1) {
           user.ban_status_display = '正常'
@@ -2088,7 +2158,7 @@ const usersCrudConfig = {
           user.interests = null
         }
       }
-      
+
       // 合并封禁状态为完整状态文本
       if (user.ban_status === -1) {
         user.ban_status_display = '正常'
@@ -2173,23 +2243,23 @@ async function revokeExistingBans(userId, operatorId) {
       'SELECT id FROM user_ban WHERE user_id = ? AND status IN (0, 3)',
       [String(userId)]
     )
-    
+
     // 如果有未解除的封禁记录，先将其状态改为"封禁撤销"
     if (existingBan.length > 0) {
-      const updatePromises = existingBan.map(ban => 
+      const updatePromises = existingBan.map(ban =>
         pool.execute(
           'UPDATE user_ban SET status = 4, operator = ? WHERE id = ?',
           [operatorId, ban.id]
         )
       )
       await Promise.all(updatePromises)
-      
+
       console.log(`用户 ${userId} 的 ${existingBan.length} 条现有封禁记录已被撤销，操作人：${operatorId}`)
-      
+
       // 恢复用户的is_active为1
       await updateUserActiveStatus(userId, true, operatorId)
     }
-    
+
     return existingBan.length > 0
   } catch (error) {
     console.error('撤销现有封禁记录失败:', error)
@@ -2236,10 +2306,10 @@ router.post('/users/:id/ban', adminAuth, async (req, res) => {
         message: '无效的状态值'
       })
     }
-    
+
     // 设置状态值
     data.status = statusNum
-    
+
     // 处理时间
     if (!data.end_time || data.end_time === '' || data.end_time === 'null' || data.end_time === 'undefined') {
       data.end_time = null
@@ -2296,7 +2366,7 @@ async function unbanUser(userId, operatorId) {
     }
 
     // 更新所有活跃封禁记录为管理员解封
-    const updatePromises = banResult.map(ban => 
+    const updatePromises = banResult.map(ban =>
       pool.execute(
         'UPDATE user_ban SET status = 1, operator = ? WHERE id = ?',
         [String(operatorId), ban.id]
@@ -3003,12 +3073,12 @@ const categoriesCrudConfig = {
         'created_at': 'c.created_at',
         'post_count': 'post_count'
       }
-      
+
       const allowedSortOrders = {
         'asc': 'ASC',
         'desc': 'DESC'
       }
-      
+
       const validSortField = allowedSortFields[sortField] || allowedSortFields['id']
       const validSortOrder = allowedSortOrders[sortOrder?.toLowerCase()] || allowedSortOrders['asc']
 

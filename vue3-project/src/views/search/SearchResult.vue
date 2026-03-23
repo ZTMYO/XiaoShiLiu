@@ -117,7 +117,7 @@ async function searchContent(type = 'all', page = 1, limit = 20) {
             params.append('keyword', keyword.value.trim())
         }
 
-        if (selectedTag.value.trim() && (type === 'users' || !keyword.value.trim())) {
+        if (selectedTag.value.trim()) {
             params.append('tag', selectedTag.value.trim())
         }
 
@@ -153,7 +153,7 @@ async function searchContent(type = 'all', page = 1, limit = 20) {
                 if (keyword.value.trim() && !selectedTag.value.trim() && postsData && postsData.data && postsData.data.length > 0) {
                     // 从实际数据计算真实的标签统计
                     const realTagStats = calculateTagStatsFromPosts(postsData.data)
-                    
+
                     // 根据类型分别缓存数据和标签统计（只有当有数据时才缓存）
                     if (type === 'all') {
                         cachedAllPosts.value = postsData.data
@@ -166,7 +166,7 @@ async function searchContent(type = 'all', page = 1, limit = 20) {
                         cachedVideosTagStats.value = realTagStats
                     }
                     cachedKeyword.value = keyword.value
-                    
+
                     // 更新当前显示的标签统计
                     tagStats.value = realTagStats
                 }
@@ -212,7 +212,7 @@ async function searchContent(type = 'all', page = 1, limit = 20) {
 // 从实际的帖子数据中计算标签统计
 function calculateTagStatsFromPosts(posts) {
     const tagMap = new Map()
-    
+
     posts.forEach(post => {
         if (post.tags && Array.isArray(post.tags)) {
             post.tags.forEach(tag => {
@@ -223,7 +223,7 @@ function calculateTagStatsFromPosts(posts) {
             })
         }
     })
-    
+
     // 转换为数组并按count排序，取前10个
     const tagStats = Array.from(tagMap.entries())
         .map(([name, count]) => ({
@@ -233,7 +233,7 @@ function calculateTagStatsFromPosts(posts) {
         }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 10)
-    
+
     return tagStats
 }
 
@@ -338,12 +338,21 @@ function handleTabChange(item) {
     // 这样确保第二个tab-container恢复到默认的"全部"状态
     if (item.id !== 'users') {
         selectedTag.value = ''
-        // 更新路由，移除tag参数
-        if (route.query.tag) {
-            const newQuery = { ...route.query }
-            delete newQuery.tag
-            router.replace({ query: newQuery })
-        }
+        // 更新路由，移除tag参数并更新tab参数
+        const newQuery = { ...route.query }
+        delete newQuery.tag
+        router.replace({
+            name: 'search_result_tab',
+            params: { tab: item.id },
+            query: newQuery
+        })
+    } else {
+        // 更新路由，更新tab参数
+        router.replace({
+            name: 'search_result_tab',
+            params: { tab: item.id },
+            query: route.query
+        })
     }
 
     if (item.id === 'users') {
@@ -483,24 +492,33 @@ watch(() => route.params.tab, (newTab) => {
     }
 }, { immediate: true })
 
+// 处理浏览器后退按钮
+const handlePopState = (event) => {
+    // 检查当前路径是否是搜索结果页面
+    if (route.path.startsWith('/search_result')) {
+        // 导航到全部标签，移除tag参数
+        const newQuery = { ...route.query }
+        delete newQuery.tag
+        router.replace({
+            name: 'search_result_tab',
+            params: { tab: 'all' },
+            query: newQuery
+        })
+    }
+}
+
 onMounted(() => {
     keyword.value = route.query.keyword || ''
     activeTab.value = route.params.tab || 'all'
-    
-    // 如果URL中有tag参数，清除它（刷新页面时也要清除tag）
-    // 这样确保第二个tab-container始终从默认的"全部"状态开始
+
+    // 处理tag参数
     if (route.query.tag) {
-        selectedTag.value = ''
-        const newQuery = { ...route.query }
-        delete newQuery.tag
-        router.replace({ query: newQuery }).then(() => {
-            // URL更新完成后，开始搜索
-            if (keyword.value) {
-                searchContent(activeTab.value)
-            }
-            // 标记初始化完成，允许watch触发搜索
-            isInitialLoad.value = false
-        })
+        selectedTag.value = route.query.tag
+        // 不需要清除tag参数，保持它在URL中
+        // 直接开始搜索，包含标签过滤
+        searchContent(activeTab.value)
+        // 标记初始化完成，允许watch触发搜索
+        isInitialLoad.value = false
     } else {
         // 没有tag参数，正常初始化
         selectedTag.value = ''
@@ -512,12 +530,16 @@ onMounted(() => {
     }
 
     eventListenerKey = eventStore.addEventListener('floating-btn-reload-request', handleFloatingBtnReload)
+    // 添加popstate事件监听器
+    window.addEventListener('popstate', handlePopState)
 })
 
 onUnmounted(() => {
     if (eventListenerKey) {
         eventStore.removeEventListener(eventListenerKey)
     }
+    // 移除popstate事件监听器
+    window.removeEventListener('popstate', handlePopState)
 })
 </script>
 
@@ -527,8 +549,8 @@ onUnmounted(() => {
         <TabContainer :tabs="searchTabs" :activeTab="activeTab" @tab-change="handleTabChange" />
 
 
-        <TagContainer v-if="shouldShowTagContainer" :tagStats="currentTagStats" :activeTag="selectedTag" :activeTab="activeTab"
-            @tag-reload="handleTagReload" />
+        <TagContainer v-if="shouldShowTagContainer" :tagStats="currentTagStats" :activeTag="selectedTag"
+            :activeTab="activeTab" @tag-reload="handleTagReload" />
 
 
         <LoadingSpinner v-if="isTagLoading" />
@@ -543,7 +565,8 @@ onUnmounted(() => {
 
 
             <div v-else>
-                <WaterfallFlow :searchKeyword="keyword" :searchTag="selectedTag" :preloadedPosts="postResults" :type="activeTab" />
+                <WaterfallFlow :searchKeyword="keyword" :searchTag="selectedTag" :preloadedPosts="postResults"
+                    :type="activeTab" />
             </div>
         </div>
         <SearchFloatingBtn @reload="handleFloatingBtnReloadRequest" />
