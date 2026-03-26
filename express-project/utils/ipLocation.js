@@ -1,4 +1,5 @@
 const axios = require('axios');
+const config = require('../config/config');
 
 /**
  * 获取IP属地信息
@@ -13,11 +14,11 @@ async function getIPLocation(ip) {
     }
 
     // 调用IP属地API
-    const response = await axios.get(`https://api.pearktrue.cn/api/ip/details`, {
+    const response = await axios.get(config.ipLocation.primaryApi, {
       params: {
         ip: ip
       },
-      timeout: 10000 // 10秒超时
+      timeout: config.ipLocation.primaryTimeout
     });
 
     if (response.data && response.data.code === 200 && response.data.data) {
@@ -32,11 +33,11 @@ async function getIPLocation(ip) {
 
     // 如果主接口返回未知，尝试备用接口
     try {
-      const backupResponse = await axios.get(`https://api.pearktrue.cn/api/ip/high`, {
+      const backupResponse = await axios.get(config.ipLocation.backupApi, {
         params: {
           ip: ip
         },
-        timeout: 5000 // 5秒超时
+        timeout: config.ipLocation.backupTimeout
       });
 
       if (backupResponse.data && backupResponse.data.code === 200 && backupResponse.data.data && backupResponse.data.data.province) {
