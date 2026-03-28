@@ -77,6 +77,8 @@
 import { ref, watch } from 'vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useScrollLock } from '@/composables/useScrollLock'
+import { apiConfig } from '@/config/api'
+import { formatFileSize } from '@/utils/fileSize'
 
 const props = defineProps({
   visible: {
@@ -174,9 +176,9 @@ const processFiles = async (files) => {
         continue
       }
 
-      // 检查文件大小 (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        error.value = '图片大小不能超过5MB'
+      // 检查文件大小
+      if (file.size > apiConfig.upload.image.maxFileSize) {
+        error.value = `图片大小不能超过${formatFileSize(apiConfig.upload.image.maxFileSize)}`
         continue
       }
 

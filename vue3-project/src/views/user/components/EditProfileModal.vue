@@ -190,6 +190,8 @@ import { useScrollLock } from '@/composables/useScrollLock'
 import { sanitizeContent } from '@/utils/contentSecurity'
 import { useUserStore } from '@/stores/user.js'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { apiConfig } from '@/config/api'
+import { formatFileSize } from '@/utils/fileSize'
 
 const props = defineProps({
   visible: {
@@ -523,8 +525,8 @@ const handleDrop = (event) => {
 }
 
 const validateFile = (file) => {
-  const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-  const maxSize = 5 * 1024 * 1024
+  const validTypes = apiConfig.upload.image.allowedTypes
+  const maxSize = apiConfig.upload.image.maxFileSize
 
   if (!validTypes.includes(file.type)) {
     const errorMsg = '不填有效的图片格式 (JPEG, PNG, GIF, WebP)'
@@ -534,10 +536,9 @@ const validateFile = (file) => {
   }
 
   if (file.size > maxSize) {
-    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1)
-    const errorMsg = `图片大小为 ${fileSizeMB}MB，超过 5MB 限制，不填更小的图片`
+    const errorMsg = `图片大小为 ${formatFileSize(file.size)}，超过 ${formatFileSize(apiConfig.upload.image.maxFileSize)} 限制，不填更小的图片`
 
-    avatarError.value = '图片大小不能超过 5MB'
+    avatarError.value = `图片大小不能超过 ${formatFileSize(apiConfig.upload.image.maxFileSize)}`
     $message.error(errorMsg)
     return false
   }
