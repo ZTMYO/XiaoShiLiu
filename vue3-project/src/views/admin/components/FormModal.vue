@@ -187,6 +187,8 @@ import { useScrollLock } from '@/composables/useScrollLock'
 import { sanitizeContent } from '@/utils/contentSecurity'
 import { generateVideoThumbnail, blobToFile, generateThumbnailFilename } from '@/utils/videoThumbnail'
 // import { getFriendsList } from '@/api/friends'
+import { apiConfig } from '@/config/api'
+import { formatFileSize } from '@/utils/fileSize'
 
 const props = defineProps({
   visible: Boolean,
@@ -1105,8 +1107,8 @@ const handleVideoFileSelect = async (event, fieldKey) => {
   if (!file) return
 
   // 验证文件类型和大小
-  const validTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv']
-  const maxSize = 100 * 1024 * 1024 // 100MB
+  const validTypes = apiConfig.upload.video.allowedTypes
+  const maxSize = apiConfig.upload.video.maxFileSize
 
   if (!validTypes.includes(file.type)) {
     videoErrors.value[fieldKey] = '请选择有效的视频格式 (MP4, AVI, MOV, WMV, FLV)'
@@ -1114,8 +1116,8 @@ const handleVideoFileSelect = async (event, fieldKey) => {
   }
 
   if (file.size > maxSize) {
-    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1)
-    videoErrors.value[fieldKey] = `视频大小为 ${fileSizeMB}MB，超过 100MB 限制，请选择更小的视频`
+    const errorMsg = `视频大小为 ${formatFileSize(file.size)}，超过 ${formatFileSize(apiConfig.upload.video.maxFileSize)} 限制，请选择更小的视频`
+    videoErrors.value[fieldKey] = errorMsg
     return
   }
 
@@ -1174,8 +1176,8 @@ const handleAvatarDrop = (event, fieldKey) => {
 
 const showAvatarCropDialog = async (file, fieldKey) => {
   // 验证文件
-  const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-  const maxSize = 5 * 1024 * 1024
+  const validTypes = apiConfig.upload.image.allowedTypes || ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  const maxSize = apiConfig.upload.image.maxFileSize
 
   if (!validTypes.includes(file.type)) {
     avatarErrors.value[fieldKey] = '请选择有效的图片格式 (JPEG, PNG, GIF, WebP)'
@@ -1183,8 +1185,8 @@ const showAvatarCropDialog = async (file, fieldKey) => {
   }
 
   if (file.size > maxSize) {
-    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1)
-    avatarErrors.value[fieldKey] = `图片大小为 ${fileSizeMB}MB，超过 5MB 限制，请选择更小的图片`
+    const errorMsg = `图片大小为 ${formatFileSize(file.size)}，超过 ${formatFileSize(apiConfig.upload.image.maxFileSize)} 限制，请选择更小的图片`
+    avatarErrors.value[fieldKey] = errorMsg
     return
   }
 

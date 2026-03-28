@@ -66,6 +66,8 @@ import SvgIcon from '@/components/SvgIcon.vue'
 import MessageToast from '@/components/MessageToast.vue'
 import ImageViewer from '@/components/ImageViewer.vue'
 import { imageUploadApi } from '@/api/index.js'
+import { apiConfig } from '@/config/api'
+import { formatFileSize } from '@/utils/fileSize'
 
 const props = defineProps({
   modelValue: {
@@ -208,9 +210,8 @@ const addFiles = async (files) => {
   // 验证所有文件
   for (const file of fileArray) {
     // 先检查文件大小
-    if (file.size > 5 * 1024 * 1024) {
-      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1)
-      const errorMsg = `图片大小为 ${fileSizeMB}MB，超过 5MB 限制，请选择更小的图片`
+    if (file.size > apiConfig.upload.image.maxFileSize) {
+      const errorMsg = `图片大小为 ${formatFileSize(file.size)}，超过 ${formatFileSize(apiConfig.upload.image.maxFileSize)} 限制，请选择更小的图片`
 
       // 显示Toast提示
       showMessage(errorMsg, 'error')

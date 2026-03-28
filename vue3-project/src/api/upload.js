@@ -1,4 +1,5 @@
 import request from './request'
+import { apiConfig } from '@/config/api'
 
 // 压缩图片函数
 const compressImage = (file, maxSizeMB = 0.8, quality = 0.4) => {
@@ -56,7 +57,7 @@ export async function uploadImage(file, options = {}) {
   try {
     if (!file) throw new Error('请选择要上传的文件')
     if (file instanceof File && !file.type.startsWith('image/')) throw new Error('请选择图片文件')
-    if (file.size > 5 * 1024 * 1024) throw new Error('图片大小不能超过5MB')
+    if (file.size > apiConfig.upload.image.maxFileSize) throw new Error(`图片大小不能超过${formatFileSize(apiConfig.upload.image.maxFileSize)}`)
 
     // 压缩图片
     const compressedFile = await compressImage(file)
@@ -98,7 +99,7 @@ export async function uploadImage(file, options = {}) {
 
 export async function uploadImages(files, options = {}) {
   try {
-    const { maxCount = 9, onProgress, onSingleComplete } = options
+    const { maxCount = apiConfig.upload.image.maxCount, onProgress, onSingleComplete } = options
     const fileArray = Array.from(files)
 
     if (fileArray.length === 0) throw new Error('请选择要上传的文件')
@@ -188,8 +189,8 @@ export async function uploadCroppedImage(blob, options = {}) {
 
 export function validateImageFile(file, options = {}) {
   const {
-    maxSize = 5 * 1024 * 1024,
-    allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    maxSize = apiConfig.upload.image.maxFileSize,
+    allowedTypes = apiConfig.upload.image.allowedTypes
   } = options
 
   if (!file) return { valid: false, error: '请选择文件' }
@@ -198,8 +199,7 @@ export function validateImageFile(file, options = {}) {
     return { valid: false, error: `不支持的文件类型` }
   }
   if (file.size > maxSize) {
-    const maxSizeMB = Math.round(maxSize / (1024 * 1024))
-    return { valid: false, error: `文件大小不能超过${maxSizeMB}MB` }
+    return { valid: false, error: `文件大小不能超过${formatFileSize(maxSize)}` }
   }
   return { valid: true, error: null }
 }
