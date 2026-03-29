@@ -200,7 +200,10 @@ REFRESH_TOKEN_EXPIRES_IN=30d
 API_BASE_URL=http://localhost:3001
 
 # Upload configuration
-UPLOAD_MAX_SIZE=50mb
+# Single image max file size
+IMAGE_MAX_SIZE=10mb
+# Single video max file size
+VIDEO_MAX_SIZE=100mb
 # Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # Video upload strategy (local: local storage, r2: Cloudflare R2)
@@ -209,7 +212,9 @@ VIDEO_UPLOAD_STRATEGY=local
 # Local storage configuration
 LOCAL_UPLOAD_DIR=uploads
 LOCAL_BASE_URL=http://localhost:3001
+# Video storage directory
 VIDEO_UPLOAD_DIR=uploads/videos
+# Video cover storage directory
 VIDEO_COVER_DIR=uploads/covers
 
 # Third-party image hosting configuration (when IMAGE_UPLOAD_STRATEGY=imagehost)
@@ -223,6 +228,8 @@ R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
 R2_BUCKET_NAME=your_bucket_name_here
 R2_ACCOUNT_ID=your_account_id_here
 R2_REGION=auto
+# Optional: If you have a custom domain, you can set R2_PUBLIC_URL
+# R2_PUBLIC_URL=https://your-custom-domain.com
 
 # CORS configuration
 CORS_ORIGIN=http://localhost:5173
@@ -244,6 +251,16 @@ SMTP_PASSWORD=your_email_password
 EMAIL_FROM=your_email@example.com
 # Sender name
 EMAIL_FROM_NAME=XiaoShiLiu Campus Community
+
+# IP location query configuration
+# Primary API URL
+IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
+# Primary API timeout (milliseconds)
+IP_LOCATION_PRIMARY_TIMEOUT=10000
+# Backup API URL
+IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
+# Backup API timeout (milliseconds)
+IP_LOCATION_BACKUP_TIMEOUT=5000
 ```
 
 ### Frontend Configuration (vue3-project/.env)
