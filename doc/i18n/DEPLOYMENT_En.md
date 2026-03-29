@@ -65,7 +65,10 @@ JWT_EXPIRES_IN=7d
 REFRESH_TOKEN_EXPIRES_IN=30d
 
 # Upload configuration
-UPLOAD_MAX_SIZE=50mb
+# Single image max file size
+IMAGE_MAX_SIZE=10mb
+# Single video max file size
+VIDEO_MAX_SIZE=100mb
 # Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # Video upload strategy (local: local storage, r2: Cloudflare R2)
@@ -111,6 +114,16 @@ SMTP_PASSWORD=your_email_password
 EMAIL_FROM=your_email@example.com
 # Sender name
 EMAIL_FROM_NAME=XiaoShiLiu Campus Community
+
+# IP Location Query Configuration
+# Primary API URL
+IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
+# Primary API timeout (milliseconds)
+IP_LOCATION_PRIMARY_TIMEOUT=10000
+# Backup API URL
+IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
+# Backup API timeout (milliseconds)
+IP_LOCATION_BACKUP_TIMEOUT=5000
 
 # Frontend build configuration
 VITE_API_BASE_URL=http://localhost:3001/api
@@ -216,13 +229,20 @@ DB_NAME=xiaoshiliu
 DB_PORT=3306
 
 # Upload Configuration
-UPLOAD_MAX_SIZE=50mb
+# Single image max file size
+IMAGE_MAX_SIZE=10mb
+# Single video max file size
+VIDEO_MAX_SIZE=100mb
 # Image Upload Strategy (local: Local Storage, imagehost: Third-party Image Hosting, r2: Cloudflare R2 Storage)
-UPLOAD_STRATEGY=imagehost
+IMAGE_UPLOAD_STRATEGY=imagehost
+# Video Upload Strategy (local: local storage, r2: Cloudflare R2 Storage)
+VIDEO_UPLOAD_STRATEGY=local
 
 # Local Storage Configuration
 LOCAL_UPLOAD_DIR=uploads
 LOCAL_BASE_URL=http://localhost:3001
+VIDEO_UPLOAD_DIR=uploads/videos
+VIDEO_COVER_DIR=uploads/covers
 
 # Third-party Image Hosting Configuration
 IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
@@ -238,9 +258,9 @@ R2_REGION=auto
 # Optional: Custom Domain URL (if a custom domain is configured)
 R2_PUBLIC_URL=https://your-custom-domain.com
 # Upload Strategy: local (Local Storage), imagehost (Third-party Image Hosting), or r2 (Cloudflare R2 Storage)
-UPLOAD_STRATEGY=local
-
-# Local Storage Configuration
+IMAGE_UPLOAD_STRATEGY=imagehost
+# Video Upload Strategy: local (Local Storage), or r2 (Cloudflare R2 Storage)
+VIDEO_UPLOAD_STRATEGY=local
 LOCAL_UPLOAD_DIR=uploads
 LOCAL_BASE_URL=http://localhost:3001
 
@@ -272,6 +292,16 @@ SMTP_PASSWORD=your_email_password
 EMAIL_FROM=your_email@example.com
 # Sender Name
 EMAIL_FROM_NAME=XiaoShiLiu Campus Community
+
+# IP Location Query Configuration
+# Primary API URL
+IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
+# Primary API timeout (milliseconds)
+IP_LOCATION_PRIMARY_TIMEOUT=10000
+# Backup API URL
+IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
+# Backup API timeout (milliseconds)
+IP_LOCATION_BACKUP_TIMEOUT=5000
 ```
 
 #### Frontend Environment Variables (vue3-project/.env)
@@ -303,9 +333,14 @@ JWT_SECRET=xiaoshiliu_secret_key_2025_docker
 JWT_EXPIRES_IN=7d
 
 # Upload Configuration
-UPLOAD_MAX_SIZE=50mb
+# Single image max file size
+IMAGE_MAX_SIZE=10mb
+# Single video max file size
+VIDEO_MAX_SIZE=100mb
 # Image Upload Strategy (local: Local Storage, imagehost: Third-party Image Hosting, r2: Cloudflare R2 Storage)
-UPLOAD_STRATEGY=imagehost
+IMAGE_UPLOAD_STRATEGY=imagehost
+# Video Upload Strategy (local: local storage, r2: Cloudflare R2 Storage)
+VIDEO_UPLOAD_STRATEGY=local
 
 # API Configuration
 API_BASE_URL=http://localhost:3001
@@ -424,14 +459,16 @@ The project supports three file upload strategies:
 ```yaml
 # Set in docker-compose.yml
 environment:
-  UPLOAD_STRATEGY: local
+  IMAGE_UPLOAD_STRATEGY: local
+  VIDEO_UPLOAD_STRATEGY: local
 ```
 
 **Third-party Image Hosting Mode** (recommended for production environments):
 ```yaml
 # Set in docker-compose.yml
 environment:
-  UPLOAD_STRATEGY: imagehost
+  IMAGE_UPLOAD_STRATEGY: imagehost
+  VIDEO_UPLOAD_STRATEGY: local
 ```
 
 **Cloudflare R2 Storage Mode** (recommended for production environments, supports CDN acceleration):
@@ -439,7 +476,8 @@ environment:
 ```yaml
 # Setting in docker-compose.yml
 environment:
-  UPLOAD_STRATEGY: r2
+  IMAGE_UPLOAD_STRATEGY: r2
+  VIDEO_UPLOAD_STRATEGY: r2
   R2_ACCESS_KEY_ID: your_r2_access_key_id
   R2_SECRET_ACCESS_KEY: your_r2_secret_access_key
   R2_ENDPOINT: https://your_account_id.r2.cloudflarestorage.com
@@ -745,7 +783,14 @@ DB_PORT=3306
 API_BASE_URL=http://localhost:3001
 
 # Upload configuration
-UPLOAD_MAX_SIZE=50mb
+# Single image max file size
+IMAGE_MAX_SIZE=10mb
+# Single video max file size
+VIDEO_MAX_SIZE=100mb
+# Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2)
+IMAGE_UPLOAD_STRATEGY=imagehost
+# Video upload strategy (local: local storage, r2: Cloudflare R2)
+VIDEO_UPLOAD_STRATEGY=local
 ```
 
 ## Database Script Description

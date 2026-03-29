@@ -45,7 +45,10 @@ JWT_EXPIRES_IN=7d
 REFRESH_TOKEN_EXPIRES_IN=30d
 
 # 上传配置
-UPLOAD_MAX_SIZE=50mb
+# 单张图片最大文件大小
+IMAGE_MAX_SIZE=10mb
+# 单个视频最大文件大小
+VIDEO_MAX_SIZE=100mb
 # 图片上传策略 (local: 本地存储, imagehost: 第三方图床, r2: Cloudflare R2)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 视频上传策略 (local: 本地存储, r2: Cloudflare R2)
@@ -91,6 +94,16 @@ SMTP_PASSWORD=your_email_password
 EMAIL_FROM=your_email@example.com
 # 发件人名称
 EMAIL_FROM_NAME=小石榴校园图文社区
+
+# IP属地查询配置
+# 主API地址
+IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
+# 主API超时时间（毫秒）
+IP_LOCATION_PRIMARY_TIMEOUT=10000
+# 备用API地址
+IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
+# 备用API超时时间（毫秒）
+IP_LOCATION_BACKUP_TIMEOUT=5000
 
 # 前端构建配置
 VITE_API_BASE_URL=http://localhost:3001/api
@@ -206,9 +219,14 @@ DB_PORT=3306
 API_BASE_URL=http://localhost:3001
 
 # 上传配置
-UPLOAD_MAX_SIZE=50mb
+# 单张图片最大文件大小
+IMAGE_MAX_SIZE=10mb
+# 单个视频最大文件大小
+VIDEO_MAX_SIZE=100mb
 # 图片上传策略 (local: 本地存储, imagehost: 第三方图床, r2: Cloudflare R2)
-UPLOAD_STRATEGY=imagehost
+IMAGE_UPLOAD_STRATEGY=imagehost
+# 视频上传策略 (local: 本地存储, r2: Cloudflare R2)
+VIDEO_UPLOAD_STRATEGY=local
 
 # 本地存储配置
 LOCAL_UPLOAD_DIR=uploads
@@ -228,6 +246,16 @@ R2_ACCOUNT_ID=your_account_id_here
 R2_REGION=auto
 # 可选：如果有自定义域名，可以设置 R2_PUBLIC_URL
 # R2_PUBLIC_URL=https://your-custom-domain.com
+
+# IP属地查询配置
+# 主API地址
+IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
+# 主API超时时间（毫秒）
+IP_LOCATION_PRIMARY_TIMEOUT=10000
+# 备用API地址
+IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
+# 备用API超时时间（毫秒）
+IP_LOCATION_BACKUP_TIMEOUT=5000
 
 # CORS配置
 CORS_ORIGIN=http://localhost:5173
@@ -341,8 +369,22 @@ XiaoShiLiu/
 
 ## 🔧 配置说明
 
-### 上传策略配置
+### 上传配置
+项目支持图片和视频上传，可配置以下参数：
 
+1. **图片上传配置**
+   ```env
+   IMAGE_MAX_SIZE=10mb           # 单张图片最大文件大小
+   IMAGE_UPLOAD_STRATEGY=imagehost  # 上传策略：local/imagehost/r2
+   ```
+   
+2. **视频上传配置**
+   ```env
+   VIDEO_MAX_SIZE=100mb          # 单个视频最大文件大小
+   VIDEO_UPLOAD_STRATEGY=local    # 上传策略：local/r2
+   ```
+
+3. **上传策略配置**
 项目支持三种图片上传策略：
 
 1. **本地存储** (`UPLOAD_STRATEGY=local`)
@@ -400,6 +442,24 @@ XiaoShiLiu/
    ```env
    EMAIL_ENABLED=false
    ```
+
+### IP属地查询配置
+项目支持 IP 属地自动查询功能，可配置以下参数：
+
+```env
+# 主API地址
+IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
+# 主API超时时间（毫秒）
+IP_LOCATION_PRIMARY_TIMEOUT=10000
+# 备用API地址
+IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
+# 备用API超时时间（毫秒）
+IP_LOCATION_BACKUP_TIMEOUT=5000
+```
+
+**说明**：
+- 系统会自动在主 API 失败时切换到备用 API
+- 超时时间可根据网络情况调整
 
 ### 反向代理配置
 

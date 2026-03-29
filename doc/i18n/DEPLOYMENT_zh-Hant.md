@@ -65,7 +65,13 @@ JWT_EXPIRES_IN=7d
 REFRESH_TOKEN_EXPIRES_IN=30d
 
 # 上傳配置
-UPLOAD_MAX_SIZE=50mb
+# 單張圖片最大文件大小
+IMAGE_MAX_SIZE=10mb
+# 上傳配置
+# 單張圖片最大文件大小
+IMAGE_MAX_SIZE=10mb
+# 單個視頻最大文件大小
+VIDEO_MAX_SIZE=100mb
 # 圖片上傳策略 (local: 本地儲存, imagehost: 第三方圖床, r2: Cloudflare R2)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 視頻上傳策略 (local: 本地儲存, r2: Cloudflare R2)
@@ -111,6 +117,16 @@ SMTP_PASSWORD=your_email_password
 EMAIL_FROM=your_email@example.com
 # 發件人名稱
 EMAIL_FROM_NAME=小石榴校園圖文社區
+
+# IP屬地查詢配置
+# 主API地址
+IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
+# 主API超時時間（毫秒）
+IP_LOCATION_PRIMARY_TIMEOUT=10000
+# 備用API地址
+IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
+# 備用API超時時間（毫秒）
+IP_LOCATION_BACKUP_TIMEOUT=5000
 
 # 前端構建配置
 VITE_API_BASE_URL=http://localhost:3001/api
@@ -216,13 +232,20 @@ DB_NAME=xiaoshiliu
 DB_PORT=3306
 
 # 上傳配置
-UPLOAD_MAX_SIZE=50mb
+# 單張圖片最大文件大小
+IMAGE_MAX_SIZE=10mb
+# 單個視頻最大文件大小
+VIDEO_MAX_SIZE=100mb
 # 圖片上傳策略 (local: 本地儲存空間, imagehost: 第三方圖片伺服，r2: Cloudflare R2 儲存空間)
-UPLOAD_STRATEGY=imagehost
+IMAGE_UPLOAD_STRATEGY=imagehost
+# 視頻上傳策略 (local: 本地儲存空間, r2: Cloudflare R2 儲存空間)
+VIDEO_UPLOAD_STRATEGY=local
 
 # 本地儲存空間配置
 LOCAL_UPLOAD_DIR=uploads
 LOCAL_BASE_URL=http://localhost:3001
+VIDEO_UPLOAD_DIR=uploads/videos
+VIDEO_COVER_DIR=uploads/covers
 
 # 第三方圖片伺服配置
 IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
@@ -238,7 +261,9 @@ R2_REGION=auto
 # 選擇性：自定義域名 URL (如果已配置自定義域名)
 R2_PUBLIC_URL=https://your-custom-domain.com
 # 上傳策略：local (本地儲存空間), imagehost (第三方圖片伺服), 或 r2 (Cloudflare R2 儲存空間)
-UPLOAD_STRATEGY=local
+IMAGE_UPLOAD_STRATEGY=imagehost
+# 視頻上傳策略 (local: 本地存儲, r2: Cloudflare R2 存儲)
+VIDEO_UPLOAD_STRATEGY=local
 
 # 本地儲存空間配置
 LOCAL_UPLOAD_DIR=uploads
@@ -303,9 +328,14 @@ JWT_SECRET=小石麗珠_secret_key_2025_docker
 JWT_EXPIRES_IN=7d
 
 # 上傳配置
-UPLOAD_MAX_SIZE=50mb
+# 單張圖片最大文件大小
+IMAGE_MAX_SIZE=10mb
+# 單個視頻最大文件大小
+VIDEO_MAX_SIZE=100mb
 # 圖片上傳策略 (local: 本地存儲, imagehost: 第三方圖片存儲, r2: Cloudflare R2 存儲)
-UPLOAD_STRATEGY=imagehost
+IMAGE_UPLOAD_STRATEGY=imagehost
+# 視頻上傳策略 (local: 本地存儲, r2: Cloudflare R2 存儲)
+VIDEO_UPLOAD_STRATEGY=local
 
 # API 配置
 API_BASE_URL=http://localhost:3001
@@ -424,14 +454,16 @@ docker-compose exec backend ls -la /app/uploads
 ```yaml
 # 設定於 docker-compose.yml
 環境變數:
-  UPLOAD_STRATEGY: local
+  IMAGE_UPLOAD_STRATEGY: local
+  VIDEO_UPLOAD_STRATEGY: local
 ```
 
 **第三方圖片伺服器模式**（推薦用於生產環境）:
 ```yaml
 # 設定於 docker-compose.yml
 環境變數:
-  UPLOAD_STRATEGY: imagehost
+  IMAGE_UPLOAD_STRATEGY: imagehost
+  VIDEO_UPLOAD_STRATEGY: local
 ```
 
 **Cloudflare R2 儲存模式**（推薦用於生產環境，支援 CDN 加速）:
@@ -439,7 +471,8 @@ docker-compose exec backend ls -la /app/uploads
 ```yaml
 # 設定於 docker-compose.yml
 環境變數:
-  UPLOAD_STRATEGY: r2
+  IMAGE_UPLOAD_STRATEGY: r2
+  VIDEO_UPLOAD_STRATEGY: r2
   R2_ACCESS_KEY_ID: your_r2_access_key_id
   R2_SECRET_ACCESS_KEY: your_r2_secret_access_key
   R2_ENDPOINT: https://your_account_id.r2.cloudflarestorage.com
@@ -745,7 +778,14 @@ DB_PORT=3306
 API_BASE_URL=http://localhost:3001
 
 # 上傳配置
-UPLOAD_MAX_SIZE=50mb
+# 單張圖片最大文件大小
+IMAGE_MAX_SIZE=10mb
+# 單個視頻最大文件大小
+VIDEO_MAX_SIZE=100mb
+# 圖片上傳策略 (local: 本地存儲, imagehost: 第三方圖片存儲, r2: Cloudflare R2 存儲)
+IMAGE_UPLOAD_STRATEGY=imagehost
+# 視頻上傳策略 (local: 本地存儲, r2: Cloudflare R2 存儲)
+VIDEO_UPLOAD_STRATEGY=local
 ```
 
 ## 資料庫腳本說明

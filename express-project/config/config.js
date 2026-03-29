@@ -21,6 +21,11 @@ const config = {
     env: process.env.NODE_ENV || 'development'
   },
 
+  // CORS配置
+  cors: {
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : ['http://localhost:5173', 'http://localhost:3001']
+  },
+
   // JWT配置
   jwt: {
     secret: process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex'),
@@ -128,6 +133,14 @@ const config = {
       email: process.env.EMAIL_FROM || '',
       name: process.env.EMAIL_FROM_NAME || '小石榴校园图文社区'
     }
+  },
+
+  // IP属地查询配置
+  ipLocation: {
+    primaryApi: process.env.IP_LOCATION_PRIMARY_API || 'https://api.pearktrue.cn/api/ip/details',
+    backupApi: process.env.IP_LOCATION_BACKUP_API || 'https://api.pearktrue.cn/api/ip/high',
+    primaryTimeout: parseInt(process.env.IP_LOCATION_PRIMARY_TIMEOUT) || 10000,
+    backupTimeout: parseInt(process.env.IP_LOCATION_BACKUP_TIMEOUT) || 5000
   }
 };
 

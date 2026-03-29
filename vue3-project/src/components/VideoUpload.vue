@@ -66,7 +66,7 @@
 
     <div class="upload-tips">
       <p>• 支持 MP4、MOV、AVI 格式</p>
-      <p>• 文件大小不超过100MB</p>
+      <p>• 文件大小不超过{{ formatFileSize(apiConfig.upload.video.maxFileSize) }}</p>
       <p>• 建议视频时长不超过5分钟</p>
       <p v-if="videoData && !isUploading">• 点击缩略图可自定义封面</p>
     </div>
@@ -82,6 +82,8 @@ import MessageToast from './MessageToast.vue'
 import { videoApi } from '@/api/video.js'
 import { uploadImage } from '@/api/upload.js'
 import { generateVideoThumbnail, blobToFile, generateThumbnailFilename } from '@/utils/videoThumbnail.js'
+import { apiConfig } from '@/config/api'
+import { formatFileSize } from '@/utils/fileSize'
 
 const props = defineProps({
   modelValue: {
@@ -90,7 +92,7 @@ const props = defineProps({
   },
   maxSize: {
     type: Number,
-    default: 100 * 1024 * 1024 // 100MB
+    default: apiConfig.upload.video.maxFileSize
   }
 })
 
@@ -210,10 +212,10 @@ const validateCoverFile = (file) => {
     return { valid: false, message: '请选择图片文件' }
   }
 
-  // 验证文件大小 (5MB)
-  const maxCoverSize = 5 * 1024 * 1024
+  // 验证文件大小
+  const maxCoverSize = apiConfig.upload.image.maxFileSize
   if (file.size > maxCoverSize) {
-    return { valid: false, message: `封面图片大小不能超过${formatFileSize(maxCoverSize)}` }
+    return { valid: false, message: `封面图片大小不能超过${formatFileSize(apiConfig.upload.image.maxFileSize)}` }
   }
 
   return { valid: true }
@@ -423,15 +425,6 @@ const removeVideo = () => {
   if (coverInput.value) {
     coverInput.value.value = ''
   }
-}
-
-// 格式化文件大小
-const formatFileSize = (bytes) => {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 // 显示消息提示

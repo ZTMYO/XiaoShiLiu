@@ -201,7 +201,10 @@ REFRESH_TOKEN_EXPIRES_IN=30d
 API_BASE_URL=http://localhost:3001
 
 # 上傳配置
-UPLOAD_MAX_SIZE=50mb
+# 單張圖片最大文件大小
+IMAGE_MAX_SIZE=10mb
+# 單個視頻最大文件大小
+VIDEO_MAX_SIZE=100mb
 # 圖片上傳策略 (local: 本地儲存, imagehost: 第三方圖床, r2: Cloudflare R2)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 視頻上傳策略 (local: 本地儲存, r2: Cloudflare R2)
@@ -210,7 +213,9 @@ VIDEO_UPLOAD_STRATEGY=local
 # 本地儲存配置
 LOCAL_UPLOAD_DIR=uploads
 LOCAL_BASE_URL=http://localhost:3001
+# 視頻儲存目錄
 VIDEO_UPLOAD_DIR=uploads/videos
+# 視頻封面儲存目錄
 VIDEO_COVER_DIR=uploads/covers
 
 # 第三方圖床配置（當IMAGE_UPLOAD_STRATEGY=imagehost時使用）
@@ -224,6 +229,8 @@ R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
 R2_BUCKET_NAME=your_bucket_name_here
 R2_ACCOUNT_ID=your_account_id_here
 R2_REGION=auto
+# 可選：如果有自定義域名，可以設置 R2_PUBLIC_URL
+# R2_PUBLIC_URL=https://your-custom-domain.com
 
 # CORS配置
 CORS_ORIGIN=http://localhost:5173
@@ -245,6 +252,16 @@ SMTP_PASSWORD=your_email_password
 EMAIL_FROM=your_email@example.com
 # 發件人名稱
 EMAIL_FROM_NAME=小石榴校園圖文社區
+
+# IP屬地查詢配置
+# 主API地址
+IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
+# 主API超時時間（毫秒）
+IP_LOCATION_PRIMARY_TIMEOUT=10000
+# 備用API地址
+IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
+# 備用API超時時間（毫秒）
+IP_LOCATION_BACKUP_TIMEOUT=5000
 ```
 
 ### 前端配置 (vue3-project/.env)

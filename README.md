@@ -200,7 +200,10 @@ REFRESH_TOKEN_EXPIRES_IN=30d
 API_BASE_URL=http://localhost:3001
 
 # 上传配置
-UPLOAD_MAX_SIZE=50mb
+# 单张图片最大文件大小
+IMAGE_MAX_SIZE=10mb
+# 单个视频最大文件大小
+VIDEO_MAX_SIZE=100mb
 # 图片上传策略 (local: 本地存储, imagehost: 第三方图床, r2: Cloudflare R2)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 视频上传策略 (local: 本地存储, r2: Cloudflare R2)
@@ -248,6 +251,16 @@ SMTP_PASSWORD=your_email_password
 EMAIL_FROM=your_email@example.com
 # 发件人名称
 EMAIL_FROM_NAME=小石榴校园图文社区
+
+# IP属地查询配置
+# 主API地址
+IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
+# 主API超时时间（毫秒）
+IP_LOCATION_PRIMARY_TIMEOUT=10000
+# 备用API地址
+IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
+# 备用API超时时间（毫秒）
+IP_LOCATION_BACKUP_TIMEOUT=5000
 ```
 
 ### 前端配置 (vue3-project/.env)
@@ -267,6 +280,7 @@ VITE_APP_TITLE=小石榴图文社区
 > - 后端支持本地存储、第三方图床和 Cloudflare R2 三种上传策略
 > - 图片和视频可以分别配置不同的上传策略
 > - 邮件功能默认关闭，启用后支持邮箱验证注册和找回密码
+> - IP属地查询支持主备双API，自动切换保证服务可用性
 > - 前端使用 Vite 环境变量，变量名需以 `VITE_` 开头
 > - 详细配置说明请参考 [部署指南](./doc/DEPLOYMENT.md)
 

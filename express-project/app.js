@@ -17,9 +17,6 @@ const { HTTP_STATUS, RESPONSE_CODES } = require('./constants');
 // 导入自动解封功能
 const { startAutoUnbanService } = require('./utils/autoUnban');
 
-// 加载环境变量
-require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-
 // 导入路由模块
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
@@ -61,10 +58,7 @@ const uploadLimiter = rateLimit({
 // 中间件配置
 // CORS配置
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3001'
-  ],
+  origin: config.cors.origin,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

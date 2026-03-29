@@ -136,7 +136,7 @@ const badgeTitle = computed(() => {
   transition: opacity 0.2s ease, visibility 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border-color-primary);
-  z-index: 10;
+  z-index: 200;
   pointer-events: none;
 }
 
