@@ -32,6 +32,7 @@ const columns = [
   { key: 'user_display_id', label: '小石榴号', type: 'user-link', sortable: false },
   { key: 'category', label: '分类', sortable: false },
   { key: 'type', label: '类型', type: 'mapped', map: { 1: '图文', 2: '视频' }, sortable: false },
+  { key: 'copyright', label: '版权', type: 'mapped', map: { 0: '原创', 1: '转载' }, sortable: false },
   {
     key: 'status',
     label: '状态',
@@ -75,6 +76,17 @@ const formFields = computed(() => {
         { value: 1, label: '图文笔记' },
         { value: 2, label: '视频笔记' }
       ]
+    },
+    {
+      key: 'copyright',
+      label: '版权声明',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 0, label: '原创' },
+        { value: 1, label: '转载' }
+      ],
+      description: '0=原创, 1=转载'
     },
     {
       key: 'status',
@@ -124,6 +136,17 @@ const searchFields = computed(() => [
       { value: '', label: '全部类型' },
       { value: '1', label: '图文' },
       { value: '2', label: '视频' }
+    ]
+  },
+  {
+    key: 'copyright',
+    label: '版权',
+    type: 'select',
+    placeholder: '选择版权',
+    options: [
+      { value: '', label: '全部版权' },
+      { value: '0', label: '原创' },
+      { value: '1', label: '转载' }
     ]
   },
   {

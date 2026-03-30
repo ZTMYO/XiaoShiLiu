@@ -68,12 +68,14 @@ CREATE TABLE IF NOT EXISTS `posts` (
   `comment_count` int(11) DEFAULT 0 COMMENT '评论数',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
   `status` tinyint(1) DEFAULT 2 COMMENT '笔记状态：0-发布（审核通过），1-草稿，2-待审核',
+  `copyright` tinyint(1) DEFAULT 0 COMMENT '版权声明：0-原创，1-转载',
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_category_id` (`category_id`),
   KEY `idx_created_at` (`created_at`),
   KEY `idx_like_count` (`like_count`),
   KEY `idx_category_id_created_at` (`category_id`, `created_at`),
+  KEY `idx_copyright` (`copyright`),
   CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_posts_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记表';
