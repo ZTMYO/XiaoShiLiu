@@ -564,10 +564,134 @@ General parameters for interfaces that support pagination:
 }
 ```
 
+### 10. Get User's Posts
+**API Endpoint**: `GET /api/users/:id/posts`
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | string | Yes | User Xiaosu ID |
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| page | int | No | Page number, default 1 |
+| limit | int | No | Number of items per page, default 20 |
+| status | string | No | Status filter, `all`=published and pending review, default only published |
+| keyword | string | No | Search keyword (title or content) |
+| category | string | No | Category ID filter |
+| sort | string | No | Sort field (created_at, view_count, like_count, etc.), default created_at |
+
+**Response Example**:
 ```json
 {
   "code": 200,
-  "message": "成功",
+  "message": "success",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "title": "Beautiful Scenery",
+        "content": "I took some beautiful scenery photos today",
+        "images": ["https://example.com/image1.jpg"],
+        "category_id": 1,
+        "tags": ["Scenery", "Photography"],
+        "copyright": 0,
+        "like_count": 10,
+        "comment_count": 5,
+        "collection_count": 3,
+        "view_count": 100,
+        "isLiked": false,
+        "isCollected": false,
+        "created_at": "2025-08-30T00:00:00.000Z",
+        "user": {
+          "id": 1,
+          "user_id": "user_001",
+          "nickname": "XiaoshiLiu",
+          "avatar": "https://example.com/avatar.jpg",
+          "verified": 0
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "pages": 1
+    }
+  }
+}
+```
+
+### 11. Get User's Liked Posts
+**API Endpoint**: `GET /api/users/:id/likes`
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | int | Yes | User ID |
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| page | int | No | Page number, default 1 |
+| limit | int | No | Number of items per page, default 20 |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "posts": [
+      {
+        "id": 2,
+        "title": "Wonderful Moment",
+        "content": "Recording the beauty in life",
+        "images": ["https://example.com/image2.jpg"],
+        "category_id": 2,
+        "tags": ["Life", "Recording"],
+        "copyright": 1,
+        "like_count": 15,
+        "comment_count": 8,
+        "collection_count": 5,
+        "view_count": 150,
+        "isLiked": true,
+        "isCollected": false,
+        "liked_at": "2025-01-02T00:00:00.000Z",
+        "created_at": "2025-08-30T00:00:00.000Z",
+        "user": {
+          "id": 2,
+          "user_id": "user_002",
+          "nickname": "User 2",
+          "avatar": "https://example.com/avatar2.jpg",
+          "verified": 0
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 3,
+      "pages": 1
+    }
+  }
+}
+```
+
+### 14. Get User Statistics
+**API Endpoint**: `GET /api/users/:id/stats`
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | int | Yes | User ID |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "success",
   "data": {
     "posts_count": 25,
     "likes_count": 150,
@@ -925,6 +1049,7 @@ General parameters for interfaces that support pagination:
         "title": "Note Title",
         "content": "Note Content",
         "category_id": 2,
+        "copyright": 0,
         "view_count": 100,
         "like_count": 10,
         "comment_count": 5,
@@ -975,8 +1100,11 @@ General parameters for interfaces that support pagination:
 | title | string | No* | Note Title (required when publishing, optional when drafting) |
 | content | string | No* | Note Content (required when publishing, optional when drafting) |
 | category_id | int | No | Category ID |
+| type | int | No | Note type: 1=image note (default), 2=video note |
 | images | array | No | Array of Image URLs |
+| video | object | No | Video information object (for video notes) |
 | tags | array | No | Array of Tag Names (string array) |
+| copyright | int | No | Copyright declaration: 0=original, 1=reprint (default 0) |
 | status | int | No | Post status, 0=published (approved), 1=draft, 2=pending review, 3=review rejected (default 2) |
 
 **Request Example**:
@@ -985,6 +1113,7 @@ General parameters for interfaces that support pagination:
   "title": "Share a Beautiful Afternoon",
   "content": "Today the weather is nice, walking in the park...",
   "category_id": 5,
+  "copyright": 0,
   "images": [
     "https://example.com/image1.jpg",
     "https://example.com/image2.jpg"
@@ -1085,6 +1214,18 @@ General parameters for interfaces that support pagination:
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | id | int | Yes | Note ID |
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| title | string | No* | Note Title (required when publishing, optional when drafting) |
+| content | string | No* | Note Content (required when publishing, optional when drafting) |
+| category_id | int | No | Category ID |
+| images | array | No | Array of Image URLs |
+| video | object | No | Video information object (for video notes) |
+| tags | array | No | Array of Tag Names (string array) |
+| copyright | int | No | Copyright declaration: 0=original, 1=reprint (default 0) |
+| status | int | No | Post status, 0=published (approved), 1=draft, 2=pending review, 3=review rejected (default 2) |
 
 ---
 ### 8. Delete Note

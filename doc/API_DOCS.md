@@ -694,6 +694,7 @@ Authorization: Bearer <your_jwt_token>
         "images": ["https://example.com/image1.jpg"],
         "category_id": 1,
         "tags": ["风景", "摄影"],
+        "copyright": 0,
         "like_count": 10,
         "comment_count": 5,
         "collection_count": 3,
@@ -748,6 +749,7 @@ Authorization: Bearer <your_jwt_token>
         "images": ["https://example.com/image2.jpg"],
         "category_id": 2,
         "tags": ["生活", "记录"],
+        "copyright": 1,
         "like_count": 15,
         "comment_count": 8,
         "collection_count": 5,
@@ -1209,6 +1211,7 @@ Authorization: Bearer <your_jwt_token>
         "title": "笔记标题",
         "content": "笔记内容",
         "category_id": 2,
+        "copyright": 0,
         "view_count": 100,
         "like_count": 10,
         "comment_count": 5,
@@ -1267,6 +1270,7 @@ Authorization: Bearer <your_jwt_token>
 | images | array | 否 | 图片URL数组（图文笔记使用） |
 | video | object | 否 | 视频信息对象（视频笔记使用） |
 | tags | array | 否 | 标签名称数组（字符串数组） |
+| copyright | int | 否 | 版权声明：0-原创，1-转载（默认0） |
 | status | int | 否 | 笔记状态，0=发布（审核通过），1=草稿，2=待审核（默认2） |
 
 **video对象结构**:
@@ -1282,6 +1286,7 @@ Authorization: Bearer <your_jwt_token>
   "content": "今天天气很好，在公园里散步...",
   "category_id": 5,
   "type": 1,
+  "copyright": 0,
   "images": [
     "https://example.com/image1.jpg",
     "https://example.com/image2.jpg"
@@ -1298,6 +1303,7 @@ Authorization: Bearer <your_jwt_token>
   "content": "记录下这美好的一刻...",
   "category_id": 5,
   "type": 2,
+  "copyright": 0,
   "video": {
     "url": "https://video.example.com/video.mp4",
     "coverUrl": "https://img.example.com/video_cover.jpg"
@@ -1407,6 +1413,7 @@ Authorization: Bearer <your_jwt_token>
 | images | array | 否 | 图片URL数组（图文笔记使用） |
 | video | object | 否 | 视频信息对象（视频笔记使用） |
 | tags | array | 否 | 标签名称数组（字符串数组） |
+| copyright | int | 否 | 版权声明：0-原创，1-转载（默认0） |
 | status | int | 否 | 笔记状态，0=发布（审核通过），1=草稿，2=待审核（默认2） |
 
 **video对象结构**:
@@ -1421,6 +1428,7 @@ Authorization: Bearer <your_jwt_token>
   "title": "更新后的标题",
   "content": "更新后的内容",
   "category_id": 2,
+  "copyright": 0,
   "images": [
     "https://example.com/new_image1.jpg"
   ],
