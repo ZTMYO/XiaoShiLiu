@@ -46,12 +46,14 @@ CREATE TABLE IF NOT EXISTS `admin` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员表';
 
 -- 3. 分类表
-CREATE TABLE categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE COMMENT '分类名称',
-    category_title VARCHAR(50) NULL COMMENT '分类英文标题，用于URL路径',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    UNIQUE KEY uk_category_title (category_title)
+CREATE TABLE IF NOT EXISTS `categories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '分类ID',
+  `name` varchar(50) NOT NULL COMMENT '分类名称',
+  `category_title` varchar(50) DEFAULT NULL COMMENT '分类英文标题，用于URL路径',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`),
+  UNIQUE KEY `category_title` (`category_title`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='分类表';
 
 -- 4. 笔记表
@@ -295,17 +297,17 @@ CREATE TABLE IF NOT EXISTS `user_verification` (
 -- 18. 用户封禁表
 CREATE TABLE IF NOT EXISTS `user_ban` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '封禁记录ID',
-  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-  `reason` text NOT NULL COMMENT '封禁原因',
+  `user_id` bigint(20) NOT NULL COMMENT '被封禁用户ID',
+  `reason` varchar(255) NOT NULL COMMENT '封禁原因',
   `end_time` timestamp NULL DEFAULT NULL COMMENT '封禁结束时间',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `status` tinyint(4) DEFAULT 0 COMMENT '状态：0=封禁中，1=管理员解封，2=自动解封，3=永久封禁，4=封禁撤销',
-  `operator` bigint(20) NOT NULL COMMENT '操作人ID',
+  `status` int(11) DEFAULT 0 COMMENT '状态：0-封禁中，1-管理员解封，2-自动解封，3-永久封禁，4-封禁撤销',
+  `operator` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作人ID：0-系统，其他为管理员ID',
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_status` (`status`),
   KEY `idx_created_at` (`created_at`),
-  KEY `idx_operator` (`operator`),
+  KEY `idx_end_time` (`end_time`),
   CONSTRAINT `user_ban_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户封禁表';
 

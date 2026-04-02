@@ -36,6 +36,10 @@ class DatabaseInitializer {
       connection = await pool.getConnection();
       console.log('开始创建数据表...');
 
+      // 开始事务
+      await connection.beginTransaction();
+      console.log('事务已开始');
+
       // 创建用户表
       await this.createUsersTable(connection);
 
@@ -90,9 +94,21 @@ class DatabaseInitializer {
       // 创建用户封禁表
       await this.createUserBanTable(connection);
 
+      // 提交事务
+      await connection.commit();
+      console.log('事务已提交');
       console.log('所有数据表创建完成!');
 
     } catch (error) {
+      // 回滚事务
+      if (connection) {
+        try {
+          await connection.rollback();
+          console.log('事务已回滚');
+        } catch (rollbackError) {
+          console.error('回滚事务失败:', rollbackError.message);
+        }
+      }
       console.error('创建数据表失败:', error.message);
       throw error;
     } finally {
