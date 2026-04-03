@@ -702,6 +702,7 @@ const apiGroups = ref([
           { name: 'images', type: 'array', required: false, description: '图片URL数组（图文笔记使用）' },
           { name: 'video', type: 'object', required: false, description: '视频信息对象（视频笔记使用）' },
           { name: 'tags', type: 'array', required: false, description: '标签名称数组（字符串数组）' },
+          { name: 'copyright', type: 'int', required: false, description: '版权声明：0=原创，1=转载（默认0）' },
           { name: 'status', type: 'int', required: false, description: '笔记状态，0=已发布（审核通过），1=草稿，2=待审核（默认2）' }
         ]
       },
@@ -781,6 +782,7 @@ const apiGroups = ref([
           { name: 'images', type: 'array', required: false, description: '图片URL数组（图文笔记使用）' },
           { name: 'video', type: 'object', required: false, description: '视频信息对象（视频笔记使用）' },
           { name: 'tags', type: 'array', required: false, description: '标签名称数组（字符串数组）' },
+          { name: 'copyright', type: 'int', required: false, description: '版权声明：0=原创，1=转载（默认0）' },
           { name: 'status', type: 'int', required: false, description: '笔记状态，0=发布（审核通过），1=草稿，2=待审核（默认2）' }
         ]
       },

@@ -1036,7 +1036,7 @@ const handleCommentLike = async (item, willBeLiked) => {
       ? await commentApi.likeComment(commentId)
       : await commentApi.unlikeComment(commentId)
 
-    if (response.code === 200) {
+    if (response.success) {
       // 使用后端返回的准确数据更新store（如果有差异的话）
       if (response.data && response.data.likeCount !== undefined) {
         commentLikeStore.updateCommentLikeState(commentId, willBeLiked, response.data.likeCount)

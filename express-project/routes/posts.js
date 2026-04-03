@@ -401,9 +401,10 @@ router.get('/:id', optionalAuth, async (req, res) => {
 // 创建笔记
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { title, content, category_id, images, video, tags, status, type } = req.body;
+    const { title, content, category_id, images, video, tags, status, type, copyright } = req.body;
     const userId = req.user.id;
     const postType = type || 1; // 默认为图文类型
+    const copyrightValue = copyright !== undefined ? copyright : 0; // 默认为原创
 
     console.log('=== 创建笔记请求 ===');
     console.log('用户ID:', userId);
@@ -412,6 +413,7 @@ router.post('/', authenticateToken, async (req, res) => {
     console.log('分类ID:', category_id);
     console.log('发布类型:', postType);
     console.log('笔记状态:', status);
+    console.log('版权声明:', copyrightValue);
     console.log('图片数量:', images ? images.length : 0);
     console.log('视频数据:', video ? JSON.stringify(video) : 'null');
     console.log('标签:', tags);
@@ -434,8 +436,8 @@ router.post('/', authenticateToken, async (req, res) => {
     // 插入笔记
     console.log('📝 开始插入笔记到数据库...');
     const [result] = await pool.execute(
-      'INSERT INTO posts (user_id, title, content, category_id, status, type) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, title || '', sanitizedContent, category_id || null, (status !== undefined ? status : 2).toString(), postType]
+      'INSERT INTO posts (user_id, title, content, category_id, status, type, copyright) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [userId, title || '', sanitizedContent, category_id || null, (status !== undefined ? status : 2).toString(), postType, copyrightValue]
     );
 
     const postId = result.insertId;
@@ -806,7 +808,7 @@ router.post('/:id/collect', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const postId = req.params.id;
-    const { title, content, category_id, images, video, tags, status } = req.body;
+    const { title, content, category_id, images, video, tags, status, copyright } = req.body;
     const userId = req.user.id;
 
     // 验证必填字段：如果不是草稿（status=2），则要求标题、内容和分类不能为空
@@ -815,6 +817,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '发布时标题、内容和分类不能为空' });
     }
     const sanitizedContent = content ? sanitizeContent(content) : '';
+    const copyrightValue = copyright !== undefined ? copyright : 0; // 默认为原创
 
     // 检查笔记是否存在且属于当前用户
     const [postRows] = await pool.execute(
@@ -832,15 +835,24 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     const postType = postRows[0].type;
 
-    // 在更新之前获取原始笔记信息（用于对比@用户变化）
-    const [originalPostRows] = await pool.execute('SELECT status, content FROM posts WHERE id = ?', [postId.toString()]);
+    // 在更新之前获取原始笔记信息（用于对比@用户变化和版权修改限制）
+    const [originalPostRows] = await pool.execute('SELECT status, content, copyright FROM posts WHERE id = ?', [postId.toString()]);
     const wasOriginallyDraft = originalPostRows.length > 0 && originalPostRows[0].status === 1;
     const originalContent = originalPostRows.length > 0 ? originalPostRows[0].content : '';
+    const originalCopyright = originalPostRows.length > 0 ? originalPostRows[0].copyright : 0;
+
+    // 已发布则不允许修改copyright
+    if (originalPostRows[0].status !== 1 && copyright !== undefined && copyright !== originalCopyright) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
+        code: RESPONSE_CODES.VALIDATION_ERROR, 
+        message: '发布后不可修改版权声明' 
+      });
+    }
 
     // 更新笔记基本信息
     await pool.execute(
-      'UPDATE posts SET title = ?, content = ?, category_id = ?, status = ? WHERE id = ?',
-      [title || '', sanitizedContent, category_id || null, (status !== undefined ? status : 2).toString(), postId.toString()]
+      'UPDATE posts SET title = ?, content = ?, category_id = ?, status = ?, copyright = ? WHERE id = ?',
+      [title || '', sanitizedContent, category_id || null, (status !== undefined ? status : 2).toString(), copyrightValue, postId.toString()]
     );
 
     // 根据笔记类型处理媒体文件

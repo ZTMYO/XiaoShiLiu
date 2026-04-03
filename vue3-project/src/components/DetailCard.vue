@@ -164,6 +164,9 @@
                 <ContentRenderer :text="postData.content" />
               </p>
               <div class="post-tags">
+                <div v-if="postData.copyright !== undefined && postData.copyright !== null" class="copyright-badge">
+                  {{ postData.copyright === 0 ? '原创' : '转载' }}
+                </div>
                 <span v-for="tag in postData.tags" :key="tag" class="tag clickable-tag" @click="handleTagClick(tag)">#{{
                   tag }}</span>
               </div>
@@ -832,7 +835,8 @@ const postData = computed(() => {
           []) :
         []),
     time: formatTime(props.item.originalData?.createdAt || props.item.created_at || props.item.time),
-    location: props.item.location || ''
+    location: props.item.location || '',
+    copyright: props.item.copyright
   }
   return data
 })
@@ -3255,6 +3259,16 @@ function handleAvatarError(event) {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
+  align-items: center;
+}
+
+.copyright-badge {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--text-color-primary);
+  margin-right: 8px;
 }
 
 .tag {

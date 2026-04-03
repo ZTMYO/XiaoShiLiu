@@ -573,40 +573,117 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
+### 10. 獲取用戶發布的筆記
+**接口地址**: `GET /api/users/:id/posts`
+
+**路徑參數**:
+| 參數 | 型別 | 必填 | 說明 |
+|------|------|------|------|
+| id | string | 是 | 用戶小石榴號 |
+
+**請求參數**:
+| 參數 | 型別 | 必填 | 說明 |
+|------|------|------|------|
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| status | string | 否 | 狀態篩選，`all`=已發布和待審核，不傳則只查詢已發布 |
+| keyword | string | 否 | 搜索關鍵詞（標題或內容） |
+| category | string | 否 | 分類ID篩選 |
+| sort | string | 否 | 排序字段（created_at, view_count, like_count等），預設created_at |
+
+**回應範例**:
 ```json
 {
   "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "id": 2,
-      "標題": "精彩的瞬間",
-      "內容": "記錄生活中的美好",
-      "圖片": ["https://example.com/image2.jpg"],
-      "分類ID": 2,
-      "標籤": ["生活", "記錄"],
-      "喜歡數": 15,
-      "評論數": 8,
-      "收藏數": 5,
-      "查看數": 150,
-      "是否喜歡": true,
-      "是否收藏": false,
-      "喜歡時間": "2025-01-02T00:00:00.000Z",
-      "創建時間": "2025-08-30T00:00:00.000Z",
-      "用戶": {
-        "id": 2,
-        "用戶ID": "user_002",
-        "暱稱": "用戶2",
-        "頭像": "https://example.com/avatar2.jpg",
-        "驗證": 0
+  "message": "success",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "title": "美麗的風景",
+        "content": "今天拍到了很美的風景",
+        "images": ["https://example.com/image1.jpg"],
+        "category_id": 1,
+        "tags": ["風景", "攝影"],
+        "copyright": 0,
+        "like_count": 10,
+        "comment_count": 5,
+        "collection_count": 3,
+        "view_count": 100,
+        "isLiked": false,
+        "isCollected": false,
+        "created_at": "2025-08-30T00:00:00.000Z",
+        "user": {
+          "id": 1,
+          "user_id": "user_001",
+          "nickname": "小石榴",
+          "avatar": "https://example.com/avatar.jpg",
+          "verified": 0
+        }
       }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "pages": 1
     }
-  ],
-  "分頁": {
-    "頁碼": 1,
-    "限制": 20,
-    "總數": 3,
-    "頁數": 1
+  }
+}
+```
+
+### 11. 獲取用戶點贊的筆記
+**接口地址**: `GET /api/users/:id/likes`
+
+**路徑參數**:
+| 參數 | 型別 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 用戶ID |
+
+**請求參數**:
+| 參數 | 型別 | 必填 | 說明 |
+|------|------|------|------|
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+
+**回應範例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "posts": [
+      {
+        "id": 2,
+        "title": "精彩的瞬間",
+        "content": "記錄生活中的美好",
+        "images": ["https://example.com/image2.jpg"],
+        "category_id": 2,
+        "tags": ["生活", "記錄"],
+        "copyright": 1,
+        "like_count": 15,
+        "comment_count": 8,
+        "collection_count": 5,
+        "view_count": 150,
+        "isLiked": true,
+        "isCollected": false,
+        "liked_at": "2025-01-02T00:00:00.000Z",
+        "created_at": "2025-08-30T00:00:00.000Z",
+        "user": {
+          "id": 2,
+          "user_id": "user_002",
+          "nickname": "用戶2",
+          "avatar": "https://example.com/avatar2.jpg",
+          "verified": 0
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 3,
+      "pages": 1
+    }
   }
 }
 ```
@@ -1045,6 +1122,7 @@ Authorization: Bearer <your_jwt_token>
         "title": "筆記標題",
         "content": "筆記內容",
         "category_id": 2,
+        "copyright": 0,
         "view_count": 100,
         "like_count": 10,
         "comment_count": 5,
@@ -1105,6 +1183,7 @@ Authorization: Bearer <your_jwt_token>
   "title": "分享一個美好的下午",
   "content": "今天天氣很好，在公園裡散步...",
   "category_id": 5,
+  "copyright": 0,
   "images": [
     "https://example.com/image1.jpg",
     "https://example.com/image2.jpg"
@@ -1203,7 +1282,19 @@ Authorization: Bearer <your_jwt_token>
 **路径參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| id | int | 是 | 笔記ID |
+| id | int | 是 | 筆記ID |
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| title | string | 否* | 筆記標題（發佈時必填，草稿時選擇） |
+| content | string | 否* | 筆記內容（發佈時必填，草稿時選擇） |
+| category_id | int | 否 | 分類ID（發佈時必填，草稿時選擇） |
+| images | array | 否 | 圖片URL陣列（圖文筆記使用） |
+| video | object | 否 | 視頻信息對象（視頻筆記使用） |
+| tags | array | 否 | 標籤名稱陣列（字串陣列） |
+| copyright | int | 否 | 版權聲明：0-原創，1-轉載（預設0） |
+| status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核，3=審核未通過（預設2） |
 
 ---
 ### 8. 刪除筆記
