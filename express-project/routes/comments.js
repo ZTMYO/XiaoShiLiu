@@ -297,9 +297,12 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const commentId = req.params.id;
     const userId = req.user.id;
 
-    // 验证评论是否存在并且是当前用户发布的
+    // 获取评论和作者信息
     const [commentRows] = await pool.execute(
-      'SELECT id, post_id, user_id, parent_id FROM comments WHERE id = ?',
+      `SELECT c.id, c.post_id, c.user_id, c.parent_id, p.user_id as post_author_id
+       FROM comments c 
+       LEFT JOIN posts p ON c.post_id = p.id 
+       WHERE c.id = ?`,
       [commentId.toString()]
     );
 
@@ -308,10 +311,10 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 
     const comment = commentRows[0];
-
-    // 检查是否是评论作者
-    if (comment.user_id !== userId) {
-      return res.status(HTTP_STATUS.FORBIDDEN).json({ code: RESPONSE_CODES.FORBIDDEN, message: '只能删除自己发布的评论' });
+    
+    // 检查是否是评论作者或笔记作者
+    if (comment.user_id !== userId && comment.post_author_id !== userId) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({ code: RESPONSE_CODES.FORBIDDEN, message: '只能删除自己发布的评论或自己笔记下的评论' });
     }
 
     // 使用递归删除函数删除评论及其所有子评论，获取删除的评论总数

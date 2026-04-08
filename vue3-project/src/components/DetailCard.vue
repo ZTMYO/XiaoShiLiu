@@ -227,7 +227,7 @@
                           作者
                         </div>
                       </div>
-                      <button v-if="isCurrentUserComment(comment)" class="comment-delete-btn"
+                      <button v-if="isCurrentUserComment(comment) || isCurrentUserPost" class="comment-delete-btn"
                         @click="handleDeleteComment(comment)">
                         删除
                       </button>
@@ -270,7 +270,7 @@
                                 作者
                               </div>
                             </div>
-                            <button v-if="isCurrentUserComment(reply)" class="comment-delete-btn"
+                            <button v-if="isCurrentUserComment(reply) || isCurrentUserPost" class="comment-delete-btn"
                               @click="handleDeleteReply(reply, comment.id)">
                               删除
                             </button>
@@ -1166,8 +1166,8 @@ const isPostAuthorComment = (comment) => {
 }
 
 const handleDeleteComment = async (comment) => {
-  if (!isCurrentUserComment(comment)) {
-    showMessage('只能删除自己发布的评论', 'error')
+  if (!isCurrentUserComment(comment) && !isCurrentUserPost) {
+    showMessage('只能删除自己发布的评论或自己笔记下的评论', 'error')
     return
   }
 
@@ -1196,8 +1196,8 @@ const handleDeleteComment = async (comment) => {
 }
 
 const handleDeleteReply = async (reply, commentId) => {
-  if (!isCurrentUserComment(reply)) {
-    showMessage('只能删除自己发布的回复', 'error')
+  if (!isCurrentUserComment(reply) && !isCurrentUserPost) {
+    showMessage('只能删除自己发布的回复或自己笔记下的回复', 'error')
     return
   }
 
