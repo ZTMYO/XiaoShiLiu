@@ -164,6 +164,9 @@
                 <ContentRenderer :text="postData.content" />
               </p>
               <div class="post-tags">
+                <div v-if="postData.copyright !== undefined && postData.copyright !== null" class="copyright-badge">
+                  {{ postData.copyright === 0 ? '原创' : '转载' }}
+                </div>
                 <span v-for="tag in postData.tags" :key="tag" class="tag clickable-tag" @click="handleTagClick(tag)">#{{
                   tag }}</span>
               </div>
@@ -224,7 +227,7 @@
                           作者
                         </div>
                       </div>
-                      <button v-if="isCurrentUserComment(comment)" class="comment-delete-btn"
+                      <button v-if="isCurrentUserComment(comment) || isCurrentUserPost" class="comment-delete-btn"
                         @click="handleDeleteComment(comment)">
                         删除
                       </button>
@@ -267,7 +270,7 @@
                                 作者
                               </div>
                             </div>
-                            <button v-if="isCurrentUserComment(reply)" class="comment-delete-btn"
+                            <button v-if="isCurrentUserComment(reply) || isCurrentUserPost" class="comment-delete-btn"
                               @click="handleDeleteReply(reply, comment.id)">
                               删除
                             </button>
@@ -832,7 +835,8 @@ const postData = computed(() => {
           []) :
         []),
     time: formatTime(props.item.originalData?.createdAt || props.item.created_at || props.item.time),
-    location: props.item.location || ''
+    location: props.item.location || '',
+    copyright: props.item.copyright
   }
   return data
 })
@@ -1162,8 +1166,8 @@ const isPostAuthorComment = (comment) => {
 }
 
 const handleDeleteComment = async (comment) => {
-  if (!isCurrentUserComment(comment)) {
-    showMessage('只能删除自己发布的评论', 'error')
+  if (!isCurrentUserComment(comment) && !isCurrentUserPost) {
+    showMessage('只能删除自己发布的评论或自己笔记下的评论', 'error')
     return
   }
 
@@ -1192,8 +1196,8 @@ const handleDeleteComment = async (comment) => {
 }
 
 const handleDeleteReply = async (reply, commentId) => {
-  if (!isCurrentUserComment(reply)) {
-    showMessage('只能删除自己发布的回复', 'error')
+  if (!isCurrentUserComment(reply) && !isCurrentUserPost) {
+    showMessage('只能删除自己发布的回复或自己笔记下的回复', 'error')
     return
   }
 
@@ -3255,6 +3259,16 @@ function handleAvatarError(event) {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
+  align-items: center;
+}
+
+.copyright-badge {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--text-color-primary);
+  margin-right: 8px;
 }
 
 .tag {

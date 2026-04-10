@@ -45,37 +45,34 @@ async function getFileStat(filePath) {
   }
 }
 
-async function validateImageFile(filename) {
+async function validateFile(filename, type) {
   if (!validateFilename(filename)) {
     return { valid: false, statusCode: HTTP_STATUS.BAD_REQUEST };
   }
 
   const ext = getFileExt(filename);
-  if (!IMAGE_MIME_TYPES[ext]) {
+  const mimeTypes = type === 'image' ? IMAGE_MIME_TYPES : VIDEO_MIME_TYPES;
+  if (!mimeTypes[ext]) {
     return { valid: false, statusCode: HTTP_STATUS.BAD_REQUEST };
   }
 
-  const uploadDir = config.upload.image.local.uploadDir;
+  const uploadDir = config.upload[type].local.uploadDir;
   const filePath = path.join(process.cwd(), uploadDir, filename);
 
-  // 路径遍历检查：确保解析后的路径仍在上传目录内
+  // 路径遍历检查
   const resolvedPath = path.resolve(filePath);
   const resolvedUploadDir = path.resolve(process.cwd(), uploadDir);
   if (!resolvedPath.startsWith(resolvedUploadDir)) {
     return { valid: false, statusCode: HTTP_STATUS.BAD_REQUEST };
   }
 
-  // 合并文件检查：一次磁盘操作获取文件信息
+  // 文件检查
   const stat = await getFileStat(filePath);
-  if (!stat) {
-    return { valid: false, statusCode: HTTP_STATUS.NOT_FOUND };
+  if (!stat || !stat.isFile()) {
+    return { valid: false, statusCode: stat ? HTTP_STATUS.BAD_REQUEST : HTTP_STATUS.NOT_FOUND };
   }
 
-  if (!stat.isFile()) {
-    return { valid: false, statusCode: HTTP_STATUS.BAD_REQUEST };
-  }
-
-  const maxSize = parseSize(config.upload.image.maxSize);
+  const maxSize = parseSize(config.upload[type].maxSize);
   if (maxSize && stat.size > maxSize) {
     return { valid: false, statusCode: HTTP_STATUS.BAD_REQUEST };
   }
@@ -84,51 +81,16 @@ async function validateImageFile(filename) {
     valid: true,
     filePath,
     fileSize: stat.size,
-    contentType: IMAGE_MIME_TYPES[ext]
+    contentType: mimeTypes[ext]
   };
 }
 
+async function validateImageFile(filename) {
+  return validateFile(filename, 'image');
+}
+
 async function validateVideoFile(filename) {
-  if (!validateFilename(filename)) {
-    return { valid: false, statusCode: HTTP_STATUS.BAD_REQUEST };
-  }
-
-  const ext = getFileExt(filename);
-  if (!VIDEO_MIME_TYPES[ext]) {
-    return { valid: false, statusCode: HTTP_STATUS.BAD_REQUEST };
-  }
-
-  const uploadDir = config.upload.video.local.uploadDir;
-  const filePath = path.join(process.cwd(), uploadDir, filename);
-
-  // 路径遍历检查：确保解析后的路径仍在上传目录内
-  const resolvedPath = path.resolve(filePath);
-  const resolvedUploadDir = path.resolve(process.cwd(), uploadDir);
-  if (!resolvedPath.startsWith(resolvedUploadDir)) {
-    return { valid: false, statusCode: HTTP_STATUS.BAD_REQUEST };
-  }
-
-  // 合并文件检查：一次磁盘操作获取文件信息
-  const stat = await getFileStat(filePath);
-  if (!stat) {
-    return { valid: false, statusCode: HTTP_STATUS.NOT_FOUND };
-  }
-
-  if (!stat.isFile()) {
-    return { valid: false, statusCode: HTTP_STATUS.BAD_REQUEST };
-  }
-
-  const maxSize = parseSize(config.upload.video.maxSize);
-  if (maxSize && stat.size > maxSize) {
-    return { valid: false, statusCode: HTTP_STATUS.BAD_REQUEST };
-  }
-
-  return {
-    valid: true,
-    filePath,
-    fileSize: stat.size,
-    contentType: VIDEO_MIME_TYPES[ext]
-  };
+  return validateFile(filename, 'video');
 }
 
 module.exports = {
@@ -137,7 +99,5 @@ module.exports = {
   getFileStat,
   parseSize,
   validateFilename,
-  getFileExt,
-  IMAGE_MIME_TYPES,
-  VIDEO_MIME_TYPES
+  getFileExt
 };
