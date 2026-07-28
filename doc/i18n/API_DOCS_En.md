@@ -5,7 +5,7 @@
 - **Version**: v1.3.2
 - **Base URL**: `http://localhost:3001`
 - **Database**: xiaoshiliu (MySQL)
-- **Update Time**: 2026-02-27
+- **Update Time**: 2026-07-28
 
 ## General Instructions
 
@@ -955,7 +955,63 @@ General parameters for interfaces that support pagination:
 }
 ```
 
-### 2. Retrieve Note Details
+### 2. Get Following Users' Notes
+**API Endpoint**: `GET /api/posts/following`
+**Authentication Required**: Yes
+
+**Description**:
+- Paginated retrieval of notes published by users the current user follows, sorted by publish time in descending order
+- If the user is not logged in, returns an empty list and a `needLogin` flag
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| page | int | No | Page number, default 1 |
+| limit | int | No | Number of items per page, default 20 |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "user_id": 2,
+        "title": "Note from followed user",
+        "content": "Note content",
+        "category_id": 1,
+        "view_count": 100,
+        "like_count": 10,
+        "comment_count": 5,
+        "collect_count": 3,
+        "created_at": "2025-08-30T00:00:00.000Z",
+        "nickname": "User 2",
+        "user_avatar": "https://example.com/avatar2.jpg",
+        "verified": 0,
+        "images": [
+          "https://example.com/image1.jpg"
+        ],
+        "tags": [
+          {
+            "id": 1,
+            "name": "Tag Name"
+          }
+        ]
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 10,
+      "pages": 1
+    }
+  }
+}
+```
+
+### 3. Retrieve Note Details
 **API Endpoint**: `GET /api/posts/:id`
 
 **Path Parameters**:
@@ -965,7 +1021,7 @@ General parameters for interfaces that support pagination:
 
 **Description**: Accessing note details will automatically increase the view count.
 
-### 3. Create a Note
+### 4. Create a Note
 **API Endpoint**: `POST /api/posts`
 **Authentication Required**: Yes
 
@@ -994,7 +1050,7 @@ General parameters for interfaces that support pagination:
 }
 ```
 
-### 4. Get Note Comments
+### 5. Get Note Comments
 **API Endpoint**: `GET /api/posts/:id/comments`
 
 **Path Parameters**:
@@ -1008,7 +1064,7 @@ General parameters for interfaces that support pagination:
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
 
-### 5. Collect a Note
+### 6. Collect a Note
 **API Endpoint**: `POST /api/posts/:id/collect`
 **Authentication Required**: Yes
 
@@ -1025,7 +1081,7 @@ General parameters for interfaces that support pagination:
 }
 ```
 
-### 6. Search Notes
+### 7. Search Notes
 **API Endpoint**: `GET /api/posts/search`
 
 **Request Parameters**:
@@ -1077,7 +1133,7 @@ General parameters for interfaces that support pagination:
 }
 ```
 
-### 7. Update Note
+### 8. Update Note
 **API Endpoint**: `PUT /api/posts/:id`
 **Authentication Required**: Yes
 
@@ -1087,7 +1143,7 @@ General parameters for interfaces that support pagination:
 | id | int | Yes | Note ID |
 
 ---
-### 8. Delete Note
+### 9. Delete Note
 **API Endpoint**: `DELETE /api/posts/:id`
 **Authentication Required**: Yes
 
@@ -1105,7 +1161,7 @@ General parameters for interfaces that support pagination:
 ```
 
 ---
-### 9. Cancel Collecting Note
+### 10. Cancel Collecting Note
 **API Endpoint**: `DELETE /api/posts/:id/collect`
 **Authentication Required**: Yes
 
@@ -1123,7 +1179,7 @@ General parameters for interfaces that support pagination:
 ```
 
 ---
-### 10. Get Draft List
+### 11. Get Draft List
 **API Endpoint**: `GET /api/posts/drafts`
 **Authentication Required**: Yes
 

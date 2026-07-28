@@ -5,7 +5,7 @@
 - **版本**: v1.3.2
 - **基礎URL**: `http://localhost:3001`
 - **數據庫**: xiaoshiliu (MySQL)
-- **更新時間**: 2026-02-27
+- **更新時間**: 2026-07-28
 
 ## 通用說明
 
@@ -1075,7 +1075,63 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 2. 獲取筆記詳情
+### 2. 獲取關注用戶的筆記
+**接口地址**: `GET /api/posts/following`
+**需要認證**: 是
+
+**功能說明**:
+- 分頁獲取當前用戶所關注用戶發佈的筆記，按發佈時間倒序排列
+- 如果用戶未登錄，返回空列表和 `needLogin` 標記
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| page | int | 否 | 頁碼，默認1 |
+| limit | int | 否 | 每頁數量，默認20 |
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "user_id": 2,
+        "title": "關注的用戶發佈的筆記",
+        "content": "筆記內容",
+        "category_id": 1,
+        "view_count": 100,
+        "like_count": 10,
+        "comment_count": 5,
+        "collect_count": 3,
+        "created_at": "2025-08-30T00:00:00.000Z",
+        "nickname": "用戶2",
+        "user_avatar": "https://example.com/avatar2.jpg",
+        "verified": 0,
+        "images": [
+          "https://example.com/image1.jpg"
+        ],
+        "tags": [
+          {
+            "id": 1,
+            "name": "標籤名"
+          }
+        ]
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 10,
+      "pages": 1
+    }
+  }
+}
+```
+
+### 3. 獲取筆記詳情
 **接口地址**: `GET /api/posts/:id`
 
 **路徑參數**:
@@ -1085,7 +1141,7 @@ Authorization: Bearer <your_jwt_token>
 
 **說明**: 存取筆記詳情會自動增加瀏覽量
 
-### 3. 創建筆記
+### 4. 創建筆記
 **接口地址**: `POST /api/posts`
 **需要認證**: 是
 
@@ -1114,7 +1170,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 4. 取得筆記評論
+### 5. 取得筆記評論
 **接口地址**: `GET /api/posts/:id/comments`
 
 **路徑參數**:
@@ -1128,7 +1184,7 @@ Authorization: Bearer <your_jwt_token>
 | page | int | 否 | 頁碼，默認1 |
 | limit | int | 否 | 每頁數量，默認20 |
 
-### 5. 收藏筆記
+### 6. 收藏筆記
 **接口地址**: `POST /api/posts/:id/collect`
 **需要認證**: 是
 
@@ -1145,7 +1201,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 6. 搜尋筆記
+### 7. 搜尋筆記
 **接口地址**: `GET /api/posts/search`
 
 **請求參數**:
@@ -1196,7 +1252,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 7. 更新筆記
+### 8. 更新筆記
 **接口地址**: `PUT /api/posts/:id`
 **需要認證**: 是
 
@@ -1206,7 +1262,7 @@ Authorization: Bearer <your_jwt_token>
 | id | int | 是 | 笔記ID |
 
 ---
-### 8. 刪除筆記
+### 9. 刪除筆記
 **接口地址**: `DELETE /api/posts/:id`
 **需要驗證**: 是
 
@@ -1224,7 +1280,7 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 ---
-### 9. 取消收藏筆記
+### 10. 取消收藏筆記
 **接口地址**: `DELETE /api/posts/:id/collect`
 **需要驗證**: 是
 
@@ -1242,7 +1298,7 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 ---
-### 10. 获取草稿列表
+### 11. 获取草稿列表
 **接口地址**: `GET /api/posts/drafts`
 **需要驗證**: 是
 

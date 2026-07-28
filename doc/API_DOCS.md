@@ -5,7 +5,7 @@
 - **版本**: v1.3.2
 - **基础URL**: `http://localhost:3001`
 - **数据库**: xiaoshiliu (MySQL)
-- **更新时间**: 2026-2-20
+- **更新时间**: 2026-7-28
 
 ## 通用说明
 
@@ -1239,7 +1239,63 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 2. 获取笔记详情
+### 2. 获取关注用户的笔记
+**接口地址**: `GET /api/posts/following`
+**需要认证**: 是
+
+**功能说明**:
+- 分页获取当前用户所关注用户发布的笔记，按发布时间倒序排列
+- 如果用户未登录，返回空列表和 `needLogin` 标记
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | int | 否 | 页码，默认1 |
+| limit | int | 否 | 每页数量，默认20 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "user_id": 2,
+        "title": "关注的用户发布的笔记",
+        "content": "笔记内容",
+        "category_id": 1,
+        "view_count": 100,
+        "like_count": 10,
+        "comment_count": 5,
+        "collect_count": 3,
+        "created_at": "2025-08-30T00:00:00.000Z",
+        "nickname": "用户2",
+        "user_avatar": "https://example.com/avatar2.jpg",
+        "verified": 0,
+        "images": [
+          "https://example.com/image1.jpg"
+        ],
+        "tags": [
+          {
+            "id": 1,
+            "name": "标签名"
+          }
+        ]
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 10,
+      "pages": 1
+    }
+  }
+}
+```
+
+### 3. 获取笔记详情
 **接口地址**: `GET /api/posts/:id`
 
 **路径参数**:
@@ -1253,7 +1309,7 @@ Authorization: Bearer <your_jwt_token>
 
 **说明**: 访问笔记详情会自动增加浏览量
 
-### 3. 创建笔记
+### 4. 创建笔记
 **接口地址**: `POST /api/posts`
 **需要认证**: 是
 
@@ -1307,7 +1363,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 4. 获取笔记评论
+### 5. 获取笔记评论
 **接口地址**: `GET /api/posts/:id/comments`
 
 **路径参数**:
@@ -1321,7 +1377,7 @@ Authorization: Bearer <your_jwt_token>
 | page | int | 否 | 页码，默认1 |
 | limit | int | 否 | 每页数量，默认20 |
 
-### 5. 收藏笔记
+### 6. 收藏笔记
 **接口地址**: `POST /api/posts/:id/collect`
 **需要认证**: 是
 
@@ -1338,7 +1394,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 6. 搜索笔记
+### 7. 搜索笔记
 **接口地址**: `GET /api/posts/search`
 
 **请求参数**:
@@ -1389,7 +1445,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 7. 更新笔记
+### 8. 更新笔记
 **接口地址**: `PUT /api/posts/:id`
 **需要认证**: 是
 
@@ -1444,7 +1500,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 8. 删除笔记
+### 9. 删除笔记
 **接口地址**: `DELETE /api/posts/:id`
 **需要认证**: 是
 
@@ -1461,7 +1517,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 9. 取消收藏笔记
+### 10. 取消收藏笔记
 **接口地址**: `DELETE /api/posts/:id/collect`
 **需要认证**: 是
 
@@ -1478,7 +1534,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 10. 获取草稿列表
+### 11. 获取草稿列表
 **接口地址**: `GET /api/posts/drafts`
 **需要认证**: 是
 
