@@ -18,7 +18,8 @@ const channelType = computed(() => {
 // 动态生成频道配置映射
 const channelConfig = computed(() => {
     const config = {
-        'recommend': { category: 'recommend', title: '推荐' }
+        'recommend': { category: 'recommend', title: '推荐' },
+        'following': { category: 'following', title: '关注' }
     }
     
     categories.value.forEach(category => {

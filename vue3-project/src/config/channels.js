@@ -1,8 +1,9 @@
 import { getCategories } from '@/api/categories'
 
-// 默认频道配置（推荐频道始终存在）
+// 默认频道配置
 const DEFAULT_CHANNELS = [
-  { id: 'recommend', label: '推荐', path: '/recommend' }
+  { id: 'recommend', label: '推荐', path: '/recommend' },
+  { id: 'following', label: '关注', path: '/following' }
 ]
 
 // 动态频道列表

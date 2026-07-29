@@ -197,6 +197,20 @@ export async function getPostList(params = {}) {
         apiParams.type = type
       }
       response = await postApi.getPosts(apiParams)
+    } else if (category === 'following') {
+      // 获取关注用户的笔记（需要登录）
+      const token = localStorage.getItem('token')
+      if (!token) {
+        return {
+          posts: [],
+          pagination: { page, limit, total: 0, pages: 0 },
+          hasMore: false,
+          needLogin: true
+        }
+      }
+      response = await request.get('/posts/following', {
+        params: { page, limit }
+      })
     } else {
       // 否则使用普通的获取笔记列表API
       const apiParams = { page, limit }

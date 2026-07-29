@@ -5,7 +5,7 @@
       <div class="docs-info">
         <span class="version">版本: v1.3.2</span>
         <span class="base-url">基础URL: http://localhost:3001/</span>
-        <span class="update-time">更新时间: 2026-2-27</span>
+        <span class="update-time">更新时间: 2026-7-28</span>
       </div>
     </div>
 
@@ -675,6 +675,18 @@ const apiGroups = ref([
           { name: 'category', type: 'string', required: false, description: '分类ID筛选，支持"recommend"推荐频道' },
           { name: 'status', type: 'int', required: false, description: '笔记状态筛选，0=已发布（审核通过），1=草稿，2=待审核（默认2）' },
           { name: 'user_id', type: 'int', required: false, description: '用户ID筛选（查看草稿时会强制为当前用户）' }
+        ]
+      },
+      {
+        method: 'GET',
+        path: '/api/posts/following',
+        title: '获取关注用户的笔记',
+        description: '分页获取当前用户所关注用户发布的笔记，按发布时间倒序排列',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'page', type: 'int', required: false, description: '页码，默认1' },
+          { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' }
         ]
       },
       {

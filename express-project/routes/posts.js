@@ -340,6 +340,120 @@ router.get('/', optionalAuth, async (req, res) => {
   }
 });
 
+// 获取关注用户的笔记
+router.get('/following', authenticateToken, async (req, res) => {
+  try {
+    const currentUserId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    // 获取当前用户关注的用户ID列表
+    const [follows] = await pool.execute(
+      'SELECT following_id FROM follows WHERE follower_id = ?',
+      [currentUserId]
+    );
+
+    if (follows.length === 0) {
+      return res.json({
+        code: RESPONSE_CODES.SUCCESS,
+        message: 'success',
+        data: {
+          posts: [],
+          pagination: { page, limit, total: 0, pages: 0 }
+        }
+      });
+    }
+
+    const followingIds = follows.map(f => f.following_id);
+    const placeholders = followingIds.map(() => '?').join(',');
+
+    // 查询关注用户的已发布笔记
+    const [rows] = await pool.execute(
+      `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.id as author_auto_id, u.location, u.verified, c.name as category
+       FROM posts p
+       LEFT JOIN users u ON p.user_id = u.id
+       LEFT JOIN categories c ON p.category_id = c.id
+       WHERE p.status = 0 AND p.user_id IN (${placeholders})
+       ORDER BY p.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...followingIds, limit.toString(), offset.toString()]
+    );
+
+    if (rows.length > 0) {
+      const postIds = rows.map(p => p.id);
+
+      // 批量获取视频信息
+      const [videos] = await pool.query('SELECT post_id, video_url, cover_url FROM post_videos WHERE post_id IN (?)', [postIds]);
+      const videoMap = {};
+      videos.forEach(v => { videoMap[v.post_id] = v; });
+
+      // 批量获取图片信息
+      const [images] = await pool.query('SELECT post_id, image_url FROM post_images WHERE post_id IN (?)', [postIds]);
+      const imageMap = {};
+      images.forEach(img => {
+        if (!imageMap[img.post_id]) imageMap[img.post_id] = [];
+        imageMap[img.post_id].push(img.image_url);
+      });
+
+      // 批量获取标签信息
+      const [tags] = await pool.query(
+        'SELECT pt.post_id, t.id, t.name FROM tags t JOIN post_tags pt ON t.id = pt.tag_id WHERE pt.post_id IN (?)',
+        [postIds]
+      );
+      const tagMap = {};
+      tags.forEach(t => {
+        if (!tagMap[t.post_id]) tagMap[t.post_id] = [];
+        tagMap[t.post_id].push({ id: t.id, name: t.name });
+      });
+
+      // 批量获取点赞和收藏状态
+      const [likes] = await pool.query('SELECT target_id FROM likes WHERE user_id = ? AND target_type = 1 AND target_id IN (?)', [currentUserId, postIds]);
+      const likedPostIds = new Set(likes.map(l => l.target_id.toString()));
+
+      const [collections] = await pool.query('SELECT post_id FROM collections WHERE user_id = ? AND post_id IN (?)', [currentUserId, postIds]);
+      const collectedPostIds = new Set(collections.map(c => c.post_id.toString()));
+
+      // 组装数据
+      for (let post of rows) {
+        if (post.type === 2) {
+          const video = videoMap[post.id];
+          post.images = video && video.cover_url ? [video.cover_url] : [];
+          post.video_url = video ? video.video_url : null;
+          post.image = video && video.cover_url ? video.cover_url : null;
+        } else {
+          const postImages = imageMap[post.id] || [];
+          post.images = postImages;
+          post.image = postImages.length > 0 ? postImages[0] : null;
+        }
+        post.tags = tagMap[post.id] || [];
+        post.liked = likedPostIds.has(post.id.toString());
+        post.collected = collectedPostIds.has(post.id.toString());
+      }
+    }
+
+    // 获取总数
+    const [countResult] = await pool.execute(
+      `SELECT COUNT(*) as total FROM posts WHERE status = 0 AND user_id IN (${placeholders})`,
+      followingIds
+    );
+    const total = countResult[0].total;
+    const pages = Math.ceil(total / limit);
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: {
+        posts: rows,
+        pagination: { page, limit, total, pages }
+      }
+    });
+  } catch (error) {
+    console.error('获取关注笔记失败:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: RESPONSE_CODES.ERROR, message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
+
 // 获取笔记详情
 router.get('/:id', optionalAuth, async (req, res) => {
   try {

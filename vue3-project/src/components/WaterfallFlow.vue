@@ -269,6 +269,10 @@ async function initContent() {
             })
             content = result.posts || []
             hasMore.value = result.hasMore !== false // 默认为true，除非明确返回false
+            if (result.needLogin) {
+                hasMore.value = false
+                authStore.openLoginModal()
+            }
         }
 
         // 如果不是初次加载，为新内容添加淡入动画
