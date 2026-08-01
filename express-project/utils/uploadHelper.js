@@ -6,6 +6,29 @@ const { HTTP_STATUS, RESPONSE_CODES } = require('../constants');
 const config = require('../config/config');
 const crypto = require('crypto');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { fileTypeFromBuffer } = require('file-type');
+
+/**
+ * 从文件缓冲区获取真实扩展名和MIME类型，并验证是否在允许列表中
+ * @param {Buffer} fileBuffer - 文件缓冲区
+ * @param {string} filename - 文件名
+ * @param {string[]} allowedTypes - 允许的MIME类型列表
+ */
+async function getFileInfo(fileBuffer, filename, allowedTypes) {
+  const fileType = await fileTypeFromBuffer(fileBuffer);
+  if (fileType) {
+    if (allowedTypes && !allowedTypes.includes(fileType.mime)) {
+      console.error(`❌ 文件类型 ${fileType.mime} 不在允许列表中: ${filename}`);
+      throw new Error(`文件类型验证失败: ${filename} 的类型 ${fileType.mime} 不在允许列表中`);
+    }
+    console.log(`📄 文件类型检测成功: ${filename} -> ${fileType.mime} (${fileType.ext})`);
+    return {
+      ext: fileType.ext
+    };
+  }
+  console.log(`📄 文件类型检测失败: ${filename}`);
+  throw new Error('无法检测文件类型');
+}
 
 /**
  * 保存图片文件到本地
@@ -22,29 +45,11 @@ async function saveImageToLocal(fileBuffer, filename, mimetype) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // MIME类型到扩展名的映射
-    const mimeToExt = {
-      'image/jpeg': '.jpg',
-      'image/jpg': '.jpg',
-      'image/png': '.png',
-      'image/webp': '.webp',
-      'image/gif': '.gif'
-    };
+    const { ext } = await getFileInfo(fileBuffer, filename, config.upload.image.allowedTypes);
+    const finalExt = ext || 'jpg';
 
-    // 根据MIME类型获取正确的扩展名
-    let ext = mimeToExt[mimetype] || path.extname(filename);
-    // 确保扩展名以.开头
-    if (!ext.startsWith('.')) {
-      ext = '.' + ext;
-    }
-    // 如果没有扩展名，使用.jpg作为默认
-    if (ext === '.') {
-      ext = '.jpg';
-    }
-
-    // 生成唯一文件名
     const hash = crypto.createHash('md5').update(fileBuffer).digest('hex');
-    const uniqueFilename = `${Date.now()}_${hash}${ext}`;
+    const uniqueFilename = `${Date.now()}_${hash}.${finalExt}`;
     const filePath = path.join(uploadDir, uniqueFilename);
 
     // 保存文件
@@ -80,30 +85,11 @@ async function saveVideoToLocal(fileBuffer, filename, mimetype) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // MIME类型到扩展名的映射
-    const mimeToExt = {
-      'video/mp4': '.mp4',
-      'video/avi': '.avi',
-      'video/mov': '.mov',
-      'video/wmv': '.wmv',
-      'video/flv': '.flv',
-      'video/webm': '.webm'
-    };
+    const { ext } = await getFileInfo(fileBuffer, filename, config.upload.video.allowedTypes);
+    const finalExt = ext || 'mp4';
 
-    // 根据MIME类型获取正确的扩展名
-    let ext = mimeToExt[mimetype] || path.extname(filename);
-    // 确保扩展名以.开头
-    if (!ext.startsWith('.')) {
-      ext = '.' + ext;
-    }
-    // 如果没有扩展名，使用.mp4作为默认
-    if (ext === '.') {
-      ext = '.mp4';
-    }
-
-    // 生成唯一文件名
     const hash = crypto.createHash('md5').update(fileBuffer).digest('hex');
-    const uniqueFilename = `${Date.now()}_${hash}${ext}`;
+    const uniqueFilename = `${Date.now()}_${hash}.${finalExt}`;
     const filePath = path.join(uploadDir, uniqueFilename);
 
     // 保存文件
@@ -143,29 +129,10 @@ async function uploadToImageHost(fileBuffer, filename, mimetype) {
       };
     }
 
-    // MIME类型到扩展名的映射
-    const mimeToExt = {
-      'image/jpeg': '.jpg',
-      'image/jpg': '.jpg',
-      'image/png': '.png',
-      'image/webp': '.webp',
-      'image/gif': '.gif'
-    };
-
-    // 根据MIME类型获取正确的扩展名
-    let ext = mimeToExt[mimetype] || path.extname(filename);
-    // 确保扩展名以.开头
-    if (!ext.startsWith('.')) {
-      ext = '.' + ext;
-    }
-    // 如果没有扩展名，使用.jpg作为默认
-    if (ext === '.') {
-      ext = '.jpg';
-    }
-
-    // 生成安全的文件名
+    const { ext } = await getFileInfo(fileBuffer, filename, config.upload.image.allowedTypes);
+    const finalExt = ext || 'jpg';
     const nameWithoutExt = path.basename(filename, path.extname(filename));
-    const safeFilename = `${nameWithoutExt}${ext}`;
+    const safeFilename = `${nameWithoutExt}.${finalExt}`;
 
     // 构建multipart/form-data请求体
     const boundary = `----formdata-${Date.now()}`;
@@ -257,29 +224,12 @@ async function uploadImageToR2(fileBuffer, filename, mimetype) {
       },
     });
 
-    // MIME类型到扩展名的映射
-    const mimeToExt = {
-      'image/jpeg': '.jpg',
-      'image/jpg': '.jpg',
-      'image/png': '.png',
-      'image/webp': '.webp',
-      'image/gif': '.gif'
-    };
-
-    // 根据MIME类型获取正确的扩展名
-    let ext = mimeToExt[mimetype] || path.extname(filename);
-    // 确保扩展名以.开头
-    if (!ext.startsWith('.')) {
-      ext = '.' + ext;
-    }
-    // 如果没有扩展名，使用.jpg作为默认
-    if (ext === '.') {
-      ext = '.jpg';
-    }
+    const { ext } = await getFileInfo(fileBuffer, filename, config.upload.image.allowedTypes);
+    const finalExt = ext || 'jpg';
 
     // 生成唯一文件名
     const hash = crypto.createHash('md5').update(fileBuffer).digest('hex');
-    const uniqueFilename = `images/${Date.now()}_${hash}${ext}`;
+    const uniqueFilename = `images/${Date.now()}_${hash}.${finalExt}`;
 
     // 上传参数
     const uploadParams = {
@@ -343,30 +293,12 @@ async function uploadVideoToR2(fileBuffer, filename, mimetype) {
       },
     });
 
-    // MIME类型到扩展名的映射
-    const mimeToExt = {
-      'video/mp4': '.mp4',
-      'video/avi': '.avi',
-      'video/mov': '.mov',
-      'video/wmv': '.wmv',
-      'video/flv': '.flv',
-      'video/webm': '.webm'
-    };
-
-    // 根据MIME类型获取正确的扩展名
-    let ext = mimeToExt[mimetype] || path.extname(filename);
-    // 确保扩展名以.开头
-    if (!ext.startsWith('.')) {
-      ext = '.' + ext;
-    }
-    // 如果没有扩展名，使用.mp4作为默认
-    if (ext === '.') {
-      ext = '.mp4';
-    }
+    const { ext } = await getFileInfo(fileBuffer, filename, config.upload.video.allowedTypes);
+    const finalExt = ext || 'mp4';
 
     // 生成唯一文件名
     const hash = crypto.createHash('md5').update(fileBuffer).digest('hex');
-    const uniqueFilename = `videos/${Date.now()}_${hash}${ext}`;
+    const uniqueFilename = `videos/${Date.now()}_${hash}.${finalExt}`;
 
     // 上传参数
     const uploadParams = {

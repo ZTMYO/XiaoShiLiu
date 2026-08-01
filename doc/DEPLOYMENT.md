@@ -105,6 +105,12 @@ IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
 # 备用API超时时间（毫秒）
 IP_LOCATION_BACKUP_TIMEOUT=5000
 
+# 日志配置
+# 是否启用请求日志 (true/false)
+LOG_ENABLED=false
+# 日志文件保存目录
+LOG_DIR=logs
+
 # 前端构建配置
 VITE_API_BASE_URL=http://localhost:3001/api
 
@@ -256,6 +262,12 @@ IP_LOCATION_PRIMARY_TIMEOUT=10000
 IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
 # 备用API超时时间（毫秒）
 IP_LOCATION_BACKUP_TIMEOUT=5000
+
+# 日志配置
+# 是否启用请求日志 (true/false)
+LOG_ENABLED=false
+# 日志文件保存目录
+LOG_DIR=logs
 
 # CORS配置
 CORS_ORIGIN=http://localhost:5173
@@ -460,6 +472,21 @@ IP_LOCATION_BACKUP_TIMEOUT=5000
 **说明**：
 - 系统会自动在主 API 失败时切换到备用 API
 - 超时时间可根据网络情况调整
+
+### 日志配置
+项目支持请求日志记录功能，可配置以下参数：
+
+```env
+# 是否启用请求日志 (true/false)
+LOG_ENABLED=false
+# 日志文件保存目录
+LOG_DIR=logs
+```
+
+**说明**：
+- 日志文件保存为 `logs/request.log`
+- 每行一条 JSON 格式日志记录
+- 记录字段：`timestamp`（请求时间）、`method`（HTTP方法）、`url`（请求URL）、`ip`（客户端IP）、`statusCode`（状态码）、`responseTime`（响应时间）
 
 ### 反向代理配置
 

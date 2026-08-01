@@ -58,7 +58,9 @@ function transformPostData(backendPost) {
       userId: backendPost.user_id
     },
     // 笔记状态：0-已发布，1-草稿，2-待审核
-    status: backendPost.status
+    status: backendPost.status,
+    // 版权声明：0-原创，1-转载
+    copyright: backendPost.copyright
   }
 
   return transformedData;

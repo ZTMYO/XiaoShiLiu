@@ -262,6 +262,10 @@ IP_LOCATION_PRIMARY_TIMEOUT=10000
 IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
 # 備用API超時時間（毫秒）
 IP_LOCATION_BACKUP_TIMEOUT=5000
+
+# 日誌配置
+LOG_ENABLED=false
+LOG_DIR=logs
 ```
 
 ### 前端配置 (vue3-project/.env)
@@ -279,6 +283,7 @@ VITE_APP_TITLE=小石榴圖文社區
 > - 後端支援本地儲存、第三方圖床和 Cloudflare R2 三種上傳策略
 > - 圖片和視頻可以分別配置不同的上傳策略
 > - 郵件功能預設關閉，啟用後支援郵箱驗證註冊和找回密碼
+> - 支援請求日誌記錄功能，可配置日誌啟用和保存目錄
 > - 前端使用 Vite 環境變數，變數名需以 `VITE_` 開頭
 > - 詳細配置說明請參考 [部署指南](DEPLOYMENT_zh-Hant.md)
 

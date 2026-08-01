@@ -78,6 +78,7 @@
 | category_id | INT | 分类ID | 外键关联categories表，可为空 |
 | type | INT | 笔记类型 | 1-图片笔记，2-视频笔记，默认1 |
 | status | TINYINT(1) | 笔记状态 | 0-发布（审核通过），1-草稿，2-待审核，3-未过审，默认2 |
+| copyright | TINYINT(1) | 版权声明 | 0-原创，1-转载，默认0 |
 | view_count | BIGINT | 浏览量 | 统计字段，默认0 |
 | like_count | INT | 点赞数 | 统计字段，默认0 |
 | collect_count | INT | 收藏数 | 统计字段，默认0 |

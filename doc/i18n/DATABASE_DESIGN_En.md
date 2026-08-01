@@ -79,6 +79,7 @@ Database structure design for the Xiaoshiliu-style image-text community project 
 | collect_count | INT | Collection Count | Statistics field, default 0 |
 | comment_count | INT | Comment Count | Statistics field, default 0 |
 | created_at | TIMESTAMP | Publish Time | Creation time |
+| copyright | TINYINT(1) | Copyright Declaration | 0-Original, 1-Reprint, default 0 |
 
 ### 3. Post Images Table (post_images)
 
@@ -260,5 +261,5 @@ Database structure design for the Xiaoshiliu-style image-text community project 
 
 ---
 
-*Last Updated: March 15, 2026*
-*Database Version: 1.0.5*
+*Last Updated: March 29, 2026*
+*Database Version: 1.0.6*

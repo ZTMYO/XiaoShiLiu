@@ -141,6 +141,16 @@ const config = {
     backupApi: process.env.IP_LOCATION_BACKUP_API || 'https://api.pearktrue.cn/api/ip/high',
     primaryTimeout: parseInt(process.env.IP_LOCATION_PRIMARY_TIMEOUT) || 10000,
     backupTimeout: parseInt(process.env.IP_LOCATION_BACKUP_TIMEOUT) || 5000
+  },
+
+  // 日志配置
+  log: {
+    enabled: process.env.LOG_ENABLED === 'true', // 默认启用
+    dir: process.env.LOG_DIR || 'logs',
+    filename: process.env.LOG_FILENAME || 'app.log', // 日志文件名
+    level: process.env.LOG_LEVEL || 'info', // 日志级别
+    maxSize: parseInt(process.env.LOG_MAX_SIZE) || '5mb', // 单个文件大小限制，默认5MB
+    maxFiles: parseInt(process.env.LOG_MAX_FILES) || 5 // 保留文件数
   }
 };
 

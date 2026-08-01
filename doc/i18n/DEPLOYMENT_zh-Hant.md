@@ -128,6 +128,10 @@ IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
 # 備用API超時時間（毫秒）
 IP_LOCATION_BACKUP_TIMEOUT=5000
 
+# 日誌配置
+LOG_ENABLED=false
+LOG_DIR=logs
+
 # 前端構建配置
 VITE_API_BASE_URL=http://localhost:3001/api
 
@@ -510,7 +514,23 @@ docker-compose exec backend ls -la /app/uploads
    EMAIL_ENABLED=false
    ```
 
-#### 7. 反向代理配置
+#### 7. 日誌配置
+
+專案支援請求日誌記錄功能，可配置以下參數：
+
+```env
+# 是否啟用請求日誌 (true/false)
+LOG_ENABLED=false
+# 日誌文件保存目錄
+LOG_DIR=logs
+```
+
+**說明**：
+- 日誌文件保存為 `logs/request.log`
+- 每行一條 JSON 格式日誌記錄
+- 記錄欄位：`timestamp`（請求時間）、`method`（HTTP方法）、`url`（請求URL）、`ip`（客戶端IP）、`statusCode`（狀態碼）、`responseTime`（響應時間）
+
+#### 8. 反向代理配置
 
 **重要提示**：如果您使用了 Nginx、Apache 等反向代理服務器，需要修改以下配置：
 
@@ -577,7 +597,7 @@ server {
 }
 ```
 
-#### 7. 清理與重置
+#### 8. 清理與重置
 
 如果您遇到問題並需要從頭開始：
 

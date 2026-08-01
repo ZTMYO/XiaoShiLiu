@@ -9,13 +9,13 @@
  */
 
 const express = require('express');
-const path = require('path');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const config = require('./config/config');
 const { HTTP_STATUS, RESPONSE_CODES } = require('./constants');
 // 导入自动解封功能
 const { startAutoUnbanService } = require('./utils/autoUnban');
+const { logger } = require('./utils/logger');
 
 // 导入路由模块
 const authRoutes = require('./routes/auth');
@@ -68,6 +68,20 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));  // 显式处理OPTIONS请求
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.once('finish', () => {
+    logger.info({
+      method: req.method,
+      url: req.originalUrl || req.url,
+      status: res.statusCode,
+      duration: `${Date.now() - start}ms`,
+      ip: req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress
+    });
+  });
+  next();
+});
 
 // 健康检查路由
 app.get('/api/health', (req, res) => {

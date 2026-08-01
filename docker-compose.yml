@@ -58,11 +58,14 @@ services:
       IP_LOCATION_PRIMARY_TIMEOUT: ${IP_LOCATION_PRIMARY_TIMEOUT:-10000}
       IP_LOCATION_BACKUP_API: ${IP_LOCATION_BACKUP_API:-https://api.pearktrue.cn/api/ip/high}
       IP_LOCATION_BACKUP_TIMEOUT: ${IP_LOCATION_BACKUP_TIMEOUT:-5000}
+      LOG_ENABLED: ${LOG_ENABLED:-false}
+      LOG_DIR: ${LOG_DIR:-logs}
       TZ: Asia/Shanghai
     ports:
       - "3001:3001"
     volumes:
       - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
       - /etc/localtime:/etc/localtime:ro
     networks:
       - xiaoshiliu-network
@@ -106,6 +109,8 @@ volumes:
   mysql_data:
     driver: local
   backend_uploads:
+    driver: local
+  backend_logs:
     driver: local
 
 networks:

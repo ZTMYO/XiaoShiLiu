@@ -111,6 +111,16 @@
             value-key="id" max-width="300px" min-width="200px" @change="handleCategoryChange" />
         </div>
 
+        <div class="copyright-section">
+          <div class="section-title">版权声明 (发布后不可编辑)</div>
+          <button type="button" class="copyright-option" :class="{ active: form.copyright === 0 }" @click="form.copyright = 0">
+            <span class="option-label">原创</span>
+          </button>
+          <button type="button" class="copyright-option" :class="{ active: form.copyright === 1 }" @click="form.copyright = 1">
+            <span class="option-label">转载</span>
+          </button>
+        </div>
+
         <div class="tag-section">
           <div class="section-title">标签 (最多10个)</div>
           <TagSelector v-model="form.tags" :max-tags="10" />
@@ -187,7 +197,8 @@ const form = reactive({
   images: [],
   video: null,
   tags: [],
-  category_id: null
+  category_id: null,
+  copyright: 0 // 默认为原创
 })
 
 // 草稿相关状态
@@ -606,7 +617,8 @@ const handlePublish = async () => {
       tags: form.tags,
       category_id: form.category_id,
       type: uploadType.value === 'image' ? 1 : 2, // 1: 图文, 2: 视频
-      status: 2 // 发布状态：2=待审核
+      status: 2, // 发布状态：2=待审核
+      copyright: form.copyright // 版权声明：0-原创，1-转载
     }
 
 
@@ -676,6 +688,7 @@ const loadDraftData = async (draftId) => {
       form.title = response.title || ''
       form.content = draft.content || ''
       form.images = draft.images || []
+      form.copyright = response.copyright !== undefined ? response.copyright : 0 // 读取版权声明，默认为原创
       
       // 设置视频数据 - 从fullData中获取视频信息
       if (fullData.video_url) {
@@ -851,7 +864,8 @@ const handleSaveDraft = async () => {
       tags: form.tags || [],
       category_id: form.category_id || null,
       type: uploadType.value === 'image' ? 1 : 2, // 1: 图文, 2: 视频
-      status: 1 // 草稿状态
+      status: 1, // 草稿状态
+      copyright: form.copyright // 版权声明：0-原创，1-转载
     }
 
     showMessage('正在保存草稿...', 'info')
@@ -1453,6 +1467,31 @@ const handleSaveDraft = async () => {
   margin-bottom: 1rem;
 }
 
+.copyright-section {
+  margin-bottom: 1rem;
+}
+
+.copyright-option {
+  padding: 0.6rem 1.2rem;
+  margin-right: 0.5rem;
+  border: 1px solid var(--border-color-primary);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: var(--bg-color-primary);
+  color: var(--text-color-primary);
+  cursor: pointer;
+}
+
+.copyright-option:hover {
+  border-color: var(--primary-color);
+}
+
+.copyright-option.active {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+}
 
 
 .publish-actions {

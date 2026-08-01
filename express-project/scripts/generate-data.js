@@ -349,8 +349,8 @@ class DataGenerator {
   async insertPosts(connection, posts) {
     for (const post of posts) {
       const [result] = await connection.execute(
-        'INSERT INTO posts (user_id, title, content, category_id, type, status, view_count, like_count, collect_count, comment_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [post.user_id, post.title, post.content, post.category_id, 1, post.status, post.view_count, 0, 0, 0]
+        'INSERT INTO posts (user_id, title, content, category_id, type, status, copyright, view_count, like_count, collect_count, comment_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [post.user_id, post.title, post.content, post.category_id, 1, post.status, post.copyright, post.view_count, 0, 0, 0]
       );
       const postId = result.insertId;
       
@@ -545,6 +545,7 @@ class DataGenerator {
         content: categoryInfo.contents[Math.floor(Math.random() * categoryInfo.contents.length)],
         category_id: categoryIndex + 1, // 使用分类ID（从1开始）
         status: 0, // 默认状态为审核提供
+        copyright: Math.random() > 0.3 ? 0 : 1, // 70%原创，30%转载
         view_count: Math.floor(Math.random() * 10000),
         like_count: Math.floor(Math.random() * 500),
         collect_count: Math.floor(Math.random() * 100),

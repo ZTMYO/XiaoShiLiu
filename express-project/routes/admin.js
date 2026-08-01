@@ -19,7 +19,7 @@ const postsCrudConfig = {
   table: 'posts',
   name: '笔记',
   requiredFields: ['user_id', 'title', 'content'],
-  updateFields: ['title', 'content', 'category_id', 'view_count', 'status'],
+  updateFields: ['title', 'content', 'category_id', 'view_count', 'status', 'copyright'],
   cascadeRules: [
     { table: 'post_images', field: 'post_id' },
     { table: 'post_tags', field: 'post_id' },
@@ -36,6 +36,10 @@ const postsCrudConfig = {
       transform: (value) => parseInt(value) // 将字符串转换为数字
     },
     status: {
+      operator: '=',
+      transform: (value) => parseInt(value) // 将字符串转换为数字
+    },
+    copyright: {
       operator: '=',
       transform: (value) => parseInt(value) // 将字符串转换为数字
     }
@@ -435,7 +439,7 @@ const postsCrudConfig = {
 
       // 获取笔记基本信息
       const [postResult] = await pool.execute(`
-        SELECT p.id, p.user_id, p.title, p.content, p.type, p.category_id, c.name as category,
+        SELECT p.id, p.user_id, p.title, p.content, p.type, p.category_id, p.copyright, c.name as category,
                p.view_count, p.like_count, p.collect_count, p.comment_count,
                p.status, p.created_at,
                u.nickname, COALESCE(u.user_id, CONCAT('user', LPAD(u.id, 3, '0'))) as user_display_id
@@ -518,6 +522,11 @@ const postsCrudConfig = {
         params.push(req.query.status)
       }
 
+      if (req.query.copyright !== undefined && req.query.copyright !== '') {
+        whereClause += whereClause ? ' AND p.copyright = ?' : ' WHERE p.copyright = ?'
+        params.push(req.query.copyright)
+      }
+
       // 获取总数
       const countQuery = `
         SELECT COUNT(*) as total 
@@ -552,7 +561,7 @@ const postsCrudConfig = {
 
       // 获取数据
       const dataQuery = `
-        SELECT p.id, p.user_id, p.title, p.content, p.type, p.category_id, c.name as category,
+        SELECT p.id, p.user_id, p.title, p.content, p.type, p.category_id, p.copyright, c.name as category,
                p.view_count, p.like_count, p.collect_count, p.comment_count,
                p.status, p.created_at,
                u.nickname, COALESCE(u.user_id, CONCAT('user', LPAD(u.id, 3, '0'))) as user_display_id
