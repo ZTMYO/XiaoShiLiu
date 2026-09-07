@@ -305,6 +305,52 @@ function createCrudHandlers(config) {
   }
 }
 
+/**
+ * 创建管理后台列表查询路由处理器
+ * 统一包装 config.customQueries.getList 的响应与错误处理
+ * @param {Object} config - CRUD配置（须包含 customQueries.getList）
+ * @param {Object} [options]
+ * @param {string} [options.successMessage='success'] - 成功消息
+ * @param {string} [options.errorMessage='获取列表失败'] - 失败消息
+ * @param {boolean} [options.includeError=false] - 错误响应是否附带 error 字段
+ * @param {Object} [options.fixedQuery={}] - 固定合并进 req.query 的查询参数
+ * @param {boolean} [options.spreadData=false] - 是否将结果展开到响应顶层（替代 data 字段）
+ */
+function createAdminListRoute(config, options = {}) {
+  const {
+    successMessage = 'success',
+    errorMessage = '获取列表失败',
+    includeError = false,
+    fixedQuery = {},
+    spreadData = false
+  } = options
+
+  return async (req, res) => {
+    try {
+      // 合并固定查询参数
+      if (Object.keys(fixedQuery).length > 0) {
+        req.query = { ...req.query, ...fixedQuery }
+      }
+
+      const result = await config.customQueries.getList(req)
+
+      if (spreadData) {
+        res.json({ code: RESPONSE_CODES.SUCCESS, message: successMessage, ...result })
+      } else {
+        res.json({ code: RESPONSE_CODES.SUCCESS, message: successMessage, data: result })
+      }
+    } catch (error) {
+      console.error(`${errorMessage}:`, error)
+      const body = { code: RESPONSE_CODES.ERROR, message: errorMessage }
+      if (includeError) {
+        body.error = error.message
+      }
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(body)
+    }
+  }
+}
+
 module.exports = {
-  createCrudHandlers
+  createCrudHandlers,
+  createAdminListRoute
 }
