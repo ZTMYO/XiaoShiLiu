@@ -1026,6 +1026,43 @@ const locateNewComment = async (commentId, replyingToInfo) => {
   }
 }
 
+// 目标评论是否已定位过（防止重复执行）
+let targetCommentLocated = false
+
+// 在内容显示（showContent）且评论加载完成后再定位目标评论
+const tryLocateTargetComment = () => {
+  if (!props.targetCommentId || targetCommentLocated) return
+  if (!showContent.value) return
+  const commentData = commentStore.getComments(props.item.id)
+  if (!commentData || commentData.loading) return
+  targetCommentLocated = true
+  nextTick(() => {
+    locateTargetComment()
+  })
+}
+
+// 内容显示后（动画完成或超时）定位目标评论
+watch(showContent, (visible) => {
+  if (visible) {
+    tryLocateTargetComment()
+  }
+})
+
+// 评论加载完成后定位目标评论（避免慢网络下评论还未渲染）
+watch(loadingComments, (loading) => {
+  if (!loading) {
+    tryLocateTargetComment()
+  }
+})
+
+// 目标评论ID变化时重置定位状态（如消息页切换不同通知时复用组件）
+watch(() => props.targetCommentId, (newId) => {
+  targetCommentLocated = false
+  if (newId) {
+    tryLocateTargetComment()
+  }
+})
+
 // 定位目标评论
 const locateTargetComment = async () => {
   if (!props.targetCommentId) {
@@ -2598,12 +2635,8 @@ onMounted(async () => {
     await fetchComments()
   }
 
-  // 如果有目标评论ID，进行定位
-  if (props.targetCommentId) {
-    nextTick(() => {
-      locateTargetComment()
-    })
-  }
+  // 尝试定位目标评论（若内容尚未显示或评论未加载完成，由下方watch补触发）
+  tryLocateTargetComment()
 
   // 自动播放视频
   if (props.item.type === 2 && props.item.video_url) {

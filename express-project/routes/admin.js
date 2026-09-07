@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const { HTTP_STATUS, RESPONSE_CODES } = require('../constants')
 const { pool } = require('../config/config')
-const { createCrudHandlers } = require('../middleware/crudFactory')
+const { createCrudHandlers, createAdminListRoute } = require('../middleware/crudFactory')
 const { recordExists } = require('../utils/dbHelper')
 const { adminAuth } = require('../utils/uploadHelper')
 const {
@@ -489,8 +489,13 @@ const postsCrudConfig = {
       let whereClause = ''
       const params = []
 
+      if (req.query.keyword) {
+        whereClause += ' WHERE (p.title LIKE ? OR p.content LIKE ?)'
+        params.push(`%${req.query.keyword}%`, `%${req.query.keyword}%`)
+      }
+
       if (req.query.title) {
-        whereClause += ' WHERE p.title LIKE ?'
+        whereClause += whereClause ? ' AND p.title LIKE ?' : ' WHERE p.title LIKE ?'
         params.push(`%${req.query.title}%`)
       }
 
@@ -614,136 +619,11 @@ const postsHandlers = createCrudHandlers(postsCrudConfig)
 
 // 笔记审核相关API
 
-// 获取待审核笔记列表
-router.get('/posts-audit', adminAuth, async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1
-    const limit = parseInt(req.query.limit) || 20
-    const offset = (page - 1) * limit
-
-    // 搜索条件
-    let whereClause = 'WHERE p.status = 2' // 只获取待审核笔记
-    const params = []
-
-    if (req.query.keyword) {
-      whereClause += ' AND (p.title LIKE ? OR p.content LIKE ?)'
-      params.push(`%${req.query.keyword}%`, `%${req.query.keyword}%`)
-    }
-
-    if (req.query.user_display_id) {
-      whereClause += ' AND u.user_id LIKE ?'
-      params.push(`%${req.query.user_display_id}%`)
-    }
-
-    if (req.query.category_id) {
-      if (req.query.category_id === 'null') {
-        whereClause += ' AND p.category_id IS NULL'
-      } else {
-        whereClause += ' AND p.category_id = ?'
-        params.push(req.query.category_id)
-      }
-    }
-
-    // 获取总数
-    const countQuery = `
-      SELECT COUNT(*) as total 
-      FROM posts p 
-      LEFT JOIN users u ON p.user_id = u.id
-      LEFT JOIN categories c ON p.category_id = c.id
-      ${whereClause}
-    `
-    const [countResult] = await pool.execute(countQuery, params)
-    const total = countResult[0].total
-
-    // 排序处理
-    const allowedSortFields = {
-      'id': 'p.id',
-      'title': 'p.title',
-      'view_count': 'p.view_count',
-      'like_count': 'p.like_count',
-      'collect_count': 'p.collect_count',
-      'comment_count': 'p.comment_count',
-      'created_at': 'p.created_at',
-      'nickname': 'u.nickname'
-    }
-
-    const allowedSortOrders = {
-      'asc': 'ASC',
-      'desc': 'DESC'
-    }
-
-    const validSortField = allowedSortFields[req.query.sortField] || 'p.created_at'
-    const validSortOrder = allowedSortOrders[req.query.sortOrder?.toLowerCase()] || 'DESC'
-    const orderClause = `ORDER BY ${validSortField} ${validSortOrder}`
-
-    // 获取数据
-    const dataQuery = `
-      SELECT p.id, p.user_id, p.title, p.content, p.type, p.category_id, c.name as category,
-             p.view_count, p.like_count, p.collect_count, p.comment_count,
-             p.status, p.created_at,
-             u.nickname, COALESCE(u.user_id, CONCAT('user', LPAD(u.id, 3, '0'))) as user_display_id
-      FROM posts p
-      LEFT JOIN users u ON p.user_id = u.id
-      LEFT JOIN categories c ON p.category_id = c.id
-      ${whereClause}
-      ${orderClause}
-      LIMIT ? OFFSET ?
-    `
-    const [posts] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
-
-    // 为每个笔记批量获取图片信息和标签信息
-    if (posts.length > 0) {
-      const postIds = posts.map(p => p.id)
-
-      // 批量获取图片
-      const [images] = await pool.query('SELECT post_id, image_url FROM post_images WHERE post_id IN (?)', [postIds])
-      const imageMap = {}
-      images.forEach(img => {
-        if (!imageMap[img.post_id]) imageMap[img.post_id] = []
-        imageMap[img.post_id].push(img.image_url)
-      })
-
-      // 批量获取标签
-      const [tags] = await pool.query(`
-        SELECT pt.post_id, t.id, t.name 
-        FROM tags t 
-        INNER JOIN post_tags pt ON t.id = pt.tag_id 
-        WHERE pt.post_id IN (?)
-      `, [postIds])
-      const tagMap = {}
-      tags.forEach(t => {
-        if (!tagMap[t.post_id]) tagMap[t.post_id] = []
-        tagMap[t.post_id].push({ id: t.id, name: t.name })
-      })
-
-      // 组装数据
-      for (let post of posts) {
-        post.images = imageMap[post.id] || []
-        post.tags = tagMap[post.id] || []
-      }
-    }
-
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: 'success',
-      data: {
-        data: posts,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      }
-    })
-  } catch (error) {
-    console.error('获取待审核笔记列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取待审核笔记列表失败'
-    })
-  }
-})
+// 获取待审核笔记列表（复用 posts getList，固定 status=2）
+router.get('/posts-audit', adminAuth, createAdminListRoute(postsCrudConfig, {
+  errorMessage: '获取待审核笔记列表失败',
+  fixedQuery: { status: 2 }
+}))
 
 // 审核通过
 router.put('/posts-audit/:id/approve', adminAuth, async (req, res) => {
@@ -886,23 +766,8 @@ router.get('/posts/:id', adminAuth, async (req, res) => {
     })
   }
 })
-// 使用自定义查询覆盖默认的getList
-router.get('/posts', adminAuth, async (req, res) => {
-  try {
-    const result = await postsCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: 'success',
-      data: result
-    })
-  } catch (error) {
-    console.error('获取笔记列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取笔记列表失败'
-    })
-  }
-})
+
+router.get('/posts', adminAuth, createAdminListRoute(postsCrudConfig, { errorMessage: '获取笔记列表失败' }))
 
 // 创建评论
 // ===== COMMENTS CRUD (使用工厂模式) =====
@@ -1041,23 +906,8 @@ router.put('/comments/:id', adminAuth, commentsHandlers.update)
 router.delete('/comments/:id', adminAuth, commentsHandlers.deleteOne)
 router.delete('/comments', adminAuth, commentsHandlers.deleteMany)
 router.get('/comments/:id', adminAuth, commentsHandlers.getOne)
-// 使用自定义查询覆盖默认的getList
-router.get('/comments', adminAuth, async (req, res) => {
-  try {
-    const result = await commentsCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: 'success',
-      data: result
-    })
-  } catch (error) {
-    console.error('获取评论列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取评论列表失败'
-    })
-  }
-})
+
+router.get('/comments', adminAuth, createAdminListRoute(commentsCrudConfig, { errorMessage: '获取评论列表失败' }))
 
 // 创建标签
 // ==================== 标签管理（使用CRUD工厂重构） ====================
@@ -1224,23 +1074,8 @@ router.put('/likes/:id', adminAuth, likesHandlers.update)
 router.delete('/likes/:id', adminAuth, likesHandlers.deleteOne)
 router.delete('/likes', adminAuth, likesHandlers.deleteMany)
 router.get('/likes/:id', adminAuth, likesHandlers.getOne)
-// 使用自定义查询覆盖默认的getList
-router.get('/likes', adminAuth, async (req, res) => {
-  try {
-    const result = await likesCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: 'success',
-      data: result
-    })
-  } catch (error) {
-    console.error('获取点赞列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取点赞列表失败'
-    })
-  }
-})
+
+router.get('/likes', adminAuth, createAdminListRoute(likesCrudConfig, { errorMessage: '获取点赞列表失败' }))
 
 // 创建收藏
 // ==================== 收藏管理（使用CRUD工厂重构） ====================
@@ -1387,23 +1222,8 @@ router.put('/collections/:id', adminAuth, collectionsHandlers.update)
 router.delete('/collections/:id', adminAuth, collectionsHandlers.deleteOne)
 router.delete('/collections', adminAuth, collectionsHandlers.deleteMany)
 router.get('/collections/:id', adminAuth, collectionsHandlers.getOne)
-// 使用自定义查询覆盖默认的getList
-router.get('/collections', adminAuth, async (req, res) => {
-  try {
-    const result = await collectionsCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: 'success',
-      data: result
-    })
-  } catch (error) {
-    console.error('获取收藏列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取收藏列表失败'
-    })
-  }
-})
+
+router.get('/collections', adminAuth, createAdminListRoute(collectionsCrudConfig, { errorMessage: '获取收藏列表失败' }))
 
 // 创建关注
 // ==================== 关注管理（使用CRUD工厂重构） ====================
@@ -1578,23 +1398,8 @@ router.put('/follows/:id', adminAuth, followsHandlers.update)
 router.delete('/follows/:id', adminAuth, followsHandlers.deleteOne)
 router.delete('/follows', adminAuth, followsHandlers.deleteMany)
 router.get('/follows/:id', adminAuth, followsHandlers.getOne)
-// 使用自定义查询覆盖默认的getList
-router.get('/follows', adminAuth, async (req, res) => {
-  try {
-    const result = await followsCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: 'success',
-      data: result
-    })
-  } catch (error) {
-    console.error('获取关注列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取关注列表失败'
-    })
-  }
-})
+
+router.get('/follows', adminAuth, createAdminListRoute(followsCrudConfig, { errorMessage: '获取关注列表失败' }))
 
 // 通知管理 CRUD 配置
 const notificationsCrudConfig = {
@@ -1693,23 +1498,8 @@ router.put('/notifications/:id', adminAuth, notificationsHandlers.update)
 router.delete('/notifications/:id', adminAuth, notificationsHandlers.deleteOne)
 router.delete('/notifications', adminAuth, notificationsHandlers.deleteMany)
 router.get('/notifications/:id', adminAuth, notificationsHandlers.getOne)
-// 使用自定义查询覆盖默认的getList
-router.get('/notifications', adminAuth, async (req, res) => {
-  try {
-    const result = await notificationsCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: 'success',
-      data: result
-    })
-  } catch (error) {
-    console.error('获取通知列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取通知列表失败'
-    })
-  }
-})
+
+router.get('/notifications', adminAuth, createAdminListRoute(notificationsCrudConfig, { errorMessage: '获取通知列表失败' }))
 
 // 会话管理 CRUD 配置
 const sessionsCrudConfig = {
@@ -1823,23 +1613,8 @@ router.put('/sessions/:id', adminAuth, sessionsHandlers.update)
 router.delete('/sessions/:id', adminAuth, sessionsHandlers.deleteOne)
 router.delete('/sessions', adminAuth, sessionsHandlers.deleteMany)
 router.get('/sessions/:id', adminAuth, sessionsHandlers.getOne)
-// 使用自定义查询覆盖默认的getList
-router.get('/sessions', adminAuth, async (req, res) => {
-  try {
-    const result = await sessionsCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: 'success',
-      data: result
-    })
-  } catch (error) {
-    console.error('获取会话列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取会话列表失败'
-    })
-  }
-})
+
+router.get('/sessions', adminAuth, createAdminListRoute(sessionsCrudConfig, { errorMessage: '获取会话列表失败' }))
 
 // 管理员会话管理 CRUD 配置
 const adminSessionsCrudConfig = {
@@ -1931,23 +1706,7 @@ router.put('/admin-sessions/:id', adminAuth, adminSessionsHandlers.update)
 router.delete('/admin-sessions/:id', adminAuth, adminSessionsHandlers.deleteOne)
 router.delete('/admin-sessions', adminAuth, adminSessionsHandlers.deleteMany)
 router.get('/admin-sessions/:id', adminAuth, adminSessionsHandlers.getOne)
-// 使用自定义查询覆盖默认的getList
-router.get('/admin-sessions', adminAuth, async (req, res) => {
-  try {
-    const result = await adminSessionsCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: 'success',
-      data: result
-    })
-  } catch (error) {
-    console.error('获取管理员会话列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取管理员会话列表失败'
-    })
-  }
-})
+router.get('/admin-sessions', adminAuth, createAdminListRoute(adminSessionsCrudConfig, { errorMessage: '获取管理员会话列表失败' }))
 
 
 
@@ -2238,22 +1997,7 @@ router.get('/users/:id', adminAuth, async (req, res) => {
     })
   }
 })
-router.get('/users', adminAuth, async (req, res) => {
-  try {
-    const result = await usersCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: 'success',
-      data: result
-    })
-  } catch (error) {
-    console.error('获取用户列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取用户列表失败'
-    })
-  }
-})
+router.get('/users', adminAuth, createAdminListRoute(usersCrudConfig, { errorMessage: '获取用户列表失败' }))
 
 // 更新用户is_active状态的辅助函数
 async function updateUserActiveStatus(userId, active, operatorId) {
@@ -2772,23 +2516,11 @@ router.get('/audit/:id', adminAuth, async (req, res) => {
   }
 })
 
-router.get('/audit', adminAuth, async (req, res) => {
-  try {
-    const result = await auditCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: '获取认证列表成功',
-      data: result
-    })
-  } catch (error) {
-    console.error('获取认证列表失败:', error)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.ERROR,
-      message: '获取认证列表失败',
-      error: error.message
-    })
-  }
-})
+router.get('/audit', adminAuth, createAdminListRoute(auditCrudConfig, {
+  successMessage: '获取认证列表成功',
+  errorMessage: '获取认证列表失败',
+  includeError: true
+}))
 
 // 审核通过
 router.put('/audit/:id/approve', adminAuth, async (req, res) => {
@@ -3163,21 +2895,10 @@ router.put('/categories/:id', adminAuth, categoriesHandlers.update)
 router.delete('/categories/:id', adminAuth, categoriesHandlers.deleteOne)
 router.delete('/categories', adminAuth, categoriesHandlers.deleteMany)
 router.get('/categories/:id', adminAuth, categoriesHandlers.getOne)
-router.get('/categories', adminAuth, async (req, res) => {
-  try {
-    const result = await categoriesCrudConfig.customQueries.getList(req)
-    res.json({
-      code: RESPONSE_CODES.SUCCESS,
-      message: '获取成功',
-      ...result
-    })
-  } catch (err) {
-    console.error('获取分类列表失败:', err)
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.SERVER_ERROR,
-      message: err.message || '获取分类列表失败'
-    })
-  }
-})
+router.get('/categories', adminAuth, createAdminListRoute(categoriesCrudConfig, {
+  successMessage: '获取成功',
+  errorMessage: '获取分类列表失败',
+  spreadData: true
+}))
 
 module.exports = router

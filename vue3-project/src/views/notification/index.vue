@@ -90,10 +90,23 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 
 // 回复相关状态
 const replyInputRefs = ref({})
+const mobileReplyItem = ref(null)
+const mobileReplyInputRef = ref(null)
 const showEmojiPanel = ref(false)
 const showMentionPanel = ref(false)
 const currentEmojiItem = ref(null)
 const currentMentionItem = ref(null)
+
+// 移动端判断：窄屏使用底部滑出回复面板
+const isMobile = () => window.innerWidth <= 900
+
+// 获取指定通知的回复输入框引用（移动端面板与内联共用）
+const getReplyInputRef = (item) => {
+  if (mobileReplyItem.value === item) {
+    return mobileReplyInputRef.value
+  }
+  return replyInputRefs.value[item.notificationId]
+}
 
 // 消息提示相关
 const showToast = ref(false)
@@ -584,10 +597,8 @@ const onImageClick = async (notification) => {
         selectedPost.value = postDetail;
 
         // 如果是评论类型的通知，传递评论ID用于定位
-        if ((notification.type === 4 || notification.type === 5) && notification.commentId) {
+        if (notification.commentId) {
           targetCommentId.value = notification.commentId;
-          // 预加载评论数据
-          await prepareDetailCard(notification.commentId);
         } else {
           targetCommentId.value = null;
         }
@@ -938,8 +949,18 @@ const handleReplyComment = (item) => {
   }
 
   // 设置回复输入状态
-  item.showReplyInput = true
   item.replyContent = ''
+
+  // 移动端使用底部滑出面板，桌面端使用内联输入区
+  if (isMobile()) {
+    mobileReplyItem.value = item
+    nextTick(() => {
+      mobileReplyInputRef.value?.focus()
+    })
+    return
+  }
+
+  item.showReplyInput = true
 
   // 聚焦输入框
   nextTick(() => {
@@ -951,10 +972,24 @@ const handleReplyComment = (item) => {
 }
 
 const handleCancelReply = (item) => {
+  // 若@/表情选择面板正打开，先还原未选中的@标记再收起
+  if (currentMentionItem.value === item) {
+    const inputRef = getReplyInputRef(item)
+    if (inputRef && inputRef.convertAtMarkerToText) {
+      inputRef.convertAtMarkerToText()
+    }
+    showMentionPanel.value = false
+    currentMentionItem.value = null
+  }
+  if (currentEmojiItem.value === item) {
+    showEmojiPanel.value = false
+    currentEmojiItem.value = null
+  }
+  if (mobileReplyItem.value === item) {
+    mobileReplyItem.value = null
+  }
   item.showReplyInput = false
   item.replyContent = ''
-  showEmojiPanel.value = false
-  currentEmojiItem.value = null
 }
 
 
@@ -964,7 +999,10 @@ const handleSendReply = async (item) => {
   const rawContent = item.replyContent || ''
   const sanitizedContent = sanitizeContent(rawContent)
 
-  if (!sanitizedContent) return
+  if (!sanitizedContent) {
+    showToastMessage('请输入回复内容', 'error')
+    return
+  }
 
   try {
     // 对于回复评论通知，commentId是新评论的ID，我们需要回复的是这个评论
@@ -1062,7 +1100,7 @@ const toggleEmojiPanel = (item) => {
 const handleEmojiSelect = (emoji) => {
   if (currentEmojiItem.value) {
     const item = currentEmojiItem.value
-    const inputRef = replyInputRefs.value[item.notificationId]
+    const inputRef = getReplyInputRef(item)
     const emojiChar = emoji.i || emoji.native || emoji
 
     // 使用ContentEditableInput组件的insertEmoji方法
@@ -1089,7 +1127,7 @@ const toggleMentionPanel = (item) => {
     currentMentionItem.value = null
   } else {
     // 如果要打开面板，先插入@符号
-    const inputRef = replyInputRefs.value[item.notificationId]
+    const inputRef = getReplyInputRef(item)
     if (inputRef && inputRef.insertAtSymbol) {
       inputRef.insertAtSymbol()
     }
@@ -1102,7 +1140,7 @@ const closeMentionPanel = () => {
   // 当关闭艾特选择模态框时，将输入框中带标记的@符号转换为纯文本
   if (currentMentionItem.value) {
     const item = currentMentionItem.value
-    const inputRef = replyInputRefs.value[item.notificationId]
+    const inputRef = getReplyInputRef(item)
     if (inputRef && inputRef.convertAtMarkerToText) {
       inputRef.convertAtMarkerToText()
     }
@@ -1111,10 +1149,18 @@ const closeMentionPanel = () => {
   currentMentionItem.value = null
 }
 
+// 输入@符号时自动打开mention选择面板
+const handleMentionInput = (item) => {
+  if (!showMentionPanel.value || currentMentionItem.value !== item) {
+    showMentionPanel.value = true
+    currentMentionItem.value = item
+  }
+}
+
 const handleMentionSelect = (friend) => {
   if (currentMentionItem.value) {
     const item = currentMentionItem.value
-    const inputRef = replyInputRefs.value[item.notificationId]
+    const inputRef = getReplyInputRef(item)
 
     // 调用ContentEditableInput组件的selectMentionUser方法
     if (inputRef && inputRef.selectMentionUser) {
@@ -1304,7 +1350,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
                             <ContentEditableInput v-model="item.replyContent"
                               :input-class="'reply-input content-textarea'" :placeholder="`回复 ${item.username}：`"
                               :enable-mention="true" :enable-ctrl-enter-send="true"
-                              @mention="handleMentionSelect" @send="handleSendReply(item)"
+                              @mention="handleMentionInput(item)" @send="handleSendReply(item)"
                               :ref="el => setReplyInputRef(item.notificationId, el)" />
                             <button class="mention-btn" @click="toggleMentionPanel(item)">
                               <SvgIcon name="mention" class="mention-icon" width="25" height="25" />
@@ -1491,6 +1537,30 @@ watch(isLoggedIn, async (newValue, oldValue) => {
 
   <MentionModal :visible="!!(showMentionPanel && currentMentionItem)" @close="closeMentionPanel"
     @select="handleMentionSelect" />
+
+  <!-- 移动端底部回复面板 -->
+  <Transition name="mobile-reply-slide">
+    <div v-if="mobileReplyItem" class="mobile-reply-mask" @click="handleCancelReply(mobileReplyItem)">
+      <div class="mobile-reply-sheet" @click.stop>
+        <ContentEditableInput ref="mobileReplyInputRef" v-model="mobileReplyItem.replyContent"
+          :input-class="'mobile-reply-input'" :placeholder="`回复 ${mobileReplyItem.username}：`"
+          :enable-mention="true" :enable-ctrl-enter-send="true" @mention="handleMentionInput(mobileReplyItem)" @send="handleSendReply(mobileReplyItem)" />
+        <div class="mobile-reply-toolbar">
+          <div class="mobile-reply-tools">
+            <button class="mobile-tool-btn" @click="toggleMentionPanel(mobileReplyItem)">
+              <SvgIcon name="mention" width="24" height="24" />
+            </button>
+            <button class="mobile-tool-btn" @click="toggleEmojiPanel(mobileReplyItem)">
+              <SvgIcon name="emoji" width="24" height="24" />
+            </button>
+          </div>
+          <button class="send-btn" @click="handleSendReply(mobileReplyItem)" :disabled="mobileReplyItem.isSending">
+            发送
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 
@@ -1972,7 +2042,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
 
 .reply-input-wrapper {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 5px;
 }
 
@@ -1981,7 +2051,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
   display: flex;
   align-items: flex-end;
   flex: 1;
-  max-width: 60%;
+  min-width: 0;
 }
 
 .reply-input {
@@ -2021,8 +2091,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
 .mention-btn {
   position: absolute;
   right: 40px;
-  top: 55%;
-  transform: translateY(-50%);
+  top: 4px;
   background: none;
   border: none;
   color: var(--text-color-tertiary);
@@ -2039,8 +2108,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
 .emoji-btn {
   position: absolute;
   right: 8px;
-  top: 55%;
-  transform: translateY(-50%);
+  top: 4px;
   background: none;
   border: none;
   color: var(--text-color-tertiary);
@@ -2058,12 +2126,14 @@ watch(isLoggedIn, async (newValue, oldValue) => {
   background: var(--primary-color);
   border: none;
   color: white;
-  padding: 8px 16px;
+  padding: 8px 10px;
   border-radius: 20px;
   font-size: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
 
 }
 
@@ -2079,12 +2149,14 @@ watch(isLoggedIn, async (newValue, oldValue) => {
   background: none;
   border: 1px solid var(--border-color-secondary);
   color: var(--text-color-secondary);
-  padding: 8px 16px;
+  padding: 8px 10px;
   border-radius: 20px;
   font-size: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
 
 }
 
@@ -2109,7 +2181,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1600;
   animation: fadeIn 0.2s ease;
 }
 
@@ -2165,5 +2237,102 @@ watch(isLoggedIn, async (newValue, oldValue) => {
   .interaction-hint .time {
     font-size: 12px;
   }
+}
+
+/* 移动端底部回复面板 */
+.mobile-reply-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  z-index: 1500;
+}
+
+.mobile-reply-sheet {
+  width: 100%;
+  background: var(--bg-color-primary);
+  border-radius: 16px 16px 0 0;
+  padding: 16px 12px calc(12px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+}
+
+.mobile-reply-input {
+  width: 100%;
+  min-height: 44px;
+  max-height: 120px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 12px;
+  background-color: var(--bg-color-secondary);
+  color: var(--text-color-primary);
+  font-size: 16px;
+  line-height: 20px;
+  resize: none;
+  outline: none;
+  caret-color: var(--primary-color);
+  transition: background 0.2s ease, border-color 0.2s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.mobile-reply-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.mobile-reply-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mobile-reply-toolbar .send-btn {
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+.mobile-tool-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 50%;
+  color: var(--text-color-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mobile-tool-btn:hover {
+  color: var(--text-color-primary);
+  background: var(--bg-color-secondary);
+}
+
+.mobile-reply-slide-enter-active,
+.mobile-reply-slide-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.mobile-reply-slide-enter-active .mobile-reply-sheet,
+.mobile-reply-slide-leave-active .mobile-reply-sheet {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-reply-slide-enter-from,
+.mobile-reply-slide-leave-to {
+  opacity: 0;
+}
+
+.mobile-reply-slide-enter-from .mobile-reply-sheet,
+.mobile-reply-slide-leave-to .mobile-reply-sheet {
+  transform: translateY(100%);
 }
 </style>
