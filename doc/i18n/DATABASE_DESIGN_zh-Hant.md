@@ -145,6 +145,7 @@
 | parent_id | BIGINT | 父評論ID | 回覆評論時使用，可為空 |
 | content | TEXT | 評論內容 | 評論文字 |
 | like_count | INT | 按讚數 | 統計欄位，預設0 |
+| is_pinned | TINYINT | 是否置頂 | 0-否，1-是，預設0 |
 | created_at | TIMESTAMP | 評論時間 | 建立時間 |
 
 ### 10. 通知表 (notifications)

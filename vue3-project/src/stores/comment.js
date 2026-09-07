@@ -66,6 +66,7 @@ export const useCommentStore = defineStore('comment', () => {
                     location: comment.user_location || comment.location,
                     likeCount: comment.like_count || 0,
                     isLiked: comment.liked || false,
+                    pinned: comment.is_pinned == 1,
                     parent_id: comment.parent_id,
                     replies: [],
                     reply_count: comment.reply_count || 0, // 子评论数量
@@ -111,6 +112,7 @@ export const useCommentStore = defineStore('comment', () => {
                                     location: reply.user_location || reply.location,
                                     likeCount: reply.like_count || 0,
                                     isLiked: reply.liked || false,
+                                    pinned: reply.is_pinned == 1,
                                     parent_id: reply.parent_id,
                                     replyTo: replyToUsername, // 添加被回复者昵称
                                     replies: [], // 保持空数组，因为是扁平化结构
@@ -232,6 +234,24 @@ export const useCommentStore = defineStore('comment', () => {
         return postComments.value.get(postId) || { comments: [], loading: false, loaded: false, total: 0 }
     }
 
+    // 更新评论置顶状态，置顶评论优先展示
+    const setCommentPinned = (postId, commentId, pinned) => {
+        const currentData = postComments.value.get(postId)
+        if (!currentData || !currentData.comments) return
+
+        const updatedComments = currentData.comments.map(comment =>
+            comment.id === commentId ? { ...comment, pinned: !!pinned } : comment
+        )
+
+        // 稳定排序：置顶评论排在前面，其余评论保持原有相对顺序
+        updatedComments.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
+
+        postComments.value.set(postId, {
+            ...currentData,
+            comments: updatedComments
+        })
+    }
+
     // 清除评论数据
     const clearComments = (postId) => {
         if (postId) {
@@ -248,6 +268,7 @@ export const useCommentStore = defineStore('comment', () => {
         addComment,
         updateComments,
         getComments,
+        setCommentPinned,
         clearComments
     }
 })

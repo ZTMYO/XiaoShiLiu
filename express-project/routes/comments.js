@@ -50,7 +50,7 @@ router.get('/', optionalAuth, async (req, res) => {
        FROM comments c
        LEFT JOIN users u ON c.user_id = u.id
        WHERE c.post_id = ? AND c.parent_id IS NULL
-       ORDER BY c.created_at DESC
+       ORDER BY c.is_pinned DESC, c.created_at DESC
        LIMIT ? OFFSET ?`,
       [postId.toString(), limit.toString(), offset.toString()]
     );
@@ -306,13 +306,65 @@ router.get('/:id/replies', optionalAuth, async (req, res) => {
 
 
 
+// 置顶/取消置顶评论（仅帖子作者可操作，且仅支持顶级评论）
+router.put('/:id/pin', authenticateToken, async (req, res) => {
+  try {
+    const commentId = req.params.id;
+    const userId = req.user.id;
+    const pinned = req.body.pinned === true;
+
+    // 验证评论是否存在
+    const [commentRows] = await pool.execute(
+      'SELECT id, post_id, parent_id FROM comments WHERE id = ?',
+      [commentId.toString()]
+    );
+
+    if (commentRows.length === 0) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ code: RESPONSE_CODES.NOT_FOUND, message: '评论不存在' });
+    }
+
+    const comment = commentRows[0];
+
+    // 仅顶级评论支持置顶
+    if (comment.parent_id) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '只能置顶顶级评论' });
+    }
+
+    // 校验帖子作者身份
+    const [postRows] = await pool.execute('SELECT user_id FROM posts WHERE id = ?', [comment.post_id.toString()]);
+    if (postRows.length === 0) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ code: RESPONSE_CODES.NOT_FOUND, message: '笔记不存在' });
+    }
+
+    if (postRows[0].user_id !== userId) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({ code: RESPONSE_CODES.FORBIDDEN, message: '只有帖子作者可以置顶评论' });
+    }
+
+    await pool.execute('UPDATE comments SET is_pinned = ? WHERE id = ?', [pinned ? 1 : 0, commentId.toString()]);
+
+    console.log('%s评论成功 - 评论ID: %s, 操作者用户ID: %s', pinned ? '置顶' : '取消置顶', commentId, userId);
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: pinned ? '评论已置顶' : '已取消置顶',
+      data: {
+        id: commentId,
+        pinned: pinned
+      }
+    });
+  } catch (error) {
+    console.error('置顶评论失败:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: RESPONSE_CODES.ERROR, message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
+
 // 删除评论
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const commentId = req.params.id;
     const userId = req.user.id;
 
-    // 验证评论是否存在并且是当前用户发布的
+    // 验证评论是否存在
     const [commentRows] = await pool.execute(
       'SELECT id, post_id, user_id, parent_id FROM comments WHERE id = ?',
       [commentId.toString()]
@@ -324,9 +376,14 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     const comment = commentRows[0];
 
-    // 检查是否是评论作者
-    if (comment.user_id !== userId) {
-      return res.status(HTTP_STATUS.FORBIDDEN).json({ code: RESPONSE_CODES.FORBIDDEN, message: '只能删除自己发布的评论' });
+    // 评论作者或帖子作者均可删除该评论
+    let isAuthorized = comment.user_id === userId;
+    if (!isAuthorized) {
+      const [postRows] = await pool.execute('SELECT user_id FROM posts WHERE id = ?', [comment.post_id.toString()]);
+      isAuthorized = postRows.length > 0 && postRows[0].user_id === userId;
+    }
+    if (!isAuthorized) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({ code: RESPONSE_CODES.FORBIDDEN, message: '只能删除自己发布的评论或自己帖子下的评论' });
     }
 
     // 使用递归删除函数删除评论及其所有子评论，获取删除的评论总数

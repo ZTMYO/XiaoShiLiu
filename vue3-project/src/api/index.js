@@ -198,6 +198,11 @@ export const commentApi = {
     return request.delete(`/comments/${commentId}`)
   },
 
+  // 置顶/取消置顶评论
+  pinComment(commentId, pinned) {
+    return request.put(`/comments/${commentId}/pin`, { pinned })
+  },
+
   // 点赞评论
   likeComment(commentId) {
     return request.post('/likes', { target_type: 2, target_id: commentId })

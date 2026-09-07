@@ -94,8 +94,13 @@
                   v-user-hover="getAuthorUserHoverConfig()">{{ authorData.name }}</span>
               </div>
             </div>
-            <FollowButton v-if="!isCurrentUserPost" :is-following="authorData.isFollowing" :user-id="authorData.id"
-              @follow="handleFollow" @unfollow="handleUnfollow" />
+            <div class="author-right-actions">
+              <FollowButton v-if="!isCurrentUserPost" :is-following="authorData.isFollowing" :user-id="authorData.id"
+                @follow="handleFollow" @unfollow="handleUnfollow" />
+              <button class="author-share-btn" aria-label="转发" @click="handleShare">
+                <SvgIcon :name="isShared ? 'tick' : 'share'" width="18" height="18" />
+              </button>
+            </div>
           </div>
 
           <div class="scrollable-content" ref="scrollableContent">
@@ -224,14 +229,26 @@
                           作者
                         </div>
                       </div>
-                      <button v-if="isCurrentUserComment(comment)" class="comment-delete-btn"
-                        @click="handleDeleteComment(comment)">
-                        删除
-                      </button>
+                      <DropdownMenu v-if="isCurrentUserComment(comment) || isCurrentUserPost" menu-class="comment-more-menu">
+                        <template #trigger>
+                          <button class="comment-more-btn" aria-label="更多操作">
+                            <SvgIcon name="more" width="16" height="16" />
+                          </button>
+                        </template>
+                        <template #menu>
+                          <DropdownItem v-if="isCurrentUserComment(comment) || isCurrentUserPost" @click="handleDeleteComment(comment)">
+                            删除
+                          </DropdownItem>
+                          <DropdownItem v-if="isCurrentUserPost" @click="handlePinComment(comment)">
+                            {{ comment.pinned ? '取消置顶' : '置顶' }}
+                          </DropdownItem>
+                        </template>
+                      </DropdownMenu>
                     </div>
                     <div class="comment-text">
                       <ContentRenderer :content="comment.content" @image-click="handleCommentImageClick" />
                     </div>
+                    <span v-if="comment.pinned" class="comment-pinned-badge">置顶评论</span>
                     <span class="comment-time">{{ comment.time }} {{ comment.location }}</span>
                     <div class="comment-actions">
                       <div class="comment-like-container">
@@ -267,10 +284,18 @@
                                 作者
                               </div>
                             </div>
-                            <button v-if="isCurrentUserComment(reply)" class="comment-delete-btn"
-                              @click="handleDeleteReply(reply, comment.id)">
-                              删除
-                            </button>
+                            <DropdownMenu v-if="isCurrentUserComment(reply) || isCurrentUserPost" menu-class="comment-more-menu">
+                              <template #trigger>
+                                <button class="comment-more-btn" aria-label="更多操作">
+                                  <SvgIcon name="more" width="16" height="16" />
+                                </button>
+                              </template>
+                              <template #menu>
+                                <DropdownItem @click="handleDeleteReply(reply, comment.id)">
+                                  删除
+                                </DropdownItem>
+                              </template>
+                            </DropdownMenu>
                           </div>
                           <div class="reply-text">
                             回复 <span class="reply-to">{{ reply.replyTo }}</span>：
@@ -353,7 +378,7 @@
                     <SvgIcon name="chat" />
                     <span>{{ commentCount }}</span>
                   </button>
-                  <button class="action-btn share-btn" @click="handleShare" @mouseleave="handleShareMouseLeave">
+                  <button v-if="!isMobile" class="action-btn share-btn" @click="handleShare" @mouseleave="handleShareMouseLeave">
                     <SvgIcon :name="isShared ? 'tick' : 'share'" />
                   </button>
                 </div>
@@ -422,6 +447,10 @@
     <!-- 评论图片查看器 -->
     <ImageViewer :visible="showCommentImageViewer" :images="commentImages" :initial-index="currentCommentImageIndex"
       image-type="comment" @close="closeCommentImageViewer" @change="handleCommentImageIndexChange" />
+
+    <!-- 删除确认弹窗 -->
+    <ConfirmDialog v-model:visible="deleteConfirmVisible" :title="deleteConfirmTitle" :message="deleteConfirmMessage"
+      type="warning" confirm-text="删除" cancel-text="取消" @confirm="handleDeleteConfirmed" />
   </div>
 </template>
 
@@ -439,6 +468,9 @@ import ContentEditableInput from './ContentEditableInput.vue'
 import ImageUploadModal from './modals/ImageUploadModal.vue'
 import ImageViewer from './ImageViewer.vue'
 import VerifiedBadge from './VerifiedBadge.vue'
+import DropdownMenu from '@/components/menu/DropdownMenu.vue'
+import DropdownItem from '@/components/menu/DropdownItem.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { useLikeStore } from '@/stores/like.js'
@@ -1198,15 +1230,56 @@ const isPostAuthorComment = (comment) => {
   return postAuthorId && commentUserId && postAuthorId === commentUserId
 }
 
-const handleDeleteComment = async (comment) => {
-  if (!isCurrentUserComment(comment)) {
-    showMessage('只能删除自己发布的评论', 'error')
+// 删除确认弹窗状态
+const deleteConfirmVisible = ref(false)
+const deleteConfirmTitle = ref('删除评论')
+const deleteConfirmMessage = ref('')
+const pendingDelete = ref(null)
+
+const handleDeleteComment = (comment) => {
+  if (!isCurrentUserComment(comment) && !isCurrentUserPost.value) {
+    showMessage('只能删除自己发布的评论或自己帖子下的评论', 'error')
     return
   }
 
+  pendingDelete.value = { kind: 'comment', item: comment }
+  deleteConfirmTitle.value = '删除评论'
+  deleteConfirmMessage.value = '确定要删除吗？'
+  deleteConfirmVisible.value = true
+}
+
+const handleDeleteReply = (reply, commentId) => {
+  if (!isCurrentUserComment(reply) && !isCurrentUserPost.value) {
+    showMessage('只能删除自己发布的回复或自己帖子下的回复', 'error')
+    return
+  }
+
+  pendingDelete.value = { kind: 'reply', item: reply, parentCommentId: commentId }
+  deleteConfirmTitle.value = '删除回复'
+  deleteConfirmMessage.value = '确定要删除吗？'
+  deleteConfirmVisible.value = true
+}
+
+const handleDeleteConfirmed = () => {
+  const task = pendingDelete.value
+  if (!task) return
+  pendingDelete.value = null
+  if (task.kind === 'comment') {
+    performDeleteComment(task.item)
+  } else if (task.kind === 'reply') {
+    performDeleteReply(task.item, task.parentCommentId)
+  }
+}
+
+const performDeleteComment = async (comment) => {
   try {
     // 先调用后端API删除评论
     const response = await commentApi.deleteComment(comment.id)
+
+    if (!response || !response.success) {
+      showMessage(response?.message || '删除评论失败，请重试', 'error')
+      return
+    }
 
     // 只有后端删除成功后，才更新前端状态
     const currentComments = commentStore.getComments(props.item.id)
@@ -1228,22 +1301,38 @@ const handleDeleteComment = async (comment) => {
   }
 }
 
-const handleDeleteReply = async (reply, commentId) => {
-  if (!isCurrentUserComment(reply)) {
-    showMessage('只能删除自己发布的回复', 'error')
-    return
-  }
-
+const performDeleteReply = async (reply, commentId) => {
   try {
     // 先调用后端API删除回复
     const response = await commentApi.deleteComment(reply.id)
+
+    if (!response || !response.success) {
+      showMessage(response?.message || '删除回复失败，请重试', 'error')
+      return
+    }
+
+    // 删除回复及其所有子回复（后端已级联删除）
+    const removeReplyAndDescendants = (replies, rootId) => {
+      const toRemove = new Set([rootId])
+      let added = true
+      while (added) {
+        added = false
+        for (const r of replies) {
+          if (!toRemove.has(r.id) && toRemove.has(r.parent_id)) {
+            toRemove.add(r.id)
+            added = true
+          }
+        }
+      }
+      return replies.filter(r => !toRemove.has(r.id))
+    }
 
     // 只有后端删除成功后，才更新前端状态
     const currentComments = commentStore.getComments(props.item.id)
     if (currentComments && currentComments.comments) {
       const targetComment = currentComments.comments.find(c => c.id === commentId)
       if (targetComment) {
-        targetComment.replies = targetComment.replies.filter(r => r.id !== reply.id)
+        targetComment.replies = removeReplyAndDescendants(targetComment.replies, reply.id)
 
         // 使用后端返回的删除数量来更新总数
         const deletedCount = response.data?.deletedCount || 1
@@ -1260,6 +1349,19 @@ const handleDeleteReply = async (reply, commentId) => {
   } catch (error) {
     console.error('删除回复失败:', error)
     showMessage('删除回复失败，请重试', 'error')
+  }
+}
+
+const handlePinComment = async (comment) => {
+  const nextPinned = !comment.pinned
+  const response = await commentApi.pinComment(comment.id, nextPinned)
+
+  if (response && response.success) {
+    const pinned = !!response.data?.pinned
+    commentStore.setCommentPinned(props.item.id, comment.id, pinned)
+    showMessage(pinned ? '评论已置顶' : '已取消置顶', 'success')
+  } else {
+    showMessage(response?.message || '操作失败，请重试', 'error')
   }
 }
 
@@ -3205,6 +3307,25 @@ function handleAvatarError(event) {
   z-index: 5;
 }
 
+.author-right-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.author-share-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .author-info {
   display: flex;
   align-items: center;
@@ -3530,22 +3651,21 @@ function handleAvatarError(event) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--primary-color-shadow);
-  color: var(--primary-color);
-  font-weight: 600;
+  background-color: var(--bg-color-tertiary);
+  color: var(--text-color-secondary);
+  font-weight: 400;
   border-radius: 999px;
   font-size: 9px;
   white-space: nowrap;
-  opacity: 0.7;
   flex-shrink: 0;
 }
 
 .author-badge--parent {
-  padding: 2px 6px;
+  padding: 1px 5px;
 }
 
 .author-badge--reply {
-  padding: 1px 5px;
+  padding: 1px 4px;
 }
 
 .comment-username {
@@ -3559,19 +3679,54 @@ function handleAvatarError(event) {
   font-size: 12px;
 }
 
-.comment-delete-btn {
-  font-size: 12px;
-  color: var(--text-color-secondary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0 8px;
-  margin-left: 8px;
-  transition: opacity 0.2s;
+/* 置顶评论标识 */
+.comment-pinned-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  margin-bottom: 2px;
+  padding: 2px 7px;
+  background-color: var(--primary-color-shadow);
+  background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  color: var(--primary-color);
+  font-weight: 400;
+  font-size: 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.comment-delete-btn:hover {
+.comment-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin-left: 8px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  opacity: 0.8;
+}
+
+.comment-more-btn:hover {
   color: var(--text-color-primary);
+  background-color: var(--bg-color-secondary);
+  opacity: 1;
+}
+
+:deep(.dropdown-menu.comment-more-menu) {
+  min-width: 0;
+  width: auto;
+}
+
+:deep(.comment-more-menu .dropdown-item-content) {
+  font-size: 14px;
+  padding: 8px 12px;
+  white-space: nowrap;
 }
 
 .comment-text {
@@ -4310,6 +4465,25 @@ function handleAvatarError(event) {
     flex-shrink: 0;
   }
 
+  .author-right-actions {
+    gap: 4px;
+  }
+
+  .author-share-btn {
+    display: flex;
+    width: 40px;
+    height: 40px;
+  }
+
+  .author-share-btn:active {
+    background: var(--bg-color-secondary);
+  }
+
+  .author-share-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
   .scrollable-content {
     flex: 1;
     padding-top: 0;
@@ -4525,6 +4699,8 @@ function handleAvatarError(event) {
 
   .input-wrapper {
     margin-right: 0;
+    max-width: none;
+    min-width: 0;
   }
 
   .comment-input {

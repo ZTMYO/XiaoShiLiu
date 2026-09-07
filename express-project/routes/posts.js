@@ -858,7 +858,7 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
        FROM comments c
        LEFT JOIN users u ON c.user_id = u.id
        WHERE c.post_id = ? AND c.parent_id IS NULL
-       ORDER BY c.created_at ${orderBy}
+       ORDER BY c.is_pinned DESC, c.created_at ${orderBy}
        LIMIT ? OFFSET ?`,
       [postId, limit.toString(), offset.toString()]
     );

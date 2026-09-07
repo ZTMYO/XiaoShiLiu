@@ -157,6 +157,7 @@
 | parent_id | BIGINT | 父评论ID | 回复评论时使用，可为空 |
 | content | TEXT | 评论内容 | 评论文本 |
 | like_count | INT | 点赞数 | 统计字段，默认0 |
+| is_pinned | TINYINT | 是否置顶 | 0-否，1-是，默认0 |
 | created_at | TIMESTAMP | 评论时间 | 创建时间 |
 
 ### 11. 通知表 (notifications)

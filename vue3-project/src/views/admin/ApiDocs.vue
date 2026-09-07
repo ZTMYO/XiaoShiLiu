@@ -5,7 +5,7 @@
       <div class="docs-info">
         <span class="version">版本: v1.3.2</span>
         <span class="base-url">基础URL: http://localhost:3001/</span>
-        <span class="update-time">更新时间: 2026-7-28</span>
+        <span class="update-time">更新时间: 2026-9-8</span>
       </div>
     </div>
 
@@ -753,7 +753,7 @@ const apiGroups = ref([
           { name: 'id', type: 'int', required: true, description: '笔记ID（路径参数）' },
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
           { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' },
-          { name: 'sort', type: 'string', required: false, description: '排序方式：desc（降序，默认）或 asc（升序）' }
+          { name: 'sort', type: 'string', required: false, description: '排序方式：desc（降序，默认）或 asc（升序），置顶评论始终排在列表最前' }
         ]
       },
       {
@@ -981,7 +981,7 @@ const apiGroups = ref([
           { name: 'id', type: 'int', required: true, description: '笔记ID（路径参数）' },
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
           { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' },
-          { name: 'sort', type: 'string', required: false, description: '排序方式：desc（降序，默认）或 asc（升序）' }
+          { name: 'sort', type: 'string', required: false, description: '排序方式：desc（降序，默认）或 asc（升序），置顶评论始终排在列表最前' }
         ]
       },
       {
@@ -1008,6 +1008,26 @@ const apiGroups = ref([
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
           { name: 'limit', type: 'int', required: false, description: '每页数量，默认10' }
         ]
+      },
+      {
+        method: 'PUT',
+        path: '/api/comments/:id/pin',
+        title: '置顶/取消置顶评论',
+        description: '帖子作者置顶或取消置顶顶级评论，置顶评论优先显示在评论列表顶部',
+        auth: true,
+        expanded: false,
+        params: [
+          { name: 'id', type: 'int', required: true, description: '评论ID（路径参数）' },
+          { name: 'pinned', type: 'boolean', required: true, description: '是否置顶（true-置顶，false-取消置顶）' }
+        ],
+        example: `{
+  "code": 200,
+  "message": "评论已置顶",
+  "data": {
+    "id": 12,
+    "pinned": true
+  }
+}`
       },
       {
         method: 'DELETE',

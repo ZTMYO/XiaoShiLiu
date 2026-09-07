@@ -191,15 +191,12 @@ onUnmounted(() => {
     transition: all 0.2s ease;
     user-select: none;
     outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .follow-btn:not(.following) {
     background: var(--primary-color);
     color: white;
-}
-
-.follow-btn:not(.following):hover {
-    background: var(--primary-color-dark);
 }
 
 .follow-btn.following {
@@ -208,9 +205,20 @@ onUnmounted(() => {
     border: 1px solid var(--border-color-secondary);
 }
 
-.follow-btn.following:hover {
-    background: var(--bg-color-secondary);
-    color: var(--text-color-primary);
+/* 触屏设备没有持久 hover，避免点按后停留在 hover 深色状态 */
+@media (hover: hover) {
+    .follow-btn:not(.following):hover {
+        background: var(--primary-color-dark);
+    }
+
+    .follow-btn.following:hover {
+        background: var(--bg-color-secondary);
+        color: var(--text-color-primary);
+    }
+}
+
+.follow-btn:active {
+    opacity: 0.85;
 }
 
 

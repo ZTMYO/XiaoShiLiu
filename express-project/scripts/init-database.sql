@@ -177,6 +177,7 @@ CREATE TABLE IF NOT EXISTS `comments` (
   `parent_id` bigint(20) DEFAULT NULL COMMENT '父评论ID',
   `content` text NOT NULL COMMENT '评论内容',
   `like_count` int(11) DEFAULT 0 COMMENT '点赞数',
+  `is_pinned` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否置顶',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '评论时间',
   PRIMARY KEY (`id`),
   KEY `idx_post_id` (`post_id`),

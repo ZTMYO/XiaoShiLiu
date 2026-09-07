@@ -1223,6 +1223,8 @@ General parameters for interfaces that support pagination:
 **API Endpoint**: `DELETE /api/comments/:id`
 **Authentication Required**: Yes
 
+**Description**: Both the comment author and the post author can delete a comment. Deleting a parent comment also removes all of its child replies.
+
 **Path Parameters**:
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -1269,7 +1271,7 @@ General parameters for interfaces that support pagination:
 |-----------|------|----------|-------------|
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
-| sort | string | No | Sorting method: desc (default) or asc |
+| sort | string | No | Sorting method: desc (default) or asc. Pinned comments are always displayed at the top |
 
 **Response Example**:
 ```json
@@ -1361,6 +1363,34 @@ General parameters for interfaces that support pagination:
 {
   "content": "This is a comment mentioning @Photography Lover and @Tech Enthusiast",
   "parent_id": null
+}
+```
+
+### 5. Pin/Unpin Comment
+**Endpoint**: `PUT /api/comments/:id/pin`
+**Authentication Required**: Yes (post author only)
+
+**Description**: The post author can pin or unpin a top-level comment. Pinned comments are always displayed first in the comment section.
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | int | Yes | Comment ID |
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| pinned | boolean | Yes | Whether to pin (true-pin, false-unpin) |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "Comment pinned successfully",
+  "data": {
+    "id": 12,
+    "pinned": true
+  }
 }
 ```
 

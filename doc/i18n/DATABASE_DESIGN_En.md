@@ -144,6 +144,7 @@ Database structure design for the Xiaoshiliu-style image-text community project 
 | parent_id | BIGINT | Parent Comment ID | Used for reply comments, nullable |
 | content | TEXT | Comment Content | Comment text |
 | like_count | INT | Like Count | Statistics field, default 0 |
+| is_pinned | TINYINT | Is Pinned | 0-No, 1-Yes, default 0 |
 | created_at | TIMESTAMP | Comment Time | Creation time |
 
 ### 10. Notifications Table (notifications)
