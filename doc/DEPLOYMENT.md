@@ -22,100 +22,35 @@ git clone https://github.com/ZTMYO/XiaoShiLiu
 cd XiaoShiLiu
 ```
 
-### 2. 配置环境变量
+### 2. 配置环境变量（Docker 只需这一份）
 
-复制环境配置文件：
+从模板复制并编辑项目**根目录**的环境文件：
+
 ```bash
 cp .env.docker .env
 ```
 
-编辑 `.env` 文件，根据需要修改配置：
+> Docker 部署只用这一份 `.env`，无需再改 `express-project/.env` 和 `vue3-project/.env`。
+> 全部变量注释见 [.env.docker](../.env.docker)。
+
+真机部署**必须检查的关键项**：
 
 ```env
-# 数据库配置
-DB_HOST=mysql
-DB_USER=xiaoshiliu_user
+# ① 数据库密码
 DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-DB_PORT=3306
 
-# JWT配置
+# ② JWT 密钥
 JWT_SECRET=xiaoshiliu_secret_key_2025_docker
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_EXPIRES_IN=30d
 
-# 上传配置
-# 单张图片最大文件大小
-IMAGE_MAX_SIZE=10mb
-# 单个视频最大文件大小
-VIDEO_MAX_SIZE=100mb
-# 图片上传策略 (local: 本地存储, imagehost: 第三方图床, r2: Cloudflare R2)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# 视频上传策略 (local: 本地存储, r2: Cloudflare R2)
-VIDEO_UPLOAD_STRATEGY=local
-
-# 本地存储配置
-LOCAL_UPLOAD_DIR=uploads
+# ③ 本地存储图片对外访问地址（改用域名/服务器IP时同步修改）
 LOCAL_BASE_URL=http://localhost:3001
-VIDEO_UPLOAD_DIR=uploads/videos
-VIDEO_COVER_DIR=uploads/covers
-
-# 第三方图床配置（当IMAGE_UPLOAD_STRATEGY=imagehost时使用）
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
-IMAGEHOST_TIMEOUT=60000
-
-# Cloudflare R2 配置（当IMAGE_UPLOAD_STRATEGY=r2或VIDEO_UPLOAD_STRATEGY=r2时使用）
-# 如需使用R2存储，请取消注释并填入真实配置
-# R2_ACCESS_KEY_ID=your_r2_access_key_id_here
-# R2_SECRET_ACCESS_KEY=your_r2_secret_access_key_here
-# R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
-# R2_BUCKET_NAME=your_bucket_name_here
-# R2_ACCOUNT_ID=your_account_id_here
-# R2_REGION=auto
-# R2_PUBLIC_URL=https://your-custom-domain.com
-
-# API配置
 API_BASE_URL=http://localhost:3001
 
-# 邮件服务配置
-# 是否启用邮件功能 (true/false)，默认不启用
+# ④ 需要邮箱验证时开启并填写 SMTP（默认关闭）
 EMAIL_ENABLED=false
-# SMTP服务器地址
-SMTP_HOST=smtp.qq.com
-# SMTP服务器端口
-SMTP_PORT=465
-# 是否使用SSL/TLS (true/false)
-SMTP_SECURE=true
-# 邮箱账号
-SMTP_USER=your_email@example.com
-# 邮箱密码/授权码
-SMTP_PASSWORD=your_email_password
-# 发件人邮箱
-EMAIL_FROM=your_email@example.com
-# 发件人名称
-EMAIL_FROM_NAME=小石榴校园图文社区
-
-# IP属地查询配置
-# 主API地址
-IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
-# 主API超时时间（毫秒）
-IP_LOCATION_PRIMARY_TIMEOUT=10000
-# 备用API地址
-IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
-# 备用API超时时间（毫秒）
-IP_LOCATION_BACKUP_TIMEOUT=5000
-
-# 前端构建配置
-VITE_API_BASE_URL=http://localhost:3001/api
-
-# 服务端口配置
-FRONTEND_PORT=80
-BACKEND_PORT=3001
-DB_PORT_EXTERNAL=3306
-
-# 生产环境标识
-NODE_ENV=production
 ```
+
+宿主机端口映射固定为 `8080`(前端) / `3001`(后端) / `3307`(数据库)，如需调整请直接修改 [docker-compose.yml](../docker-compose.yml) 中各服务的 `ports` 段，而不是改 `.env`。
 
 ### 3. 启动服务
 
@@ -148,6 +83,10 @@ docker-compose up -d --build
 - **前端界面**：http://localhost:8080
 - **后端API**：http://localhost:3001
 - **数据库**：localhost:3307
+
+部署到服务器后，把上面的 `localhost` 换成服务器公网 IP 或域名即可访问。数据库端口（3307）**不要**对公网开放，仅允许本机/内网访问更安全。
+
+> 首次在服务器启动前可先运行 `docker compose config` 校验编排配置是否合法。
 
 ### 5. 常用管理命令
 
@@ -463,9 +402,37 @@ IP_LOCATION_BACKUP_TIMEOUT=5000
 
 ### 反向代理配置
 
-**重要提示**：如果您使用了 Nginx、Apache 等反向代理服务器，需要修改以下配置：
+如果您的站点挂在 Nginx 等反向代理后面（绑定域名 / HTTPS），改法取决于部署方式：
 
-#### 后端配置 (express-project/.env)
+#### 场景一：Docker 部署 —— 改根目录 `.env`
+
+Docker 前端镜像内置 nginx，已把 `/api` 反代到后端容器。外层 Nginx 只需把 `/api` 转发到**宿主机**上后端的映射端口：
+
+```nginx
+location /api {
+    proxy_pass http://localhost:3001;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
+
+同源部署（前端与后端共用同一域名）时浏览器请求走相对路径 `/api`，**不需要 CORS**；仅当前端域名与后端域名不一致时才需在 `.env` 加：
+
+```env
+CORS_ORIGIN=https://yourdomain.com
+```
+
+若使用**本地存储**图片，务必把对外访问地址改成真实域名，否则图片裂图：
+
+```env
+LOCAL_BASE_URL=https://yourdomain.com
+API_BASE_URL=https://yourdomain.com
+```
+
+#### 场景二：传统部署 —— 分别改两份 `.env`
+
+**后端配置 (`express-project/.env`)：**
 
 ```env
 # 将 API_BASE_URL 改为您的域名和端口
@@ -477,7 +444,7 @@ API_BASE_URL=https://yourdomain.com
 CORS_ORIGIN=https://yourdomain.com
 ```
 
-#### 前端配置 (vue3-project/.env)
+**前端配置 (`vue3-project/.env`，改后需重新 `npm run build`)：**
 
 ```env
 # 将 API 基础 URL 改为您的域名和后端端口
@@ -490,13 +457,19 @@ VITE_API_BASE_URL=https://yourdomain.com/api
 
 假设您的域名是 `example.com`，后端通过反向代理映射到 3001 端口：
 
-**后端 .env：**
+**Docker（根目录 .env）：**
+```env
+LOCAL_BASE_URL=https://example.com
+API_BASE_URL=https://example.com
+```
+
+**传统部署（后端 .env）：**
 ```env
 API_BASE_URL=https://example.com
 CORS_ORIGIN=https://example.com
 ```
 
-**前端 .env：**
+**传统部署（前端 .env）：**
 ```env
 VITE_API_BASE_URL=https://example.com/api
 ```
@@ -536,7 +509,7 @@ server {
    ```bash
    # 检查端口占用
    netstat -ano | findstr :8080
-   # 修改 .env 中的端口配置
+   # 端口映射在 docker-compose.yml 的 ports 段修改，如 "8080:80" 改为 "8081:80"，然后重新 docker compose up -d
    ```
 
 2. **容器启动失败**

@@ -1,5 +1,10 @@
 name: xiaoshiliu
 
+# 真机部署：
+#   1. 将根目录 .env.docker 复制为 .env，按服务器实际修改（DB密码、JWT、域名等）
+#   2. 执行 docker compose up -d --build
+# 业务配置只需维护根目录这一份 .env，各服务通过 env_file / 变量引用它。
+
 services:
   # MySQL数据库服务
   mysql:
@@ -35,34 +40,18 @@ services:
     container_name: xiaoshiliu-backend
     restart: unless-stopped
     environment:
+      # 以下属于容器内网/运行模式等基础设施常量，不随业务环境变化
       NODE_ENV: production
-      PORT: 3001
       DB_HOST: mysql
-      DB_USER: ${DB_USER:-xiaoshiliu_user}
-      DB_PASSWORD: ${DB_PASSWORD:-123456}
-      DB_NAME: ${DB_NAME:-xiaoshiliu}
-      DB_PORT: 3306
-      JWT_SECRET: ${JWT_SECRET:-xiaoshiliu_secret_key_2025}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN:-30d}
-      API_BASE_URL: http://localhost:3001
-      IMAGE_MAX_SIZE: ${IMAGE_MAX_SIZE:-10mb}
-      VIDEO_MAX_SIZE: ${VIDEO_MAX_SIZE:-100mb}
-      IMAGE_UPLOAD_STRATEGY: ${IMAGE_UPLOAD_STRATEGY:-imagehost}
-      VIDEO_UPLOAD_STRATEGY: ${VIDEO_UPLOAD_STRATEGY:-local}
-      LOCAL_UPLOAD_DIR: ${LOCAL_UPLOAD_DIR:-uploads}
-      LOCAL_BASE_URL: ${LOCAL_BASE_URL:-http://localhost:3001}
-      IMAGEHOST_API_URL: ${IMAGEHOST_API_URL:-https://api.xinyew.cn/api/360tc}
-      IMAGEHOST_TIMEOUT: ${IMAGEHOST_TIMEOUT:-60000}
-      IP_LOCATION_PRIMARY_API: ${IP_LOCATION_PRIMARY_API:-https://api.pearktrue.cn/api/ip/details}
-      IP_LOCATION_PRIMARY_TIMEOUT: ${IP_LOCATION_PRIMARY_TIMEOUT:-10000}
-      IP_LOCATION_BACKUP_API: ${IP_LOCATION_BACKUP_API:-https://api.pearktrue.cn/api/ip/high}
-      IP_LOCATION_BACKUP_TIMEOUT: ${IP_LOCATION_BACKUP_TIMEOUT:-5000}
       TZ: Asia/Shanghai
+    # 其余业务配置（DB密码/JWT/上传/邮件/图床等）统一从根目录 .env 注入，
+    env_file:
+      - .env
     ports:
       - "3001:3001"
     volumes:
       - backend_uploads:/app/uploads
+      - ./doc:/doc:ro
       - /etc/localtime:/etc/localtime:ro
     networks:
       - xiaoshiliu-network
@@ -82,7 +71,8 @@ services:
       context: ./vue3-project
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: http://localhost:3001/api
+        # 前端默认走相对路径 /api 由 nginx 反代；仅当直连后端时才需要覆盖
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3001/api}
     container_name: xiaoshiliu-frontend
     restart: unless-stopped
     environment:

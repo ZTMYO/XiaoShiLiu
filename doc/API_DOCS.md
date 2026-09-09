@@ -5,7 +5,7 @@
 - **版本**: v1.3.2
 - **基础URL**: `http://localhost:3001`
 - **数据库**: xiaoshiliu (MySQL)
-- **更新时间**: 2026-7-28
+- **更新时间**: 2026-9-9
 
 ## 通用说明
 
@@ -1681,7 +1681,6 @@ Authorization: Bearer <your_jwt_token>
 - `content` 字段可能包含HTML格式的@用户标签
 - 前端需要正确渲染HTML内容以显示@用户链接
 - @用户链接包含 `href`、`data-user-id`、`class` 等属性用于前端处理
-```
 
 ### 2. 创建评论
 **接口地址**: `POST /api/posts/:id/comments`

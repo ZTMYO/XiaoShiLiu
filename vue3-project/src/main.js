@@ -1,8 +1,8 @@
 /**
- * 小石榴校园图文社区 - Vue3前端应用
+ * 小石榴校园图文社区
  * 
  * @author ZTMYO
- * @github https://github.com/ZTMYO
+ * @github https://github.com/ZTMYO/XiaoShiLiu
  * @description 基于Vue3+Vite+Pinia的现代化图文社区前端应用
  * @version v1.3.2
  * @license GPLv3
