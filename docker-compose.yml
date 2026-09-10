@@ -97,6 +97,8 @@ volumes:
     driver: local
   backend_uploads:
     driver: local
+  backend_logs:
+    driver: local
 
 networks:
   xiaoshiliu-network:

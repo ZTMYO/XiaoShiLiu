@@ -13,7 +13,7 @@ const storage = multer.memoryStorage();
 // 文件过滤器 - 图片
 const imageFileFilter = (req, file, cb) => {
   // 检查文件类型
-  if (file.mimetype.startsWith('image/')) {
+  if (config.upload.image.allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error('只允许上传图片文件'), false);
@@ -23,8 +23,7 @@ const imageFileFilter = (req, file, cb) => {
 // 文件过滤器 - 视频
 const videoFileFilter = (req, file, cb) => {
   // 检查文件类型
-  const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'];
-  if (allowedTypes.includes(file.mimetype)) {
+  if (config.upload.video.allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error('只允许上传视频文件'), false);
@@ -45,14 +44,14 @@ const upload = multer({
 const mixedFileFilter = (req, file, cb) => {
   if (file.fieldname === 'file') {
     // 视频文件验证
-    if (file.mimetype.startsWith('video/')) {
+    if (config.upload.video.allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new Error('只支持视频文件'), false);
     }
   } else if (file.fieldname === 'thumbnail') {
     // 缩略图文件验证
-    if (file.mimetype.startsWith('image/')) {
+    if (config.upload.image.allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new Error('缩略图只支持图片文件'), false);
@@ -267,7 +266,7 @@ router.use((error, req, res, next) => {
     }
   }
 
-  if (error.message === '只允许上传图片文件' || error.message === '只允许上传视频文件') {
+  if (error.message === '只允许上传图片文件' || error.message === '只允许上传视频文件' || error.message === '只支持视频文件' || error.message === '缩略图只支持图片文件' || error.message === '不支持的文件字段') {
     return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: error.message });
   }
 

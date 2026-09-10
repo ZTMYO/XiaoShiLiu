@@ -636,7 +636,7 @@ router.post('/login', async (req, res) => {
     );
 
     if (userRows.length === 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.NOT_FOUND, message: '用户不存在' });
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '账号或密码错误' });
     }
 
     const user = userRows[0];
@@ -652,7 +652,7 @@ router.post('/login', async (req, res) => {
     );
 
     if (passwordCheck.length === 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '密码错误' });
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '账号或密码错误' });
     }
 
     // 生成JWT令牌
@@ -871,7 +871,7 @@ router.post('/admin/login', async (req, res) => {
     );
 
     if (adminRows.length === 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.NOT_FOUND, message: '管理员账号不存在' });
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '账号或密码错误' });
     }
 
     const admin = adminRows[0];
@@ -883,7 +883,7 @@ router.post('/admin/login', async (req, res) => {
     );
 
     if (passwordCheck.length === 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '密码错误' });
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '账号或密码错误' });
     }
 
     // 生成JWT令牌

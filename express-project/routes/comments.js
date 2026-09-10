@@ -366,7 +366,10 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     // 验证评论是否存在
     const [commentRows] = await pool.execute(
-      'SELECT id, post_id, user_id, parent_id FROM comments WHERE id = ?',
+      `SELECT c.id, c.post_id, c.user_id, c.parent_id, p.user_id as post_author_id
+       FROM comments c 
+       LEFT JOIN posts p ON c.post_id = p.id 
+       WHERE c.id = ?`,
       [commentId.toString()]
     );
 

@@ -261,6 +261,10 @@ IP_LOCATION_PRIMARY_TIMEOUT=10000
 IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
 # 备用API超时时间（毫秒）
 IP_LOCATION_BACKUP_TIMEOUT=5000
+
+# 日志配置
+LOG_ENABLED=false
+LOG_DIR=logs
 ```
 
 ### 前端配置 (vue3-project/.env)
@@ -281,6 +285,7 @@ VITE_APP_TITLE=小石榴图文社区
 > - 图片和视频可以分别配置不同的上传策略
 > - 邮件功能默认关闭，启用后支持邮箱验证注册和找回密码
 > - IP属地查询支持主备双API，自动切换保证服务可用性
+> - 支持请求日志记录功能，可配置日志启用和保存目录
 > - 前端使用 Vite 环境变量，变量名需以 `VITE_` 开头
 > - 详细配置说明请参考 [部署指南](./doc/DEPLOYMENT.md)
 

@@ -261,6 +261,10 @@ IP_LOCATION_PRIMARY_TIMEOUT=10000
 IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
 # Backup API timeout (milliseconds)
 IP_LOCATION_BACKUP_TIMEOUT=5000
+
+# Log configuration
+LOG_ENABLED=false
+LOG_DIR=logs
 ```
 
 ### Frontend Configuration (vue3-project/.env)
@@ -278,6 +282,7 @@ VITE_APP_TITLE=XiaoShiLiu Image-Text Community
 > - Backend supports local storage, third-party image hosting, and Cloudflare R2 upload strategies
 > - Images and videos can be configured with different upload strategies
 > - Email functionality is disabled by default; when enabled, it supports email verification registration and password recovery
+> - Supports request logging feature, configurable log enable and save directory
 > - Frontend uses Vite environment variables, variable names must start with `VITE_`
 > - For detailed configuration instructions, please refer to the [Deployment Guide](DEPLOYMENT_En.md)
 

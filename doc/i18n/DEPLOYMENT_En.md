@@ -125,6 +125,10 @@ IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
 # Backup API timeout (milliseconds)
 IP_LOCATION_BACKUP_TIMEOUT=5000
 
+# Log configuration
+LOG_ENABLED=false
+LOG_DIR=logs
+
 # Frontend build configuration
 VITE_API_BASE_URL=http://localhost:3001/api
 
@@ -302,6 +306,10 @@ IP_LOCATION_PRIMARY_TIMEOUT=10000
 IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
 # Backup API timeout (milliseconds)
 IP_LOCATION_BACKUP_TIMEOUT=5000
+
+# Log configuration
+LOG_ENABLED=false
+LOG_DIR=logs
 ```
 
 #### Frontend Environment Variables (vue3-project/.env)
