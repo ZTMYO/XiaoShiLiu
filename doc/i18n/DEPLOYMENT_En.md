@@ -1,321 +1,199 @@
-# Deployment Guide
+# XiaoShiLiu Image & Text Community Deployment Guide
 
-This document provides a detailed introduction to the deployment process and configuration instructions for the XiaoShiLiu image and text community project.
+## System Requirements
 
-## Deployment Methods
+- **Docker Deployment**: Docker 20.10+, Docker Compose 2.0+
+- **Traditional Deployment**: Node.js 18+, MySQL 5.7+, npm or yarn
 
-The project supports two deployment methods:
-
-1. **Docker One-Click Deployment** (recommended) - Simple and quick, suitable for production environments
-2. **Traditional Deployment** - Manual configuration, suitable for development environments
-
-> 💡 **BT-Panel Deployment**: If you are using BT-Panel (宝塔面板), you can refer to this detailed tutorial with screenshots: [Complete Tutorial for Deploying XiaoShiLiu with BT-Panel](https://www.sakuraidc.cc/forum-post/3116.html)
+> 💡 For BT-Panel deployment, refer to: [Complete Tutorial for Deploying the XiaoShiLiu Image & Text Community with BT-Panel](https://www.sakuraidc.cc/forum-post/3116.html)
 
 ---
 
-## 🐳 Docker One-Click Deployment (Recommended)
+## 🐋 Docker One-Click Deployment (Recommended)
 
-### Environment Requirements
-
-- Docker >= 20.0
-- Docker Compose >= 2.0
-- Available Memory >= 2GB
-- Available Disk Space >= 5GB
-
-### Image and Version Description
-
-| Component | Image/Source | Version/Tag | Description |
-|-----------|--------------|-------------|-------------|
-| Database | mysql | 5.7 | Uses the official image `mysql:5.7` with utf8mb4 default configuration |
-| Backend Runtime | node | 18-alpine | `express-project/Dockerfile` uses `node:18-alpine` |
-| Frontend Build | node | 18-alpine | `vue3-project/Dockerfile` uses this for the build phase |
-| Frontend Runtime | nginx | alpine | Uses `nginx:alpine` to provide static files |
-| Compose Health Check | wget | - | Frontend health check uses `wget --spider http://localhost/` |
-
-> Note: The above versions are consistent with `docker-compose.yml` and the front-end and back-end `Dockerfile`; if changes are required, please synchronize adjustments to the corresponding files and documentation.
-### Quick Start
-
-#### 1. Clone the Project
+### 1. Clone the Project
 
 ```bash
-git clone https://github.com/ZTMYO/XiaoShiLiu.git
+git clone https://github.com/ZTMYO/XiaoShiLiu
 cd XiaoShiLiu
 ```
 
-#### 2. Configure Environment Variables
+### 2. Configure Environment Variables
 
-Copy the environment configuration file:
+Docker deployment only uses the single `.env` in the root directory; there is no need to modify `express-project/.env` or `vue3-project/.env`:
+
 ```bash
 cp .env.docker .env
 ```
 
-Edit the `.env` file and modify the configuration as needed:
+Key items that must be checked for a real-machine deployment:
 
 ```env
-# Database configuration
-DB_HOST=mysql
-DB_USER=xiaoshiliu_user
+# ① Database password
 DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-DB_PORT=3306
 
-# JWT configuration
+# ② JWT secret
 JWT_SECRET=xiaoshiliu_secret_key_2025_docker
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_EXPIRES_IN=30d
 
-# Upload configuration
-# Single image max file size
-IMAGE_MAX_SIZE=10mb
-# Single video max file size
-VIDEO_MAX_SIZE=100mb
-# Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2, aliyun: Alibaba Cloud OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# Video upload strategy (local: local storage, r2: Cloudflare R2)
-VIDEO_UPLOAD_STRATEGY=local
-
-# Local storage configuration
-LOCAL_UPLOAD_DIR=uploads
+# ③ Public image access address (update it at the same time when switching to a domain/server IP, otherwise images will break)
 LOCAL_BASE_URL=http://localhost:3001
-VIDEO_UPLOAD_DIR=uploads/videos
-VIDEO_COVER_DIR=uploads/covers
-
-# Third-party image hosting configuration (when IMAGE_UPLOAD_STRATEGY=imagehost)
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
-IMAGEHOST_TIMEOUT=60000
-
-# Cloudflare R2 configuration (when IMAGE_UPLOAD_STRATEGY=r2 or VIDEO_UPLOAD_STRATEGY=r2)
-# Uncomment and fill in real configuration if using R2 storage
-# R2_ACCESS_KEY_ID=your_r2_access_key_id_here
-# R2_SECRET_ACCESS_KEY=your_r2_secret_access_key_here
-# R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
-# R2_BUCKET_NAME=your_bucket_name_here
-# R2_ACCOUNT_ID=your_account_id_here
-# R2_REGION=auto
-# R2_PUBLIC_URL=https://your-custom-domain.com
-
-# Alibaba Cloud OSS configuration (when IMAGE_UPLOAD_STRATEGY=aliyun)
-# Use a RAM sub-account AccessKey with read/write permission limited to this bucket
-# OSS_REGION=oss-cn-hongkong
-# OSS_BUCKET_NAME=your_bucket_name_here
-# OSS_ACCESS_KEY_ID=your_access_key_id_here
-# OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
-# Optional: set after binding a custom domain or CDN; otherwise the default domain is used
-# OSS_PUBLIC_URL=https://img.example.com
-# Optional: object directory prefix, isolates images by environment or purpose (default images/)
-# OSS_IMAGE_PREFIX=images/
-
-# API configuration
 API_BASE_URL=http://localhost:3001
 
-# Email service configuration
-# Enable email functionality (true/false), disabled by default
+# ④ Enable and fill in SMTP when email verification is required (disabled by default)
 EMAIL_ENABLED=false
-# SMTP server address
-SMTP_HOST=smtp.qq.com
-# SMTP server port
-SMTP_PORT=465
-# Use SSL/TLS (true/false)
-SMTP_SECURE=true
-# Email account
-SMTP_USER=your_email@example.com
-# Email password/authorization code
-SMTP_PASSWORD=your_email_password
-# Sender email
-EMAIL_FROM=your_email@example.com
-# Sender name
-EMAIL_FROM_NAME=XiaoShiLiu Campus Community
-
-# IP Location Query Configuration
-# Primary API URL
-IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
-# Primary API timeout (milliseconds)
-IP_LOCATION_PRIMARY_TIMEOUT=10000
-# Backup API URL
-IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
-# Backup API timeout (milliseconds)
-IP_LOCATION_BACKUP_TIMEOUT=5000
-
-# Frontend build configuration
-VITE_API_BASE_URL=http://localhost:3001/api
-
-# Service port configuration
-FRONTEND_PORT=80
-BACKEND_PORT=3001
-DB_PORT_EXTERNAL=3306
-
-# Production environment flag
-NODE_ENV=production
 ```
 
-#### 3. One-Click Start
+> See [.env.docker](../../.env.docker) for all variables and comments.
+> The host ports are fixed at 8080 (frontend), 3001 (backend), and 3307 (database). To adjust them, modify the `ports` section of [docker-compose.yml](../../docker-compose.yml) rather than `.env`.
 
-**Windows Users:**
+### 3. Start the Services
+
+On Windows, using the PowerShell script is recommended:
 
 ```powershell
-# Start services
-.\deploy.ps1
-
-# Rebuild and start
-.\deploy.ps1 -Build
-
-# Start and seed example data (optional)
-.\deploy.ps1 -Build -Seed
-# Or seed data separately after the service has started
-.\deploy.ps1 -Seed
-
-# Check service status
-.\deploy.ps1 -Status
-
-# View logs
-.\deploy.ps1 -Logs
-
-# Stop services
-.\deploy.ps1 -Stop
+.\deploy.ps1            # Start
+.\deploy.ps1 -Build     # Rebuild and start
+.\deploy.ps1 -Seed      # Start and seed sample data
+.\deploy.ps1 -Help      # View help
 ```
 
-**Linux/macOS Users:**
+On other platforms, use Docker Compose:
 
 ```bash
-# Grant execution permission to the script
-chmod +x deploy.sh
-
-# Start services
-./deploy.sh
-
-# Rebuild and start
-./deploy.sh --build
-
-# Check service status
-./deploy.sh --status
-
-# View logs
-./deploy.sh --logs
-
-# Stop services
-./deploy.sh --stop
+docker-compose up -d
+docker-compose up -d --build   # Rebuild and start
 ```
 
-#### 4. Access the Application
+> Before starting on a server for the first time, you can first run `docker compose config` to verify that the orchestration configuration is valid.
 
-After the service starts successfully, you can access the application through the following addresses:
+### 4. Access the Application
 
-| Service | Address | Description |
-|---------|---------|-------------|
-| Frontend Interface | http://localhost:8080 | Main access entry |
-| Backend API | http://localhost:3001 | API service |
-| Database | localhost:3307 | MySQL database |
+| Service | Address |
+|---|---|
+| Frontend UI | http://localhost:8080 |
+| Backend API | http://localhost:3001 |
+| Database | localhost:3307 |
 
-### Docker Deployment Architecture
+After deploying to a server, replace `localhost` with the public IP or domain to access it. Database port 3307 should **not** be exposed to the public internet; allowing only local/intranet access is safer.
 
+### 5. Common Commands
+
+```powershell
+.\deploy.ps1 -Status    # Check service status
+.\deploy.ps1 -Logs      # View logs
+.\deploy.ps1 -Stop      # Stop services
+.\deploy.ps1 -Clean     # Clean up all data (use with caution)
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │    Backend      │    │     MySQL       │
-│   (Nginx)       │◄───┤   (Express)     │◄───┤   (Database)    │
-│   Port: 80      │    │   Port: 3001    │    │   Port: 3306    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+
+---
+
+## 🛠️ Traditional Deployment
+
+### 1. Prerequisites
+
+Make sure Node.js 18+, MySQL 5.7+, and Git are installed.
+
+### 2. Backend Configuration
+
+```bash
+cd express-project
+cp .env.example .env
+npm install
 ```
 
-### Environment Variable Configuration
-
-The project uses a `.env` file for configuration, with separate environment configurations for the frontend and backend:
-
-#### Backend Environment Variables (express-project/.env)
+Edit `.env`; the following four items must be confirmed:
 
 ```env
-# Server Configuration
-PORT=3001
-NODE_ENV=development
+DB_PASSWORD=123456                      # Database password
+JWT_SECRET=xiaoshiliu_secret_key_2025   # JWT secret, be sure to change it in production
+API_BASE_URL=http://localhost:3001      # Backend public access address
+CORS_ORIGIN=http://localhost:5173       # Frontend address allowed for CORS
+```
 
-# JWT Configuration
-JWT_SECRET=xiaoshiliu_secret_key_2025
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_EXPIRES_IN=30d
+The remaining variables (upload strategy, email, IP location, sensitive word detection, etc.) can keep their defaults. For the complete list of variables and comments, see [.env.example](../../express-project/.env.example), and for the meaning of each item, see "Configuration" below.
 
-# Database Configuration
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-DB_PORT=3306
+Initialize the database and start the service:
 
-# Upload Configuration
-# Single image max file size
-IMAGE_MAX_SIZE=10mb
-# Single video max file size
-VIDEO_MAX_SIZE=100mb
-# Image Upload Strategy (local: Local Storage, imagehost: Third-party Image Hosting, r2: Cloudflare R2 Storage, aliyun: Alibaba Cloud OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# Video Upload Strategy (local: local storage, r2: Cloudflare R2 Storage)
-VIDEO_UPLOAD_STRATEGY=local
+```bash
+npm run init-db        # Create the database and tables
+npm run generate-data  # Generate sample data (optional)
+npm start              # Start the service, default http://localhost:3001
+```
 
-# Local Storage Configuration
-LOCAL_UPLOAD_DIR=uploads
-LOCAL_BASE_URL=http://localhost:3001
-VIDEO_UPLOAD_DIR=uploads/videos
-VIDEO_COVER_DIR=uploads/covers
+> The database-related scripts are all under `express-project/scripts/`: `init-database.js` (create the database and tables), `init-database.sql` (pure SQL version, which can be executed directly in a MySQL client), `generate-data.js` (generate sample data), `update-sample-images.js` (refresh sample image links).
 
-# Third-party Image Hosting Configuration
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
-IMAGEHOST_TIMEOUT=60000
+### 3. Frontend Configuration
 
-# Cloudflare R2 Storage Configuration
-R2_ACCESS_KEY_ID=your_r2_access_key_id
-R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
-R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
-R2_BUCKET_NAME=your_bucket_name
-R2_ACCOUNT_ID=your_account_id
-R2_REGION=auto
-# Optional: Custom Domain URL (if a custom domain is configured)
-R2_PUBLIC_URL=https://your-custom-domain.com
+```bash
+cd vue3-project
+cp .env.example .env
+npm install
+npm run dev            # Development mode, default http://localhost:5173
+```
 
-# Alibaba Cloud OSS configuration (when IMAGE_UPLOAD_STRATEGY=aliyun)
-# Use a RAM sub-account AccessKey with read/write permission limited to this bucket
-OSS_REGION=oss-cn-hongkong
-OSS_BUCKET_NAME=your_bucket_name_here
-OSS_ACCESS_KEY_ID=your_access_key_id_here
-OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
-# Optional: set after binding a custom domain or CDN; otherwise the default domain is used
-# OSS_PUBLIC_URL=https://img.example.com
-# Optional: object directory prefix, isolates images by environment or purpose (default images/)
-OSS_IMAGE_PREFIX=images/
-# Upload Strategy: local (Local Storage), imagehost (Third-party Image Hosting), r2 (Cloudflare R2 Storage), or aliyun (Alibaba Cloud OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# Video Upload Strategy: local (Local Storage), or r2 (Cloudflare R2 Storage)
-VIDEO_UPLOAD_STRATEGY=local
-LOCAL_UPLOAD_DIR=uploads
-LOCAL_BASE_URL=http://localhost:3001
+Build and preview in production mode:
 
-# Third-party Image Hosting Configuration
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
-IMAGEHOST_TIMEOUT=60000
+```bash
+npm run build          # Build to dist/
+npm run preview        # Local preview, default http://localhost:4173
+```
 
-# API Configuration
-API_BASE_URL=http://localhost:3001
+The frontend `.env` points to `http://localhost:3001/api` by default; when the backend port is changed, `VITE_API_BASE_URL` must be updated accordingly.
 
-# CORS Configuration
-CORS_ORIGIN=http://localhost:5173
+### 4. Access the Application
 
-# Email Service Configuration
-# Enable email functionality (true/false)
-# Set to false to skip email verification during registration, suitable for users without SMTP service
-EMAIL_ENABLED=true
-# SMTP Server Address
-SMTP_HOST=smtp.qq.com
-# SMTP Server Port
-SMTP_PORT=465
-# Use SSL/TLS (true/false)
-SMTP_SECURE=true
-# Email Account
-SMTP_USER=your_email@example.com
-# Email Password/Authorization Code
-SMTP_PASSWORD=your_email_password
-# Sender Email
-EMAIL_FROM=your_email@example.com
-# Sender Name
-EMAIL_FROM_NAME=XiaoShiLiu Campus Community
+| Service | Address |
+|---|---|
+| Frontend (development mode) | http://localhost:5173 |
+| Frontend (production preview) | http://localhost:4173 |
+| Backend API | http://localhost:3001 |
 
-# IP Location Query Configuration
+---
+
+## 🔧 Configuration
+
+### Upload Configuration
+
+The image upload strategy is selected by `IMAGE_UPLOAD_STRATEGY`, and there are four in total:
+
+| Strategy | Value | Description | Variables to Configure |
+|---|---|---|---|
+| Local storage | `local` | Stored on the server disk | `LOCAL_UPLOAD_DIR`, `LOCAL_BASE_URL` |
+| Third-party image hosting | `imagehost` | Uploaded to third-party image hosting (default) | `IMAGEHOST_API_URL`, `IMAGEHOST_TIMEOUT` |
+| Cloudflare R2 | `r2` | Stored in an R2 bucket | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET_NAME`, `R2_ACCOUNT_ID`, `R2_REGION` |
+| Alibaba Cloud OSS | `aliyun` | Stored in an OSS bucket | `OSS_REGION`, `OSS_BUCKET_NAME`, `OSS_ACCESS_KEY_ID`, `OSS_ACCESS_KEY_SECRET`, `OSS_IMAGE_PREFIX` |
+
+The video upload strategy is selected by `VIDEO_UPLOAD_STRATEGY`, which supports only `local` and `r2`. The file size limits are controlled by `IMAGE_MAX_SIZE` (default 10mb) and `VIDEO_MAX_SIZE` (default 100mb).
+
+> When using the `local` strategy, `LOCAL_BASE_URL` must be an address that the browser can reach, otherwise images will break.
+
+### Cloudflare R2 Configuration
+
+1. Log in to the Cloudflare console and go to R2 Object Storage
+2. Create a bucket
+3. Generate an API token and select R2:Edit as the permission
+4. Obtain the account ID
+5. Fill `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET_NAME`, `R2_ACCOUNT_ID`, `R2_REGION=auto` into `.env`
+6. After binding a custom domain, you can optionally set `R2_PUBLIC_URL`; if left empty, the default R2 domain is used
+
+### Alibaba Cloud OSS Configuration
+
+1. Log in to the Alibaba Cloud console and go to Object Storage Service (OSS)
+2. Create a bucket (`oss-cn-hongkong` is recommended; set the read/write permission as needed)
+3. Create a RAM sub-account and generate an AccessKey, granting it read/write permission for that bucket only
+4. Fill `OSS_REGION`, `OSS_BUCKET_NAME`, `OSS_ACCESS_KEY_ID`, `OSS_ACCESS_KEY_SECRET` into `.env`
+5. After binding a custom domain or CDN, you can optionally set `OSS_PUBLIC_URL`; `OSS_IMAGE_PREFIX` is used to isolate images by environment or purpose, and defaults to `images/`
+
+### Email Configuration
+
+`EMAIL_ENABLED` controls whether registration requires email verification:
+
+- `false` (default): registration does not require email verification, and no SMTP configuration is needed
+- `true`: registration requires filling in an email and verifying it, and `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM`, `EMAIL_FROM_NAME` must be configured at the same time
+
+### IP Location Query Configuration
+
+```env
 # Primary API URL
 IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
 # Primary API timeout (milliseconds)
@@ -326,274 +204,73 @@ IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
 IP_LOCATION_BACKUP_TIMEOUT=5000
 ```
 
-#### Frontend Environment Variables (vue3-project/.env)
+The system automatically switches to the backup API when the primary API fails; the timeout can be adjusted according to network conditions.
+
+### Sensitive Word Detection Configuration
+
+`SENSITIVE_WORD_CHECK_ENABLED` controls the switch:
 
 ```env
-# API Base URL Configuration
-VITE_API_BASE_URL=http://localhost:3001/api
-
-# Use Real API
-VITE_USE_REAL_API=true
-
-# Application Title
-VITE_APP_TITLE=Small Pear Graphic Community
+# Whether to enable scheduled sensitive word detection
+SENSITIVE_WORD_CHECK_ENABLED=false
+# Whitelisted user IDs; whitelisted users are excluded from detection, separate multiple IDs with English commas (leave empty to disable the whitelist)
+SENSITIVE_WORD_CHECK_WHITELIST=
 ```
 
-#### Docker Environment Variable Description
+- The detection method is keyword matching; the word list is located at `express-project/scripts/违规词库.txt`, with one word per line
+- Detection scope: XiaoShiLiu ID, user nickname, personal bio, tag names, post titles and content, comments
+- On a match, the content is directly replaced with "违规昵称", "违规内容", "违规标题", "违规评论", "违规标签", and no notification is sent
+- User IDs in `SENSITIVE_WORD_CHECK_WHITELIST` are excluded from detection
+- The detection interval is 24 hours; it is not executed immediately when the backend starts, and no task is registered when it is not enabled
 
-When deploying with Docker, environment variables are configured through `docker-compose.yml`:
+To run detection once immediately, you can execute it manually (also controlled by the switch, and skipped directly when not enabled):
+
+```bash
+cd express-project
+node scripts/local-sensitive-word-check.js
+```
+
+### Reverse Proxy Configuration
+
+When the site is behind a reverse proxy such as Nginx (binding a domain / HTTPS), modify it according to the deployment method.
+
+**Docker Deployment**: The frontend image has nginx built in and already reverse-proxies `/api` to the backend container. The outer Nginx only needs to forward `/api` to the mapped backend port on the host:
+
+```nginx
+location /api {
+    proxy_pass http://localhost:3001;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
+
+For same-origin deployment, browser requests use the relative path `/api`, so **no CORS** is needed; configuration is required only when the frontend domain differs from the backend domain:
 
 ```env
-# Database Configuration (Docker Environment)
-DB_HOST=mysql
-DB_USER=xiaoshiliu_user
-DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-
-# JWT Configuration
-JWT_SECRET=xiaoshiliu_secret_key_2025_docker
-JWT_EXPIRES_IN=7d
-
-# Upload Configuration
-# Single image max file size
-IMAGE_MAX_SIZE=10mb
-# Single video max file size
-VIDEO_MAX_SIZE=100mb
-# Image Upload Strategy (local: Local Storage, imagehost: Third-party Image Hosting, r2: Cloudflare R2 Storage, aliyun: Alibaba Cloud OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# Video Upload Strategy (local: local storage, r2: Cloudflare R2 Storage)
-VIDEO_UPLOAD_STRATEGY=local
-
-# API Configuration
-API_BASE_URL=http://localhost:3001
-```
-
-### Common Commands
-
-```bash
-# Check service status
-docker-compose ps
-
-# View service logs
-docker-compose logs -f
-
-# Restart a specific service
-docker-compose restart backend
-
-# Enter the container (sh is used since alpine images typically do not have bash)
-docker-compose exec backend sh
-# Or enter the MySQL client
-docker-compose exec mysql mysql -u root -p
-
-# Backup the database
-docker-compose exec mysql mysqldump -u root -p xiaoshiliu > backup.sql
-
-# Restore the database
-docker-compose exec -T mysql mysql -u root -p xiaoshiliu < backup.sql
-```
-
-### Data Persistence
-
-Docker uses volumes for data persistence in deployment:
-
-- `mysql_data`: MySQL database files
-- `backend_uploads`: Backend upload files
-
-### Troubleshooting
-
-#### 1. Port Conflicts
-
-If port conflicts occur, you can modify the port mappings in the `docker-compose.yml` file:
-
-```yaml
-services:
-  frontend:
-    ports:
-      - "8080:80"  # Modify the frontend port
-  backend:
-    ports:
-      - "3002:3001"  # Modify the backend port
-```
-
-#### 2. Memory Insufficient
-
-Ensure the system has enough memory, and you can view resource usage with the following command:
-
-```bash
-docker stats
-```
-
-#### 3. Database Connection Failure / Loading Data
-
-- Check if the database service is started normally:
-
-```bash
-docker-compose logs mysql
-```
-
-- Load sample data (Windows):
-```powershell
-.\deploy.ps1 -Seed
-```
-
-- Load sample data (manual execution):
-```bash
-docker-compose exec -T backend node scripts/generate-data.js
-```
-
-#### 4. File Upload Permission Issues
-
-**Problem Phenomena**:
-- When uploading files from the frontend, a 400 error is returned
-- Backend logs show: `EACCES: permission denied, open '/app/uploads/xxx.png'`
-
-**Cause Analysis**:
-Permission issue in the Docker container's uploads directory. The directory belongs to the root user, but the application runs under the nodejs user.
-
-**Solution**:
-
-1. **Check the permissions of the uploads directory**:
-```bash
-docker-compose exec backend ls -la /app/uploads
-```
-
-2. **Fix the permission issue**:
-```bash
-# Modify the directory owner to root user using root user
-docker-compose exec --user root backend chown -R nodejs:nodejs /app/uploads
-```
-
-3. **Verify the permission fix**:
-```bash
-# Confirm that the directory now belongs to the nodejs user
-docker-compose exec backend ls -la /app/uploads
-```
-
-**Preventive Measures**:
-- Ensure the uploads directory permissions are set correctly in the Dockerfile
-- Automatically fix permissions issues when the container starts
-
-#### 5. Upload Strategy Configuration
-
-The project supports four file upload strategies:
-
-**Local Storage Mode** (recommended for development and small deployments):
-```yaml
-# Set in docker-compose.yml
-environment:
-  IMAGE_UPLOAD_STRATEGY: local
-  VIDEO_UPLOAD_STRATEGY: local
-```
-
-**Third-party Image Hosting Mode** (recommended for production environments):
-```yaml
-# Set in docker-compose.yml
-environment:
-  IMAGE_UPLOAD_STRATEGY: imagehost
-  VIDEO_UPLOAD_STRATEGY: local
-```
-
-**Cloudflare R2 Storage Mode** (recommended for production environments, supports CDN acceleration):
-
-```yaml
-# Setting in docker-compose.yml
-environment:
-  IMAGE_UPLOAD_STRATEGY: r2
-  VIDEO_UPLOAD_STRATEGY: r2
-  R2_ACCESS_KEY_ID: your_r2_access_key_id
-  R2_SECRET_ACCESS_KEY: your_r2_secret_access_key
-  R2_ENDPOINT: https://your_account_id.r2.cloudflarestorage.com
-  R2_BUCKET_NAME: your_bucket_name
-  R2_ACCOUNT_ID: your_account_id
-  R2_REGION: auto
-  # Optional: Custom domain
-  R2_PUBLIC_URL: https://your-custom-domain.com
-
-> **Note**: To use Cloudflare R2 storage, you need to first create an R2 bucket and obtain the corresponding access key in the Cloudflare console.
-
-**Alibaba Cloud OSS Storage Mode** (recommended for production environments, supports CDN acceleration):
-
-```yaml
-# Setting in docker-compose.yml
-environment:
-  IMAGE_UPLOAD_STRATEGY: aliyun
-  OSS_REGION: oss-cn-hongkong
-  OSS_BUCKET_NAME: your_bucket_name
-  OSS_ACCESS_KEY_ID: your_access_key_id
-  OSS_ACCESS_KEY_SECRET: your_access_key_secret
-  OSS_IMAGE_PREFIX: images/
-  # Optional: Custom domain
-  OSS_PUBLIC_URL: https://img.example.com
-```
-
-> **Note**: To use Alibaba Cloud OSS storage, you need to first create an OSS bucket in the Alibaba Cloud console, create a RAM sub-account and grant it read/write permission only for that bucket, then fill in its AccessKey.
-
-#### 6. Email Feature Configuration
-
-The project supports email verification functionality, controlled by the `EMAIL_ENABLED` switch:
-
-1. **Enable Email Feature** (`EMAIL_ENABLED=true`)
-   - Email address and verification required during registration
-   - SMTP server configuration required
-   ```env
-   EMAIL_ENABLED=true
-   SMTP_HOST=smtp.qq.com
-   SMTP_PORT=465
-   SMTP_SECURE=true
-   SMTP_USER=your_email@example.com
-   SMTP_PASSWORD=your_email_password
-   EMAIL_FROM=your_email@example.com
-   EMAIL_FROM_NAME=XiaoShiLiu Campus Community
-   ```
-
-2. **Disable Email Feature** (`EMAIL_ENABLED=false`, default)
-   - No email verification required during registration
-   - Suitable for scenarios without SMTP service or where email verification is not needed
-   ```env
-   EMAIL_ENABLED=false
-   ```
-
-#### 7. Reverse Proxy Configuration
-
-**Important Note**: If you are using a reverse proxy server such as Nginx or Apache, you need to modify the following configurations:
-
-**Backend Configuration (express-project/.env)**
-
-```env
-# Change API_BASE_URL to your domain and port
-API_BASE_URL=https://yourdomain.com:port
-# Or if using default ports (80/443)
-API_BASE_URL=https://yourdomain.com
-
-# CORS configuration also needs to be changed to the frontend access address
 CORS_ORIGIN=https://yourdomain.com
 ```
 
-**Frontend Configuration (vue3-project/.env)**
+When using local image storage, be sure to change the public access address to the real domain:
 
 ```env
-# Change API base URL to your domain and backend port
-VITE_API_BASE_URL=https://yourdomain.com:port/api
-# Or if using default ports (80/443)
+LOCAL_BASE_URL=https://yourdomain.com
+API_BASE_URL=https://yourdomain.com
+```
+
+**Traditional Deployment**: You need to modify the two `.env` files separately (after changing the frontend, you must re-run `npm run build`):
+
+```env
+# express-project/.env
+API_BASE_URL=https://yourdomain.com
+CORS_ORIGIN=https://yourdomain.com
+
+# vue3-project/.env
 VITE_API_BASE_URL=https://yourdomain.com/api
 ```
 
-**Configuration Example**
+A complete Nginx site configuration example (using `example.com` as an example):
 
-Assuming your domain is `example.com` and the backend is mapped to port 3001 through a reverse proxy:
-
-**Backend .env:**
-```env
-API_BASE_URL=https://example.com
-CORS_ORIGIN=https://example.com
-```
-
-**Frontend .env:**
-```env
-VITE_API_BASE_URL=https://example.com/api
-```
-
-**Nginx Configuration Example:**
 ```nginx
 server {
     listen 80;
@@ -620,311 +297,32 @@ server {
 }
 ```
 
-#### 7. Cleanup and Reset
+---
 
-If you encounter problems and need to start over:
+## 🚨 Troubleshooting
 
-```bash
-# Windows
-.\deploy.ps1 -Clean
+### Docker Deployment Issues
 
-# Linux/macOS
-./deploy.sh --clean
-```
+| Issue | Troubleshooting |
+|---|---|
+| Port conflict | Use `netstat -ano \| findstr :8080` to check the usage; modify the port mapping in the `ports` section of docker-compose.yml, then run `docker compose up -d` again |
+| Container fails to start | Use `docker-compose logs` to view the logs, and `docker-compose up -d --build` to rebuild |
+| Database connection failure | Use `docker-compose ps` to check the container status, and `docker-compose restart mysql` to restart the database |
+
+### Traditional Deployment Issues
+
+| Issue | Troubleshooting |
+|---|---|
+| Node.js version incompatible | Use `node --version` to confirm that the version is not lower than 18, and switch with nvm: `nvm use 18` |
+| Database connection failure | Check whether MySQL is started, the database user permissions, and the firewall settings |
+| Dependency installation failure | Run `npm cache clean --force`, delete `node_modules`, and then run `npm install` again |
 
 ---
 
-## 📋 Traditional Deployment Method
+## 📝 Notes
 
-## System Requirements
+- **Production environment**: Change the default database password and `JWT_SECRET`, configure HTTPS, set firewall rules, and back up data regularly
+- **Do not** commit the `.env` file to version control
+- It is recommended to use a CDN to accelerate static resources and to update dependencies regularly
 
-| Component | Version Requirement | Description |
-|-----------|---------------------|-------------|
-| Node.js | >= 16.0.0 | Runtime environment |
-| MySQL | >= 5.7 | Database |
-| MariaDB | >= 10.3 | Database (optional) |
-| npm | >= 8.0.0 | Package manager |
-| yarn | >= 1.22.0 | Package manager (optional) |
-| Browser | Supports ES6+ | Modern browser |
-
-## Quick Start
-
-### 1. Install Dependencies
-
-```bash
-# Using cnpm
-cnpm install
-# Or using yarn
-yarn install
-```
-
-### 2. Configure Backend API Address
-
-Create an environment configuration file (optional):
-
-```bash
-# Copy environment configuration template
-cp .env.example .env
-```
-
-Edit the `.env` file to configure the backend API address:
-
-```env
-# Backend API address
-VITE_API_BASE_URL=http://localhost:3001
-
-# Other configurations...
-```
-
-### 3. Start Development Server
-
-```bash
-# Start development server
-npm run dev
-
-# Or using yarn
-yarn dev
-```
-
-The development server will start at `http://localhost:5173`.
-
-### 4. Build Production Version
-
-```bash
-# Build production version
-npm run build
-
-# Preview production version
-npm run preview
-```
-
-## Backend Service Configuration
-
-⚠️ **Important Reminder**: The frontend project needs to be used with the backend service.
-
-1. **Start Backend Service**:
-   ```bash
-   # Navigate to the backend project directory
-   cd ../express-project
-   
-   # Install backend dependencies
-   npm install
-   
-   # Start backend service
-   npm start
-   ```
-
-2. **Backend Service Address**: `http://localhost:3001`
-
-3. **API Documentation**: Check the `API_DOCS.md` file in the backend project.
-
-## Development Environment Configuration
-
-### Environment Check
-
-```bash
-# Check Node.js version
-node --version
-
-# Check npm version
-npm --version
-```
-
-### Development Server
-
-```bash
-# Start development server (hot reload)
-npm run dev
-
-# Access address: http://localhost:5173
-```
-
-### Code Conventions
-
-- Use Vue 3 Composition API
-- Adhere to the official Vue.js style guide
-- Component naming in PascalCase
-- File naming in kebab-case
-
-## Explanation of Configuration Files
-
-### Frontend Configuration Files (vue3-project directory)
-
-| File | Description |
-|------|-------------|
-| `.env` | Environment variable configuration file |
-| `vite.config.js` | Vite build tool configuration |
-| `package.json` | Project dependencies and script configuration |
-| `jsconfig.json` | JavaScript project configuration |
-
-### Backend Configuration Files (express-project directory)
-
-| File | Description |
-|------|-------------|
-| `config/config.js` | Main configuration file |
-| `.env` | Environment variable configuration file |
-| `database_design.md` | Database design document |
-| `scripts/init-database.js` | Database initialization script |
-| `generate-data.js` | Test data generation script |
-
-## npm Script Commands
-
-### Frontend Scripts (to be executed in the vue3-project directory)
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start the development server |
-| `npm run build` | Build the production version |
-| `npm run preview` | Preview the production version |
-
-### Backend Scripts (to be executed in the express-project directory)
-
-| Command | Description |
-|---------|-------------|
-| `npm start` | Start the server |
-| `npm run dev` | Start the development server (hot reload) |
-| `npm run init-db` | Initialize the database |
-| `npm run generate-data` | Generate test data |
-
-## Environment Variable Configuration
-
-### Frontend Environment Variables (vue3-project/.env)
-
-```env
-# API server address
-VITE_API_BASE_URL=http://localhost:3001/api
-
-# Other frontend configurations
-VITE_APP_TITLE=Small石榴Image and Text Community
-VITE_USE_REAL_API=true
-```
-
-### Backend Environment Variables (express-project/.env)
-
-```env
-# Server configuration
-NODE_ENV=development
-PORT=3001
-
-# JWT configuration
-JWT_SECRET=xiaoshiliu_secret_key_2025
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_EXPIRES_IN=30d
-
-# Database configuration
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-DB_PORT=3306
-
-# API configuration
-API_BASE_URL=http://localhost:3001
-
-# Upload configuration
-# Single image max file size
-IMAGE_MAX_SIZE=10mb
-# Single video max file size
-VIDEO_MAX_SIZE=100mb
-# Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2, aliyun: Alibaba Cloud OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# Video upload strategy (local: local storage, r2: Cloudflare R2)
-VIDEO_UPLOAD_STRATEGY=local
-```
-
-## Database Script Description
-
-The database-related scripts for the project are all placed in the `express-project/scripts/` directory for easy management and use:
-
-### Script File Introduction
-
-#### 1. Database Initialization Script
-- **File Location**: `scripts/init-database.js`
-- **Function**: Create the database and all table structures
-- **Usage Method**:
-  ```bash
-  cd express-project
-  node scripts/init-database.js
-  ```
-- **Description**: Must be run for the first deployment, which will automatically create the `xiaoshiliu` database and 12 data tables
-
-#### 2. Test Data Generation Script
-- **File Location**: `scripts/generate-data.js`
-- **Function**: Generate mock user, note, comment, and other test data
-- **Usage Method**:
-  ```bash
-  cd express-project
-  node scripts/generate-data.js
-  ```
-- **Description**: Optional to run, used to quickly populate test data, including 50 users, 200 notes, and 800 comments, etc.
-
-#### 3. SQL Initialization File
-- **File Location**: `scripts/init-database.sql`
-- **Function**: Pure SQL version of the database initialization script
-- **Usage Method**: Can be directly executed in the MySQL client
-- **Description**: Has the same function as `init-database.js`, providing an SQL version for reference
-
-#### 4. Sample Image Update Script
-- **File Location**: `scripts/update-sample-images.js`
-- **Function**: Automatically obtain the latest image links and update the sample images in the database
-- **Usage Method**:
-  ```bash
-  cd express-project
-  node scripts/update-sample-images.js
-  ```
-
-- **Description**:
-  - Automatically fetches the latest image links from the Liziwen API
-  - Updates `imgLinks/avatar_link.txt` (50 avatar links)
-  - Updates `imgLinks/post_img_link.txt` (300 note image links)
-  - Batch updates user avatars and note images in the database
-  - Supports statistics showing the number of images before and after the update
-
-## Development Environment Startup Process
-
-### 1. Start Backend Service
-
-```bash
-# Open the first terminal, navigate to the backend directory
-cd express-project
-
-# Install backend dependencies (first run)
-npm install
-
-# Configure the database (first run)
-# Edit config/config.js or .env file
-
-# Initialize the database (first run)
-node scripts/init-database.js
-
-# Generate test data (optional)
-node scripts/generate-data.js
-
-# Start the backend service
-npm start
-# The backend service runs at http://localhost:3001
-```
-
-### 2. Start Frontend Service
-
-```bash
-# Open the second terminal, navigate to the frontend directory
-cd vue3-project
-
-# Install frontend dependencies (first run)
-npm install
-
-# Configure API address (optional)
-# Edit .env file, set VITE_API_BASE_URL
-
-# Start the frontend development server
-npm run dev
-# The frontend service runs at http://localhost:5173
-```
-
-### 3. Access the Application
-
-| Service | Address |
-|---------|---------|
-| Frontend Interface | http://localhost:5173 |
-| Backend API | http://localhost:3001 |
+**Wishing you a smooth deployment!** 🎉

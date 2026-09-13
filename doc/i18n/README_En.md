@@ -9,9 +9,13 @@
 </p>
 <p align="center">
     <i>A high-fidelity Xiaohongshu-style graphic community project supporting core features like graphic posting and social interaction, designed to provide a complete frontend-to-backend practice template</i>
-<p align="center"><a href="https://www.shiliu.space">Demo Site</a> · <a href="https://www.bilibili.com/video/BV1J4agztEBX/?spm_id_from=333.1387.homepage.video_card.click">Video Introduction</a>
 </p>
-<p align="center"><a href="https://github.com/ZTMYO/XiaoShiLiu">简体中文</a>|<a href="README_En.md">English</a>|<a href="README_zh-Hant.md">繁體中文</a>
+<p align="center">
+    <a href="https://www.shiliu.space">Demo Site</a> · <a href="https://www.bilibili.com/video/BV1J4agztEBX/?spm_id_from=333.1387.homepage.video_card.click">Video Introduction</a>
+</p>
+<p align="center">
+    <a href="https://github.com/ZTMYO/XiaoShiLiu">简体中文</a>|<a href="README_En.md">English</a>|<a href="README_zh-Hant.md">繁體中文</a>
+</p>
 
 <p align="center">
     <a href="https://github.com/ZTMYO/XiaoShiLiu/stargazers">
@@ -29,18 +33,15 @@
 </p>
 <p align="center">
     <img src="https://img.shields.io/static/v1?message=Vue&color=4f4f4f&logo=Vue.js&logoColor=4FC08D&label=">
-    <img
-        src="https://img.shields.io/static/v1?&message=JavaScript&color=4f4f4f&logo=JavaScript&logoColor=F7DF1E&label=">
-    </a>
+    <img src="https://img.shields.io/static/v1?&message=JavaScript&color=4f4f4f&logo=JavaScript&logoColor=F7DF1E&label=">
 </p>
 
-
 > **Disclaimer**  
-> This project is licensed under the [GPLv3 License](./LICENSE), free and open-source, for learning and communication purposes only. Resale is prohibited; please beware of scams. For commercial use, retain copyright information to ensure legal compliance. Operational risks shall be borne by the user, and the author is not liable.
+> This project is licensed under the [GPLv3 License](../../LICENSE), free and open-source, for learning and communication purposes only. Resale is prohibited; please beware of scams. For commercial use, retain copyright information to ensure legal compliance. Operational risks shall be borne by the user, and the author is not liable.
 
 ---
 
-> 📁 **Project Structure Explanation**: This project contains complete frontend and backend code. The frontend is located in the `vue3-project/` directory, and the backend is in the `express-project/` directory. For detailed structure, please refer to the [Project Structure Document](PROJECT_STRUCTURE_En.md).
+> 📁 The frontend lives in `vue3-project/` and the backend in `express-project/`; see the [Project Structure Document](PROJECT_STRUCTURE_En.md).
 
 ## Project Demonstration
 
@@ -72,15 +73,12 @@
     <td><img src="../imgs/14.png" alt="PC Interface 14" width="300"/></td>
     <td><img src="../imgs/15.png" alt="PC Interface 15" width="300"/></td>
   </tr>
-  </tr>
-    <tr>
-    <td><img src="./doc/imgs/16.png" alt="PC端界面16" width="300"/></td>
-    <td><img src="./doc/imgs/17.png" alt="PC端界面17" width="300"/></td>
-    <td><img src="./doc/imgs/18.png" alt="PC端界面18" width="300"/></td>
+  <tr>
+    <td><img src="../imgs/16.png" alt="PC Interface 16" width="300"/></td>
+    <td><img src="../imgs/17.png" alt="PC Interface 17" width="300"/></td>
+    <td><img src="../imgs/18.png" alt="PC Interface 18" width="300"/></td>
   </tr>
 </table>
-
-
 
 ### Mobile Interface
 
@@ -153,8 +151,6 @@
 
 </details>
 
-
-
 ## Third-Party APIs
 - **Image Storage**: Sample images are from [Liciyuan Image Hosting](https://t.alcy.cc/), providing stable image storage service
 - **Image Upload**: User-uploaded images use [Xiarou API](https://api.aa1.cn/doc/360tc.html) to ensure stability and speed
@@ -164,170 +160,56 @@
 
 | Component | Version Requirement |
 |-----------|---------------------|
-| Node.js | >= 16.0.0 |
+| Node.js | >= 18.0.0 |
 | MySQL | >= 5.7 |
 | MariaDB | >= 10.3 |
 | npm | >= 8.0.0 |
 | yarn | >= 1.22.0 |
 | Browser | ES6+ supported |
 
-> Note: The above are the minimum version requirements for traditional local development. For Docker deployment, the default image versions are as follows: MySQL 5.7, Node 18-alpine (frontend/backend build/run), Nginx alpine; Docker >= 20, Docker Compose >= 2. See [Deployment Guide](DEPLOYMENT_En.md) for details.
+> The above are the minimum version requirements for traditional local development; Docker image versions and prerequisites are covered in the [Deployment Guide](DEPLOYMENT_En.md).
 
-## Environment Configuration
+## Quick Start
 
-The project uses environment variables for configuration management, with separate `.env` files for frontend and backend:
+### 1. Environment Configuration
 
-### Backend Configuration (express-project/.env)
-
-```env
-# Server configuration
-PORT=3001
-NODE_ENV=development
-
-# Database configuration
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-DB_PORT=3306
-
-# JWT configuration
-JWT_SECRET=xiaoshiliu_secret_key_2025
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_EXPIRES_IN=30d
-
-# API configuration
-API_BASE_URL=http://localhost:3001
-
-# Upload configuration
-# Single image max file size
-IMAGE_MAX_SIZE=10mb
-# Single video max file size
-VIDEO_MAX_SIZE=100mb
-# Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2, aliyun: Alibaba Cloud OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# Video upload strategy (local: local storage, r2: Cloudflare R2)
-VIDEO_UPLOAD_STRATEGY=local
-
-# Local storage configuration
-LOCAL_UPLOAD_DIR=uploads
-LOCAL_BASE_URL=http://localhost:3001
-# Video storage directory
-VIDEO_UPLOAD_DIR=uploads/videos
-# Video cover storage directory
-VIDEO_COVER_DIR=uploads/covers
-
-# Third-party image hosting configuration (when IMAGE_UPLOAD_STRATEGY=imagehost)
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
-IMAGEHOST_TIMEOUT=60000
-
-# Cloudflare R2 configuration (when IMAGE_UPLOAD_STRATEGY=r2 or VIDEO_UPLOAD_STRATEGY=r2)
-R2_ACCESS_KEY_ID=your_r2_access_key_id_here
-R2_SECRET_ACCESS_KEY=your_r2_secret_access_key_here
-R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
-R2_BUCKET_NAME=your_bucket_name_here
-R2_ACCOUNT_ID=your_account_id_here
-R2_REGION=auto
-# Optional: If you have a custom domain, you can set R2_PUBLIC_URL
-# R2_PUBLIC_URL=https://your-custom-domain.com
-
-# Alibaba Cloud OSS configuration (when IMAGE_UPLOAD_STRATEGY=aliyun)
-# Use a RAM sub-account AccessKey with read/write permission limited to this bucket
-OSS_REGION=oss-cn-hongkong
-OSS_BUCKET_NAME=your_bucket_name_here
-OSS_ACCESS_KEY_ID=your_access_key_id_here
-OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
-# Optional: set after binding a custom domain or CDN; otherwise the default domain is used
-# OSS_PUBLIC_URL=https://img.example.com
-# Optional: object directory prefix, isolates images by environment or purpose (default images/)
-OSS_IMAGE_PREFIX=images/
-
-# CORS configuration
-CORS_ORIGIN=http://localhost:5173
-
-# Email service configuration
-# Enable email functionality (true/false), disabled by default
-EMAIL_ENABLED=false
-# SMTP server address
-SMTP_HOST=smtp.qq.com
-# SMTP server port
-SMTP_PORT=465
-# Use SSL/TLS (true/false)
-SMTP_SECURE=true
-# Email account
-SMTP_USER=your_email@example.com
-# Email password/authorization code
-SMTP_PASSWORD=your_email_password
-# Sender email
-EMAIL_FROM=your_email@example.com
-# Sender name
-EMAIL_FROM_NAME=XiaoShiLiu Campus Community
-
-# IP location query configuration
-# Primary API URL
-IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
-# Primary API timeout (milliseconds)
-IP_LOCATION_PRIMARY_TIMEOUT=10000
-# Backup API URL
-IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
-# Backup API timeout (milliseconds)
-IP_LOCATION_BACKUP_TIMEOUT=5000
-```
-
-### Frontend Configuration (vue3-project/.env)
+Both the frontend and backend have their own `.env`, copied from the `.env.example` in the corresponding directory. In the backend `express-project/.env`, confirm at least these four items:
 
 ```env
-# API base URL configuration
-VITE_API_BASE_URL=http://localhost:3001/api
-
-# Application configuration
-VITE_USE_REAL_API=true
-VITE_APP_TITLE=XiaoShiLiu Image-Text Community
+DB_PASSWORD=123456                      # Database password
+JWT_SECRET=xiaoshiliu_secret_key_2025   # JWT secret; be sure to change it in production
+API_BASE_URL=http://localhost:3001      # Backend public access address
+CORS_ORIGIN=http://localhost:5173       # Frontend address allowed for CORS
 ```
 
-> 💡 **Configuration Notes**:
-> - Backend supports local storage, third-party image hosting, Cloudflare R2, and Alibaba Cloud OSS upload strategies
-> - Images and videos can be configured with different upload strategies
-> - Email functionality is disabled by default; when enabled, it supports email verification registration and password recovery
-> - Frontend uses Vite environment variables, variable names must start with `VITE_`
-> - For detailed configuration instructions, please refer to the [Deployment Guide](DEPLOYMENT_En.md)
+The frontend `vue3-project/.env` only needs `VITE_API_BASE_URL` pointing to the backend API (defaults to `http://localhost:3001/api`).
 
-### 1. Install Dependencies
+All other variables (upload strategy, email, IP location, sensitive word detection, etc.) can keep their defaults: see [express-project/.env.example](../../express-project/.env.example) and [vue3-project/.env.example](../../vue3-project/.env.example) for the complete list, and the [Deployment Guide](DEPLOYMENT_En.md) for what each item means.
+
+### 2. Install Dependencies
 
 ```bash
-# Using cnpm or npm
-cnpm install
-# Or using yarn
-yarn install
+npm install
 ```
 
-### 2. Start Development Server
+### 3. Start Development Server
 
 ```bash
-# Start development server
 npm run dev
-
-# Or using yarn
-yarn dev
 ```
 
-The development server will start at `http://localhost:5173`
+The development server runs at `http://localhost:5173`.
 
-### 3. Build Production Version
+### 4. Build Production
 
 ```bash
-# Build production version
-npm run build
-
-# Preview production version
-npm run preview
+npm run build     # Build to dist/
+npm run preview   # Local preview, defaults to http://localhost:4173
 ```
-
-> ⚠️ **Important Reminder**: The frontend project needs to work with the backend service. For detailed configuration, please refer to the [Deployment Guide](DEPLOYMENT_En.md)
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ZTMYO/XiaoShiLiu&type=Date)](https://www.star-history.com/#ZTMYO/XiaoShiLiu&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=ZTMYO/XiaoShiLiu&type=Date&theme=dark)](https://www.star-history.com/#ZTMYO/XiaoShiLiu&Date)
 
 ---
 

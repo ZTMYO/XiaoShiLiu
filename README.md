@@ -9,9 +9,13 @@
 </p>
 <p align="center">
     <i>一个高仿小红书的图文社区项目，支持图文发布、社交互动等核心功能，旨在提供从前端到后端的完整实践范本</i>
-<p align="center"><a href="https://www.shiliu.space">演示网站</a> · <a href="https://www.bilibili.com/video/BV1J4agztEBX/?spm_id_from=333.1387.homepage.video_card.click">视频介绍</a>
 </p>
-<p align="center"><a href="https://github.com/ZTMYO/XiaoShiLiu">简体中文</a>|<a href="doc/i18n/README_En.md">English</a>|<a href="doc/i18n/README_zh-Hant.md">繁體中文</a>
+<p align="center">
+    <a href="https://www.shiliu.space">演示网站</a> · <a href="https://www.bilibili.com/video/BV1J4agztEBX/?spm_id_from=333.1387.homepage.video_card.click">视频介绍</a>
+</p>
+<p align="center">
+    <a href="https://github.com/ZTMYO/XiaoShiLiu">简体中文</a>|<a href="doc/i18n/README_En.md">English</a>|<a href="doc/i18n/README_zh-Hant.md">繁體中文</a>
+</p>
 
 <p align="center">
     <a href="https://github.com/ZTMYO/XiaoShiLiu/stargazers">
@@ -29,18 +33,15 @@
 </p>
 <p align="center">
     <img src="https://img.shields.io/static/v1?message=Vue&color=4f4f4f&logo=Vue.js&logoColor=4FC08D&label=">
-    <img
-        src="https://img.shields.io/static/v1?&message=JavaScript&color=4f4f4f&logo=JavaScript&logoColor=F7DF1E&label=">
-    </a>
+    <img src="https://img.shields.io/static/v1?&message=JavaScript&color=4f4f4f&logo=JavaScript&logoColor=F7DF1E&label=">
 </p>
-
 
 > **声明**  
 > 本项目基于 [GPLv3 协议](./LICENSE)，免费开源，仅供学习交流，禁止转卖，谨防受骗。如需商用请保留版权信息，确保合法合规使用，运营风险自负，与作者无关。
 
 ---
 
-> 📁 **项目结构说明**：本项目包含完整的前后端代码，前端位于 `vue3-project/` 目录，后端位于 `express-project/` 目录。详细结构请查看 [项目结构文档](./doc/PROJECT_STRUCTURE.md)。
+> 📁 前端位于 `vue3-project/`，后端位于 `express-project/`，详见[项目结构文档](./doc/PROJECT_STRUCTURE.md)。
 
 ## 项目展示
 
@@ -72,14 +73,12 @@
     <td><img src="./doc/imgs/14.png" alt="PC端界面14" width="300"/></td>
     <td><img src="./doc/imgs/15.png" alt="PC端界面15" width="300"/></td>
   </tr>
-    <tr>
+  <tr>
     <td><img src="./doc/imgs/16.png" alt="PC端界面16" width="300"/></td>
     <td><img src="./doc/imgs/17.png" alt="PC端界面17" width="300"/></td>
     <td><img src="./doc/imgs/18.png" alt="PC端界面18" width="300"/></td>
   </tr>
 </table>
-
-
 
 ### 移动端界面
 
@@ -152,185 +151,65 @@
 
 </details>
 
-
-
 ## 第三方API
 - **图片存储：** 灌装的示例图片来自 [栗次元图床](https://t.alcy.cc/)，提供稳定的图片存储服务
 - **图片上传：** 用户上传图片使用了 [夏柔API](https://api.aa1.cn/doc/360tc.html)，确保图片上传的稳定性和速度
 - **属地查询：** IP属地查询服务使用 [保罗API](https://api.pearktrue.cn/console/detail?id=290)，实现精准的IP属地定位功能
 
-
 ## 环境要求
 
 | 组件 | 版本要求 |
 |------|----------|
-| Node.js | >= 16.0.0 |
+| Node.js | >= 18.0.0 |
 | MySQL | >= 5.7 |
 | MariaDB | >= 10.3 |
 | npm | >= 8.0.0 |
 | yarn | >= 1.22.0 |
-| 浏览器 | 支持ES6+ |
+| 浏览器 | 支持 ES6+ |
 
-> 提示：上述为传统本地开发的最低版本要求。若使用 Docker 部署，默认镜像版本如下：MySQL 5.7、Node 18-alpine（前后端构建/运行）、Nginx alpine；Docker >= 20、Docker Compose >= 2。详见[部署指南文档](./doc/DEPLOYMENT.md)。
+> 上述为传统本地开发的最低版本要求；Docker 部署的镜像版本与前置条件见[部署指南](./doc/DEPLOYMENT.md)。
 
-## 环境配置
+## 快速开始
 
-项目使用环境变量进行配置管理，前后端分别有独立的 `.env` 文件：
+### 1. 环境配置
 
-### 后端配置 (express-project/.env)
-
-```env
-# 服务器配置
-PORT=3001
-NODE_ENV=development
-
-# 数据库配置
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-DB_PORT=3306
-
-# JWT配置
-JWT_SECRET=xiaoshiliu_secret_key_2025
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_EXPIRES_IN=30d
-
-# API配置
-API_BASE_URL=http://localhost:3001
-
-# 上传配置
-# 单张图片最大文件大小
-IMAGE_MAX_SIZE=10mb
-# 单个视频最大文件大小
-VIDEO_MAX_SIZE=100mb
-# 图片上传策略 (local: 本地存储, imagehost: 第三方图床, r2: Cloudflare R2, aliyun: 阿里云 OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# 视频上传策略 (local: 本地存储, r2: Cloudflare R2)
-VIDEO_UPLOAD_STRATEGY=local
-
-# 本地存储配置
-LOCAL_UPLOAD_DIR=uploads
-LOCAL_BASE_URL=http://localhost:3001
-# 视频存储目录
-VIDEO_UPLOAD_DIR=uploads/videos
-# 视频封面存储目录
-VIDEO_COVER_DIR=uploads/covers
-
-# 第三方图床配置（当IMAGE_UPLOAD_STRATEGY=imagehost时使用）
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
-IMAGEHOST_TIMEOUT=60000
-
-# Cloudflare R2 配置（当IMAGE_UPLOAD_STRATEGY=r2或VIDEO_UPLOAD_STRATEGY=r2时使用）
-R2_ACCESS_KEY_ID=your_r2_access_key_id_here
-R2_SECRET_ACCESS_KEY=your_r2_secret_access_key_here
-R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
-R2_BUCKET_NAME=your_bucket_name_here
-R2_ACCOUNT_ID=your_account_id_here
-R2_REGION=auto
-# 可选：如果有自定义域名，可以设置 R2_PUBLIC_URL
-# R2_PUBLIC_URL=https://your-custom-domain.com
-
-# 阿里云 OSS 配置（当IMAGE_UPLOAD_STRATEGY=aliyun时使用）
-# 建议使用 RAM 子账号的 AccessKey，并只授予该 Bucket 的读写权限
-OSS_REGION=oss-cn-hongkong
-OSS_BUCKET_NAME=your_bucket_name_here
-OSS_ACCESS_KEY_ID=your_access_key_id_here
-OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
-# 可选：绑定自定义域名或 CDN 后设置，留空则使用默认域名
-# OSS_PUBLIC_URL=https://img.example.com
-# 可选：对象目录前缀，按环境或用途隔离图片（默认 images/）
-OSS_IMAGE_PREFIX=images/
-
-# CORS配置
-CORS_ORIGIN=http://localhost:5173
-
-# 邮件服务配置
-# 是否启用邮件功能 (true/false)，默认不启用
-EMAIL_ENABLED=false
-# SMTP服务器地址
-SMTP_HOST=smtp.qq.com
-# SMTP服务器端口
-SMTP_PORT=465
-# 是否使用SSL/TLS (true/false)
-SMTP_SECURE=true
-# 邮箱账号
-SMTP_USER=your_email@example.com
-# 邮箱密码/授权码
-SMTP_PASSWORD=your_email_password
-# 发件人邮箱
-EMAIL_FROM=your_email@example.com
-# 发件人名称
-EMAIL_FROM_NAME=小石榴校园图文社区
-
-# IP属地查询配置
-# 主API地址
-IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
-# 主API超时时间（毫秒）
-IP_LOCATION_PRIMARY_TIMEOUT=10000
-# 备用API地址
-IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
-# 备用API超时时间（毫秒）
-IP_LOCATION_BACKUP_TIMEOUT=5000
-```
-
-### 前端配置 (vue3-project/.env)
+前后端各有一份 `.env`，从对应目录的 `.env.example` 复制。后端 `express-project/.env` 至少确认以下四项：
 
 ```env
-# API基础URL
-VITE_API_BASE_URL=http://localhost:3001/api
-
-# 是否使用真实API
-VITE_USE_REAL_API=true
-
-# 应用标题
-VITE_APP_TITLE=小石榴图文社区
+DB_PASSWORD=123456                      # 数据库密码
+JWT_SECRET=xiaoshiliu_secret_key_2025   # JWT 密钥，生产环境务必更换
+API_BASE_URL=http://localhost:3001      # 后端对外访问地址
+CORS_ORIGIN=http://localhost:5173       # 允许跨域的前端地址
 ```
 
-> 💡 **配置说明**：
-> - 后端支持本地存储、第三方图床、Cloudflare R2 和阿里云 OSS 四种上传策略
-> - 图片和视频可以分别配置不同的上传策略
-> - 邮件功能默认关闭，启用后支持邮箱验证注册和找回密码
-> - IP属地查询支持主备双API，自动切换保证服务可用性
-> - 前端使用 Vite 环境变量，变量名需以 `VITE_` 开头
-> - 详细配置说明请参考 [部署指南](./doc/DEPLOYMENT.md)
+前端 `vue3-project/.env` 只需确认 `VITE_API_BASE_URL` 指向后端 API（默认 `http://localhost:3001/api`）。
 
-### 1. 安装依赖
+其余变量（上传策略、邮件、IP 属地、违规词检测等）保持默认即可：完整列表见 [express-project/.env.example](./express-project/.env.example) 与 [vue3-project/.env.example](./vue3-project/.env.example)，各项含义见[部署指南](./doc/DEPLOYMENT.md)。
+
+### 2. 安装依赖
 
 ```bash
-# 使用 cnpm或npm
-cnpm install
-# 或使用 yarn
-yarn install
+npm install
 ```
 
-### 2. 启动开发服务器
+### 3. 启动开发服务器
 
 ```bash
-# 启动开发服务器
 npm run dev
-
-# 或使用 yarn
-yarn dev
 ```
 
-开发服务器将在 `http://localhost:5173` 启动
+开发服务器默认运行在 `http://localhost:5173`。
 
-### 3. 构建生产版本
+### 4. 构建生产版本
 
 ```bash
-# 构建生产版本
-npm run build
-
-# 预览生产版本
-npm run preview
+npm run build     # 构建到 dist/
+npm run preview   # 本地预览，默认 http://localhost:4173
 ```
-
-> ⚠️ **重要提醒**：前端项目需要配合后端服务使用，详细配置请查看 [部署指南](./doc/DEPLOYMENT.md)
 
 ## Star历史
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ZTMYO/XiaoShiLiu&type=Date&theme=dark)](https://github.com/ZTMYO/XiaoShiLiu)
+[![Star History Chart](https://api.star-history.com/svg?repos=ZTMYO/XiaoShiLiu&type=Date&theme=dark)](https://www.star-history.com/#ZTMYO/XiaoShiLiu&Date)
 
 ---
 
@@ -341,5 +220,3 @@ By ZTMYO\
 Made with ❤️ & ⌨️
 
 </div>
-
-

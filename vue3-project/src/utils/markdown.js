@@ -292,9 +292,11 @@ function extractDescription(blockText) {
   return text.length > 300 ? `${text.slice(0, 300)}…` : text
 }
 
-// 提取块内第一段围栏代码作为响应示例原文
+// 提取「响应示例」段的围栏代码作为响应示例原文；无该标记时回退到块内第一段围栏
 function extractExample(blockText) {
-  const m = blockText.match(/```[^\n]*\n([\s\S]*?)```/)
+  const parts = blockText.split(/\*\*响应示例\*\*/)
+  const source = parts.length > 1 ? parts[1] : blockText
+  const m = source.match(/```[^\n]*\n([\s\S]*?)```/)
   return m ? m[1].replace(/\n+$/, '') : ''
 }
 

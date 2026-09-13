@@ -151,6 +151,16 @@ const config = {
     backupApi: process.env.IP_LOCATION_BACKUP_API || 'https://api.pearktrue.cn/api/ip/high',
     primaryTimeout: parseInt(process.env.IP_LOCATION_PRIMARY_TIMEOUT) || 10000,
     backupTimeout: parseInt(process.env.IP_LOCATION_BACKUP_TIMEOUT) || 5000
+  },
+
+  // 违规词检测配置
+  sensitiveWordCheck: {
+    enabled: process.env.SENSITIVE_WORD_CHECK_ENABLED === 'true',
+    // 白名单用户ID，名单内用户不参与检测，多个用英文逗号分隔
+    userWhitelist: (process.env.SENSITIVE_WORD_CHECK_WHITELIST || '')
+      .split(',')
+      .map(id => parseInt(id.trim(), 10))
+      .filter(id => !Number.isNaN(id))
   }
 };
 

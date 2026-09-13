@@ -9,10 +9,14 @@
 </p>
 <p align="center">
     <i>一個高仿小紅書的圖文社群項目，支援圖文發布、社交互動等核心功能，旨在提供從前端到後端的完整實踐範本</i>
-<p align="center"><a href="https://www.shiliu.space">演示網站</a> · <a href="https://www.bilibili.com/video/BV1J4agztEBX/?spm_id_from=333.1387.homepage.video_card.click">影片介紹</a>
 </p>
-<p align="center"><a href="https://github.com/ZTMYO/XiaoShiLiu">簡體中文</a>|<a href="README_En.md">English</a>|<a href="./i18n/README_zh-Hant.md">繁體中文</a>
+<p align="center">
+    <a href="https://www.shiliu.space">演示網站</a> · <a href="https://www.bilibili.com/video/BV1J4agztEBX/?spm_id_from=333.1387.homepage.video_card.click">影片介紹</a>
 </p>
+<p align="center">
+    <a href="https://github.com/ZTMYO/XiaoShiLiu">簡體中文</a>|<a href="README_En.md">English</a>|<a href="README_zh-Hant.md">繁體中文</a>
+</p>
+
 <p align="center">
     <a href="https://github.com/ZTMYO/XiaoShiLiu/stargazers">
         <img src="https://img.shields.io/github/stars/ZTMYO/XiaoShiLiu?style=flat&logo=github&color=brightgreen&label=Stars">
@@ -29,18 +33,15 @@
 </p>
 <p align="center">
     <img src="https://img.shields.io/static/v1?message=Vue&color=4f4f4f&logo=Vue.js&logoColor=4FC08D&label=">
-    <img
-        src="https://img.shields.io/static/v1?&message=JavaScript&color=4f4f4f&logo=JavaScript&logoColor=F7DF1E&label=">
-    </a>
+    <img src="https://img.shields.io/static/v1?&message=JavaScript&color=4f4f4f&logo=JavaScript&logoColor=F7DF1E&label=">
 </p>
 
-
 > **聲明**  
-> 本項目基於 [GPLv3 協議](./LICENSE)，免費開源，僅供學習交流，禁止轉賣，謹防受騙。如需商用請保留版權信息，確保合法合規使用，運營風險自負，與作者無關。
+> 本項目基於 [GPLv3 協議](../../LICENSE)，免費開源，僅供學習交流，禁止轉賣，謹防受騙。如需商用請保留版權信息，確保合法合規使用，運營風險自負，與作者無關。
 
 ---
 
-> 📁 **項目結構說明**：本項目包含完整的前後端程式碼，前端位於 `vue3-project/` 目錄，後端位於 `express-project/` 目錄。詳細結構請查看 [項目結構文件](PROJECT_STRUCTURE_zh-Hant.md)。
+> 📁 前端位於 `vue3-project/`，後端位於 `express-project/`，詳見[項目結構文件](PROJECT_STRUCTURE_zh-Hant.md)。
 
 ## 項目展示
 
@@ -49,59 +50,56 @@
 <table>
   <tr>
     <td><img src="../imgs/1.png" alt="PC端界面1" width="300"/></td>
-<td><img src="../imgs/2.png" alt="PC端界面2" width="300"/></td>
-<td><img src="../imgs/3.png" alt="PC端界面3" width="300"/></td>
+    <td><img src="../imgs/2.png" alt="PC端界面2" width="300"/></td>
+    <td><img src="../imgs/3.png" alt="PC端界面3" width="300"/></td>
   </tr>
   <tr>
     <td><img src="../imgs/4.png" alt="PC端界面4" width="300"/></td>
-<td><img src="../imgs/5.png" alt="PC端界面5" width="300"/></td>
-<td><img src="../imgs/6.png" alt="PC端界面6" width="300"/></td>
+    <td><img src="../imgs/5.png" alt="PC端界面5" width="300"/></td>
+    <td><img src="../imgs/6.png" alt="PC端界面6" width="300"/></td>
   </tr>
   <tr>
     <td><img src="../imgs/7.png" alt="PC端界面7" width="300"/></td>
-<td><img src="../imgs/8.png" alt="PC端界面8" width="300"/></td>
-<td><img src="../imgs/9.png" alt="PC端界面9" width="300"/></td>
+    <td><img src="../imgs/8.png" alt="PC端界面8" width="300"/></td>
+    <td><img src="../imgs/9.png" alt="PC端界面9" width="300"/></td>
   </tr>
   <tr>
     <td><img src="../imgs/10.png" alt="PC端界面10" width="300"/></td>
-<td><img src="../imgs/11.png" alt="PC端界面11" width="300"/></td>
-<td><img src="../imgs/12.png" alt="PC端界面12" width="300"/></td>
+    <td><img src="../imgs/11.png" alt="PC端界面11" width="300"/></td>
+    <td><img src="../imgs/12.png" alt="PC端界面12" width="300"/></td>
   </tr>
   <tr>
     <td><img src="../imgs/13.png" alt="PC端界面13" width="300"/></td>
     <td><img src="../imgs/14.png" alt="PC端界面14" width="300"/></td>
     <td><img src="../imgs/15.png" alt="PC端界面15" width="300"/></td>
   </tr>
-  </tr>
-    <tr>
-    <td><img src="./doc/imgs/16.png" alt="PC端界面16" width="300"/></td>
-    <td><img src="./doc/imgs/17.png" alt="PC端界面17" width="300"/></td>
-    <td><img src="./doc/imgs/18.png" alt="PC端界面18" width="300"/></td>
+  <tr>
+    <td><img src="../imgs/16.png" alt="PC端界面16" width="300"/></td>
+    <td><img src="../imgs/17.png" alt="PC端界面17" width="300"/></td>
+    <td><img src="../imgs/18.png" alt="PC端界面18" width="300"/></td>
   </tr>
 </table>
-
-
 
 ### 移動端界面
 
 <table>
   <tr>
     <td><img src="../imgs/m1.png" alt="移動端界面1" width="200"/></td>
-<td><img src="../imgs/m2.png" alt="移動端界面2" width="200"/></td>
-<td><img src="../imgs/m3.png" alt="移動端界面3" width="200"/></td>
-<td><img src="../imgs/m4.png" alt="移動端界面4" width="200"/></td>
+    <td><img src="../imgs/m2.png" alt="移動端界面2" width="200"/></td>
+    <td><img src="../imgs/m3.png" alt="移動端界面3" width="200"/></td>
+    <td><img src="../imgs/m4.png" alt="移動端界面4" width="200"/></td>
   </tr>
   <tr>
     <td><img src="../imgs/m5.png" alt="移動端界面5" width="200"/></td>
-<td><img src="../imgs/m6.png" alt="移動端界面6" width="200"/></td>
-<td><img src="../imgs/m7.png" alt="移動端界面7" width="200"/></td>
-<td><img src="../imgs/m8.png" alt="移動端界面8" width="200"/></td>
+    <td><img src="../imgs/m6.png" alt="移動端界面6" width="200"/></td>
+    <td><img src="../imgs/m7.png" alt="移動端界面7" width="200"/></td>
+    <td><img src="../imgs/m8.png" alt="移動端界面8" width="200"/></td>
   </tr>
   <tr>
     <td><img src="../imgs/m9.png" alt="移動端界面9" width="200"/></td>
-<td><img src="../imgs/m10.png" alt="移動端界面10" width="200"/></td>
-<td><img src="../imgs/m11.png" alt="移動端界面11" width="200"/></td>
-<td><img src="../imgs/m12.png" alt="移動端界面12" width="200"/></td>
+    <td><img src="../imgs/m10.png" alt="移動端界面10" width="200"/></td>
+    <td><img src="../imgs/m11.png" alt="移動端界面11" width="200"/></td>
+    <td><img src="../imgs/m12.png" alt="移動端界面12" width="200"/></td>
   </tr>
 </table>
 
@@ -117,7 +115,7 @@
 ## 項目亮點
 
 - **工程化：** 環境配置、程式碼規範、建構與產物最佳化的完整流程
-- **業務能力：** 驗權流程、路由守衛、狀態管理與接口封裝
+- **業務能力：** 鑑權流程、路由守衛、狀態管理與接口封裝
 - **體驗優化：** 骨架屏、延遲載入、預載入、無障礙與響應式適配
 - **元件與分層：** 可復用元件拆分、按領域分組與別名引入
 - **後台管理：** 基礎CRUD、數據管理與配置面板，支援後續擴展權限與統計
@@ -153,182 +151,65 @@
 
 </details>
 
-
-
 ## 第三方API
 - **圖片儲存：** 灌裝的示例圖片來自 [栗次元圖床](https://t.alcy.cc/)，提供穩定的圖片儲存服務
 - **圖片上傳：** 使用者上傳圖片使用了 [夏柔API](https://api.aa1.cn/doc/360tc.html)，確保圖片上傳的穩定性和速度
-- **属地查詢：** IP属地查詢服務使用 [保羅API](https://api.pearktrue.cn/console/detail?id=290)，實現精準的IP属地定位功能
-
+- **屬地查詢：** IP屬地查詢服務使用 [保羅API](https://api.pearktrue.cn/console/detail?id=290)，實現精準的IP屬地定位功能
 
 ## 環境要求
 
 | 元件 | 版本要求 |
 |------|----------|
-| Node.js | >= 16.0.0 |
+| Node.js | >= 18.0.0 |
 | MySQL | >= 5.7 |
 | MariaDB | >= 10.3 |
 | npm | >= 8.0.0 |
 | yarn | >= 1.22.0 |
-| 瀏覽器 | 支援ES6+ |
+| 瀏覽器 | 支援 ES6+ |
 
-> 提示：上述為傳統本地開發的最低版本要求。若使用 Docker 部署，預設鏡像版本如下：MySQL 5.7、Node 18-alpine（前後端建構/執行）、Nginx alpine；Docker >= 20、Docker Compose >= 2。詳見[部署指南文件](DEPLOYMENT_zh-Hant.md)。
+> 上述為傳統本地開發的最低版本要求；Docker 部署的鏡像版本與前置條件見[部署指南](DEPLOYMENT_zh-Hant.md)。
 
-## 環境配置
+## 快速開始
 
-項目使用環境變數進行配置管理，前後端分別有獨立的 `.env` 文件：
+### 1. 環境配置
 
-### 後端配置 (express-project/.env)
-
-```env
-# 伺服器配置
-PORT=3001
-NODE_ENV=development
-
-# 資料庫配置
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-DB_PORT=3306
-
-# JWT配置
-JWT_SECRET=xiaoshiliu_secret_key_2025
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_EXPIRES_IN=30d
-
-# API配置
-API_BASE_URL=http://localhost:3001
-
-# 上傳配置
-# 單張圖片最大文件大小
-IMAGE_MAX_SIZE=10mb
-# 單個視頻最大文件大小
-VIDEO_MAX_SIZE=100mb
-# 圖片上傳策略 (local: 本地儲存, imagehost: 第三方圖床, r2: Cloudflare R2, aliyun: 阿里雲 OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# 視頻上傳策略 (local: 本地儲存, r2: Cloudflare R2)
-VIDEO_UPLOAD_STRATEGY=local
-
-# 本地儲存配置
-LOCAL_UPLOAD_DIR=uploads
-LOCAL_BASE_URL=http://localhost:3001
-# 視頻儲存目錄
-VIDEO_UPLOAD_DIR=uploads/videos
-# 視頻封面儲存目錄
-VIDEO_COVER_DIR=uploads/covers
-
-# 第三方圖床配置（當IMAGE_UPLOAD_STRATEGY=imagehost時使用）
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
-IMAGEHOST_TIMEOUT=60000
-
-# Cloudflare R2 配置（當IMAGE_UPLOAD_STRATEGY=r2或VIDEO_UPLOAD_STRATEGY=r2時使用）
-R2_ACCESS_KEY_ID=your_r2_access_key_id_here
-R2_SECRET_ACCESS_KEY=your_r2_secret_access_key_here
-R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
-R2_BUCKET_NAME=your_bucket_name_here
-R2_ACCOUNT_ID=your_account_id_here
-R2_REGION=auto
-# 可選：如果有自定義域名，可以設置 R2_PUBLIC_URL
-# R2_PUBLIC_URL=https://your-custom-domain.com
-
-# 阿里雲 OSS 配置（當 IMAGE_UPLOAD_STRATEGY=aliyun 時使用）
-# 建議使用 RAM 子帳號的 AccessKey，並只授予該 Bucket 的讀寫權限
-OSS_REGION=oss-cn-hongkong
-OSS_BUCKET_NAME=your_bucket_name_here
-OSS_ACCESS_KEY_ID=your_access_key_id_here
-OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
-# 可選：綁定自訂網域或 CDN 後設定，留空則使用預設網域
-# OSS_PUBLIC_URL=https://img.example.com
-# 可選：物件目錄前綴，按環境或用途隔離圖片（預設 images/）
-OSS_IMAGE_PREFIX=images/
-
-# CORS配置
-CORS_ORIGIN=http://localhost:5173
-
-# 郵件服務配置
-# 是否啟用郵件功能 (true/false)，預設不啟用
-EMAIL_ENABLED=false
-# SMTP伺服器地址
-SMTP_HOST=smtp.qq.com
-# SMTP伺服器端口
-SMTP_PORT=465
-# 是否使用SSL/TLS (true/false)
-SMTP_SECURE=true
-# 郵箱賬號
-SMTP_USER=your_email@example.com
-# 郵箱密碼/授權碼
-SMTP_PASSWORD=your_email_password
-# 發件人郵箱
-EMAIL_FROM=your_email@example.com
-# 發件人名稱
-EMAIL_FROM_NAME=小石榴校園圖文社區
-
-# IP屬地查詢配置
-# 主API地址
-IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
-# 主API超時時間（毫秒）
-IP_LOCATION_PRIMARY_TIMEOUT=10000
-# 備用API地址
-IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
-# 備用API超時時間（毫秒）
-IP_LOCATION_BACKUP_TIMEOUT=5000
-```
-
-### 前端配置 (vue3-project/.env)
+前後端各有一份 `.env`，從對應目錄的 `.env.example` 複製。後端 `express-project/.env` 至少確認以下四項：
 
 ```env
-# API基礎URL配置
-VITE_API_BASE_URL=http://localhost:3001/api
-
-# 應用配置
-VITE_USE_REAL_API=true
-VITE_APP_TITLE=小石榴圖文社區
+DB_PASSWORD=123456                      # 資料庫密碼
+JWT_SECRET=xiaoshiliu_secret_key_2025   # JWT 金鑰，生產環境務必更換
+API_BASE_URL=http://localhost:3001      # 後端對外存取地址
+CORS_ORIGIN=http://localhost:5173       # 允許跨域的前端地址
 ```
 
-> 💡 **配置說明**：
-> - 後端支援本地儲存、第三方圖床、Cloudflare R2 和阿里雲 OSS 四種上傳策略
-> - 圖片和視頻可以分別配置不同的上傳策略
-> - 郵件功能預設關閉，啟用後支援郵箱驗證註冊和找回密碼
-> - 前端使用 Vite 環境變數，變數名需以 `VITE_` 開頭
-> - 詳細配置說明請參考 [部署指南](DEPLOYMENT_zh-Hant.md)
+前端 `vue3-project/.env` 只需確認 `VITE_API_BASE_URL` 指向後端 API（預設 `http://localhost:3001/api`）。
 
-### 1. 安裝依賴
+其餘變數（上傳策略、郵件、IP 屬地、違規詞檢測等）保持預設即可：完整列表見 [express-project/.env.example](../../express-project/.env.example) 與 [vue3-project/.env.example](../../vue3-project/.env.example)，各項含義見[部署指南](DEPLOYMENT_zh-Hant.md)。
+
+### 2. 安裝依賴
 
 ```bash
-# 使用 cnpm或npm
-cnpm install
-# 或使用 yarn
-yarn install
+npm install
 ```
 
-### 2. 啟動開發伺服器
+### 3. 啟動開發伺服器
 
 ```bash
-# 啟動開發伺服器
 npm run dev
-
-# 或使用 yarn
-yarn dev
 ```
 
-開發伺服器將在 `http://localhost:5173` 啟動
+開發伺服器預設執行在 `http://localhost:5173`。
 
-### 3. 建構生產版本
+### 4. 建構生產版本
 
 ```bash
-# 建構生產版本
-npm run build
-
-# 預覽生產版本
-npm run preview
+npm run build     # 建構到 dist/
+npm run preview   # 本地預覽，預設 http://localhost:4173
 ```
-
-> ⚠️ **重要提醒**：前端項目需配合後端服務使用，詳細配置請查看 [部署指南](DEPLOYMENT_zh-Hant.md)
 
 ## Star歷史
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ZTMYO/XiaoShiLiu&type=Date)](https://www.star-history.com/#ZTMYO/XiaoShiLiu&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=ZTMYO/XiaoShiLiu&type=Date&theme=dark)](https://www.star-history.com/#ZTMYO/XiaoShiLiu&Date)
 
 ---
 

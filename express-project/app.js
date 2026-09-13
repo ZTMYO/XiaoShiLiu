@@ -16,6 +16,8 @@ const config = require('./config/config');
 const { HTTP_STATUS, RESPONSE_CODES } = require('./constants');
 // 导入自动解封功能
 const { startAutoUnbanService } = require('./utils/autoUnban');
+// 导入违规词检测服务
+const { startSensitiveWordCheckService } = require('./utils/sensitiveWordScheduler');
 
 // 导入路由模块
 const authRoutes = require('./routes/auth');
@@ -112,6 +114,9 @@ app.use('*', (req, res) => {
 
 // 启动自动解封服务
 startAutoUnbanService();
+
+// 启动违规词检测服务
+startSensitiveWordCheckService();
 
 // 启动服务器
 const PORT = config.server.port;

@@ -5,11 +5,11 @@
 - **版本**: v1.3.2
 - **基礎URL**: `http://localhost:3001`
 - **數據庫**: xiaoshiliu (MySQL)
-- **更新時間**: 2026-07-28
+- **更新時間**: 2026-09-13
 
 ## 通用說明
 
-### 响應格式
+### 響應格式
 所有API接口統一返回JSON格式，結構如下：
 
 ```json
@@ -21,23 +21,55 @@
 ```
 
 ### 狀態碼說明
-- `200`: 请求成功
-- `400`: 请求参数错误
-- `401`: 未授权，需要登录
-- `403`: 禁止访问
-- `404`: 资源不存在
-- `500`: 服务器内部错误
+- `200`: 請求成功
+- `400`: 請求參數錯誤
+- `401`: 未授權，需要登錄
+- `403`: 禁止訪問
+- `404`: 資源不存在
+- `500`: 伺服器內部錯誤
 
 ### 認證說明
-需要認證的接口需要在請求頭中攜帶JWT token：
+需要認證的接口在請求頭中攜帶存取令牌：
 ```
-Authorization: Bearer <your_jwt_token>
+Authorization: Bearer <access_token>
 ```
+
+**令牌類型與有效期**
+
+| 令牌 | 說明 | 有效期 |
+|------|------|--------|
+| `access_token` | 接口鑑權憑證，JWT 格式 | 7 天，由 `JWT_EXPIRES_IN` 配置，預設 `7d` |
+| `refresh_token` | 用於換取新令牌，JWT 格式 | 30 天，由 `REFRESH_TOKEN_EXPIRES_IN` 配置，預設 `30d` |
+| 服務端會話 | `user_sessions` 表記錄，登錄時寫入 | 7 天，每次刷新令牌後重新計時 |
+
+> 實際可用時長取服務端會話與 JWT 有效期中的較短者。若連續 7 天未調用刷新接口，會話記錄先失效，刷新令牌即使未滿 30 天也無法繼續使用。
+
+**刷新令牌**
+
+存取令牌過期後，攜帶 `refresh_token` 調用 `POST /api/auth/refresh` 獲取新的一對令牌。刷新成功後服務端會把會話有效期重置為 7 天，`user_sessions` 中舊令牌同時被新令牌替換。
+
+**鑑權失敗響應**
+
+| 狀態碼 | 提示信息 | 觸發原因 |
+|--------|----------|----------|
+| 401 | 訪問令牌缺失 | 請求頭未攜帶 `Authorization` |
+| 401 | 無效的訪問令牌 | 令牌格式錯誤、簽名校驗失敗或已過期 |
+| 401 | 用戶不存在或已被禁用 | 令牌對應的用戶已刪除或被禁用 |
+| 401 | 會話已過期，請重新登錄 | 會話記錄已失效（退出登錄、重新登錄或超過有效期） |
+| 403 | 賬戶已被禁用 | 登錄時檢測到 `is_active = 0` |
+
+**單會話機制**
+
+同一用戶同時只保留一個有效會話：調用登錄接口會把該用戶此前所有會話置為失效，舊設備上的令牌隨即返回 401。退出登錄只失效當前設備對應的會話。
+
+**關於 `expires_in`**
+
+登錄與刷新接口響應中的 `expires_in` 固定返回 `3600`，實際有效期請以 `access_token` 中的 `exp` 聲明為準。
 
 ### 分頁參數
 支持分頁的接口通用參數：
-- `page`: 頁碼，默認為1
-- `limit`: 每頁數量，默認為20
+- `page`: 頁碼，預設為1
+- `limit`: 每頁數量，預設為20
 
 ---
 
@@ -47,7 +79,7 @@ Authorization: Bearer <your_jwt_token>
 **接口地址**: `POST /api/auth/register`
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | user_id | string | 是 | 用戶ID（唯一，3-15位字母數字下劃線） |
 | nickname | string | 是 | 昵稱（少於10位） |
@@ -68,7 +100,7 @@ Authorization: Bearer <your_jwt_token>
 - 當郵件功能啟用時（`EMAIL_ENABLED=true`），需要提供email和emailCode參數
 - 當郵件功能禁用時（`EMAIL_ENABLED=false`），email和emailCode參數可選，註冊時不需要郵箱驗證
 
-**響應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -79,7 +111,7 @@ Authorization: Bearer <your_jwt_token>
       "user_id": "user_001",
       "nickname": "小石榴",
       "avatar": "https://example.com/avatar.jpg",
-      "bio": "这是個人簡介",
+      "bio": "這是個人簡介",
       "location": "北京",
       "verified": 0
     },
@@ -96,12 +128,12 @@ Authorization: Bearer <your_jwt_token>
 **接口地址**: `POST /api/auth/login`
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | user_id | string | 是 | 小石榴號 |
 | password | string | 是 | 密碼 |
 
-**響應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -136,7 +168,7 @@ Authorization: Bearer <your_jwt_token>
 |------|------|------|------|
 | refresh_token | 字串 | 是 | 刷新令牌 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -153,7 +185,7 @@ Authorization: Bearer <your_jwt_token>
 **接口地址**: `POST /api/auth/logout`
 **需要認證**: 是
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -165,7 +197,7 @@ Authorization: Bearer <your_jwt_token>
 **接口地址**: `GET /api/auth/me`
 **需要認證**: 是
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -182,7 +214,35 @@ Authorization: Bearer <your_jwt_token>
     "like_count": 100,
     "is_active": 1,
     "verified": 0,
-    "created_at": "2025-08-30T00:00:00.000Z"
+    "created_at": "2025-08-30T00:00:00.000Z",
+    "ban": null
+  }
+}
+```
+
+**被封禁用戶響應示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "user_id": "user_001",
+    "nickname": "小石榴",
+    "avatar": "https://example.com/avatar.jpg",
+    "bio": "這是個人簡介",
+    "location": "北京",
+    "follow_count": 10,
+    "fans_count": 20,
+    "like_count": 100,
+    "is_active": 1,
+    "verified": 0,
+    "created_at": "2025-08-30T00:00:00.000Z",
+    "ban": {
+      "end_time": "2026-03-31 23:59:59",
+      "reason": "違反社區規定",
+      "created_at": "2026-02-20T10:00:00.000Z"
+    }
   }
 }
 ```
@@ -193,11 +253,11 @@ Authorization: Bearer <your_jwt_token>
 **說明**: 僅在郵件功能啟用時可用（`EMAIL_ENABLED=true`）
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | email | string | 是 | 郵箱地址（調用此接口時必填） |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -205,7 +265,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-**錯誤回應**（郵件功能未啟用時）:
+**錯誤響應**（郵件功能未啟用時）:
 ```json
 {
   "code": 400,
@@ -218,7 +278,7 @@ Authorization: Bearer <your_jwt_token>
 
 **說明**: 獲取當前郵件功能是否啟用，前端根據此配置決定是否顯示郵箱相關字段
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -242,7 +302,7 @@ Authorization: Bearer <your_jwt_token>
 | email | string | 是 | 郵箱地址 |
 | emailCode | string | 是 | 郵箱驗證碼 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -257,7 +317,7 @@ Authorization: Bearer <your_jwt_token>
 
 **需要認證**: 是
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -275,7 +335,7 @@ Authorization: Bearer <your_jwt_token>
 |------|------|------|------|
 | email | string | 是 | 已綁定的郵箱地址 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -297,7 +357,7 @@ Authorization: Bearer <your_jwt_token>
 | email | string | 是 | 郵箱地址 |
 | emailCode | string | 是 | 郵箱驗證碼 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -317,7 +377,7 @@ Authorization: Bearer <your_jwt_token>
 | emailCode | string | 是 | 郵箱驗證碼 |
 | newPassword | string | 是 | 新密碼（6-20位） |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -335,10 +395,10 @@ Authorization: Bearer <your_jwt_token>
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | 整數 | 否 | 頁碼，默認1 |
-| limit | 整數 | 否 | 每頁數量，默認20 |
+| page | 整數 | 否 | 頁碼，預設1 |
+| limit | 整數 | 否 | 每頁數量，預設20 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -377,7 +437,7 @@ Authorization: Bearer <your_jwt_token>
 |------|------|------|------|
 | id | 整數 | 是 | 用戶ID |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -393,7 +453,34 @@ Authorization: Bearer <your_jwt_token>
     "fans_count": 20,
     "like_count": 100,
     "verified": 0,
-    "created_at": "2025-08-30T00:00:00.000Z"
+    "created_at": "2025-08-30T00:00:00.000Z",
+    "ban": null
+  }
+}
+```
+
+**被封禁用戶響應示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 2,
+    "user_id": "user_002",
+    "nickname": "測試用戶",
+    "avatar": "https://example.com/avatar2.jpg",
+    "bio": "測試用戶簡介",
+    "location": "上海",
+    "follow_count": 5,
+    "fans_count": 8,
+    "like_count": 20,
+    "verified": 0,
+    "created_at": "2025-08-31T00:00:00.000Z",
+    "ban": {
+      "end_time": "2026-03-31 23:59:59",
+      "reason": "違反社區規定",
+      "created_at": "2026-02-20T10:00:00.000Z"
+    }
   }
 }
 ```
@@ -409,10 +496,10 @@ Authorization: Bearer <your_jwt_token>
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | 整數 | 否 | 頁碼，默認1 |
-| limit | 整數 | 否 | 每頁數量，默認20 |
+| page | 整數 | 否 | 頁碼，預設1 |
+| limit | 整數 | 否 | 每頁數量，預設20 |
 
-### 4. 关注用戶
+### 4. 關注用戶
 **接口地址**: `POST /api/users/:id/follow`
 **需要認證**: 是
 
@@ -421,7 +508,7 @@ Authorization: Bearer <your_jwt_token>
 |------|------|------|------|
 | id | int | 是 | 被關注用戶ID |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -438,7 +525,7 @@ Authorization: Bearer <your_jwt_token>
 |------|------|------|------|
 | id | int | 是 | 被關注用戶ID |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -457,10 +544,10 @@ Authorization: Bearer <your_jwt_token>
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -500,10 +587,10 @@ Authorization: Bearer <your_jwt_token>
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -539,27 +626,31 @@ Authorization: Bearer <your_jwt_token>
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | keyword | string | 是 | 搜尋關鍵詞（支持昵稱和小石榴號搜尋） |
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 
-**回應範例**:
-
+**響應示例**:
 ```json
 {
   "code": 200,
   "message": "success",
   "data": {
-    "likes": [
+    "users": [
       {
         "id": 1,
-        "post_id": 1,
-        "user": {
-          "id": 1,
-          "user_id": "user_001",
-          "nickname": "小石榴",
-          "avatar": "https://example.com/avatar.jpg",
-          "verified": 0
-        },
+        "user_id": "user_001",
+        "nickname": "小石榴",
+        "avatar": "https://example.com/avatar.jpg",
+        "bio": "這是個人簡介",
+        "location": "北京",
+        "follow_count": 10,
+        "fans_count": 20,
+        "like_count": 100,
+        "post_count": 5,
+        "verified": 0,
+        "isFollowing": false,
+        "isMutual": false,
+        "buttonType": "follow",
         "created_at": "2025-08-30T00:00:00.000Z"
       }
     ],
@@ -573,40 +664,145 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
+### 9. 取得用戶個性標籤
+**接口地址**: `GET /api/users/:id/personality-tags`
+
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 用戶ID |
+
+**響應示例**:
 ```json
 {
   "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "id": 2,
-      "標題": "精彩的瞬間",
-      "內容": "記錄生活中的美好",
-      "圖片": ["https://example.com/image2.jpg"],
-      "分類ID": 2,
-      "標籤": ["生活", "記錄"],
-      "喜歡數": 15,
-      "評論數": 8,
-      "收藏數": 5,
-      "查看數": 150,
-      "是否喜歡": true,
-      "是否收藏": false,
-      "喜歡時間": "2025-01-02T00:00:00.000Z",
-      "創建時間": "2025-08-30T00:00:00.000Z",
-      "用戶": {
+  "message": "success",
+  "data": {
+    "tags": [
+      {
+        "id": 1,
+        "name": "攝影愛好者",
+        "color": "#FF6B6B"
+      },
+      {
         "id": 2,
-        "用戶ID": "user_002",
-        "暱稱": "用戶2",
-        "頭像": "https://example.com/avatar2.jpg",
-        "驗證": 0
+        "name": "旅行達人",
+        "color": "#4ECDC4"
       }
+    ]
+  }
+}
+```
+
+### 10. 取得用戶發布的筆記
+**接口地址**: `GET /api/users/:id/posts`
+
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | string | 是 | 用戶小石榴號 |
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| status | string | 否 | 狀態篩選，`all`=已發布和待審核，不傳則只查詢已發布 |
+| keyword | string | 否 | 搜尋關鍵詞（標題或內容） |
+| category | string | 否 | 分類ID篩選 |
+| sort | string | 否 | 排序字段（created_at, view_count, like_count等），預設created_at |
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "title": "美麗的風景",
+        "content": "今天拍到了很美的風景",
+        "images": ["https://example.com/image1.jpg"],
+        "category_id": 1,
+        "tags": ["風景", "攝影"],
+        "like_count": 10,
+        "comment_count": 5,
+        "collection_count": 3,
+        "view_count": 100,
+        "isLiked": false,
+        "isCollected": false,
+        "created_at": "2025-08-30T00:00:00.000Z",
+        "user": {
+          "id": 1,
+          "user_id": "user_001",
+          "nickname": "小石榴",
+          "avatar": "https://example.com/avatar.jpg",
+          "verified": 0
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "pages": 1
     }
-  ],
-  "分頁": {
-    "頁碼": 1,
-    "限制": 20,
-    "總數": 3,
-    "頁數": 1
+  }
+}
+```
+
+### 11. 取得用戶按讚的筆記
+**接口地址**: `GET /api/users/:id/likes`
+
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 用戶ID |
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "posts": [
+      {
+        "id": 2,
+        "title": "精彩的瞬間",
+        "content": "記錄生活中的美好",
+        "images": ["https://example.com/image2.jpg"],
+        "category_id": 2,
+        "tags": ["生活", "記錄"],
+        "like_count": 15,
+        "comment_count": 8,
+        "collection_count": 5,
+        "view_count": 150,
+        "isLiked": true,
+        "isCollected": false,
+        "liked_at": "2025-01-02T00:00:00.000Z",
+        "created_at": "2025-08-30T00:00:00.000Z",
+        "user": {
+          "id": 2,
+          "user_id": "user_002",
+          "nickname": "用戶2",
+          "avatar": "https://example.com/avatar2.jpg",
+          "verified": 0
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 3,
+      "pages": 1
+    }
   }
 }
 ```
@@ -616,11 +812,11 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是
 
 **路徑參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 目標用戶ID |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -637,17 +833,17 @@ Authorization: Bearer <your_jwt_token>
 **接口地址**: `GET /api/users/:id/mutual-follows`
 
 **路徑參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 用戶ID |
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | 頁碼 | int | 否 | 頁碼，預設1 |
 | 每頁數量 | int | 否 | 每頁數量，預設20 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -680,11 +876,11 @@ Authorization: Bearer <your_jwt_token>
 **接口地址**: `GET /api/users/:id/stats`
 
 **路徑參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 用戶ID |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -706,7 +902,7 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是
 
 **路徑參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 用戶ID |
 
@@ -718,7 +914,7 @@ Authorization: Bearer <your_jwt_token>
 | bio | 字串 | 否 | 個人簡介 |
 | location | 字串 | 否 | 所在地 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -750,7 +946,7 @@ Authorization: Bearer <your_jwt_token>
 | title | 字串 | 否 | 認證稱號（個人=職業/身份，官方=機構名稱） |
 | description | 字串 | 否 | 認證理由 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -761,11 +957,11 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 17. 获取認證申請狀態
+### 17. 取得認證申請狀態
 **接口地址**: `GET /api/users/verification/status`
 **需要認證**: 是
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -800,7 +996,7 @@ Authorization: Bearer <your_jwt_token>
 - 撤回已通過的認證申請會同時取消用戶的認證狀態
 - 撤回後可以重新提交認證申請
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -812,18 +1008,18 @@ Authorization: Bearer <your_jwt_token>
 
 ## 分類管理接口
 
-### 1. 获取分类列表
+### 1. 取得分類列表
 **接口地址**: `GET /api/categories`
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | sortField | 字串 | 否 | 排序字段，可選值：id、name、created_at、post_count，預設id |
 | sortOrder | 字串 | 否 | 排序方式，可選值：asc、desc，預設asc |
 | name | 字串 | 否 | 按分類名稱模糊搜尋 |
 | category_title | 字串 | 否 | 按英文標題模糊搜尋 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -859,7 +1055,7 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是（管理員權限）
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | page | 整數 | 否 | 頁碼，預設1 |
 | limit | 整數 | 否 | 每頁數量，預設10 |
@@ -868,7 +1064,7 @@ Authorization: Bearer <your_jwt_token>
 | name | 字串 | 否 | 按分類名稱模糊搜尋 |
 | category_title | 字串 | 否 | 按英文標題模糊搜尋 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -896,11 +1092,11 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是（管理員權限）
 
 **路徑參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | 整數 | 是 | 分類ID |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -919,12 +1115,12 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是（管理員權限）
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | name | 字串 | 是 | 分類名稱 |
 | category_title | 字串 | 是 | 英文標題，用於URL路由 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -943,17 +1139,17 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是（管理員權限）
 
 **路徑參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 分類ID |
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | name | string | 否 | 分類名稱 |
 | category_title | string | 否 | 英文標題，用於URL路由 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -972,11 +1168,11 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是（管理員權限）
 
 **路徑參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 分類ID |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -989,18 +1185,18 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是（管理員權限）
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | ids | array | 是 | 分類ID陣列 |
 
-**請求範例**:
+**請求示例**:
 ```json
 {
   "ids": [1, 2, 3]
 }
 ```
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1011,7 +1207,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-**錯誤回應**:
+**錯誤響應**:
 - 400: 請求參數錯誤（無效的分類ID陣列）
 - 400: 部分分類下還有筆記，無法刪除
 - 404: 未找到要刪除的分類
@@ -1024,15 +1220,15 @@ Authorization: Bearer <your_jwt_token>
 **接口地址**: `GET /api/posts`
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | page | int | 否 | 頁碼，預設1 |
 | limit | int | 否 | 每頁數量，預設20 |
-| category | string | 否 | 分類ID過濾，支持"recommend"推薦頻道 |
+| category | string | 否 | 分類ID篩選，支持"recommend"推薦頻道 |
 | status | int | 否 | 筆記狀態篩選，0=已發布，1=草稿，2=待審核，3=審核未通過（預設0） |
-| user_id | int | 否 | 用戶ID過濾（查看草稿時會強制為當前用戶） |
+| user_id | int | 否 | 用戶ID篩選（查看草稿時會強制為當前用戶） |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1086,8 +1282,8 @@ Authorization: Bearer <your_jwt_token>
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 
 **響應示例**:
 ```json
@@ -1135,9 +1331,13 @@ Authorization: Bearer <your_jwt_token>
 **接口地址**: `GET /api/posts/:id`
 
 **路徑參數**:
-| 參數 | 過類型 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| id | int | 是 | 笔記ID |
+| id | int | 是 | 筆記ID |
+
+**權限說明**:
+- 已發布的筆記（status=0）：所有人可查看
+- 草稿（status=1）和待審核（status=2）的筆記：只有作者本人可以查看
 
 **說明**: 存取筆記詳情會自動增加瀏覽量
 
@@ -1146,21 +1346,30 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是
 
 **請求參數**:
-| 參數 | 過類型 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| title | string | 否* | 笔記標題（發佈時必填，草稿時選擇） |
-| content | string | 否* | 笔記內容（發佈時必填，草稿時選擇） |
+| title | string | 否* | 筆記標題（發佈時必填，草稿時可選） |
+| content | string | 否* | 筆記內容（發佈時必填，草稿時可選） |
 | category_id | int | 否 | 分類ID |
-| images | array | 否 | 圖片URL陣列 |
+| type | int | 否 | 筆記類型：1-圖文筆記（預設），2-視頻筆記 |
+| images | array | 否 | 圖片URL陣列（圖文筆記使用） |
+| video | object | 否 | 視頻資訊物件（視頻筆記使用） |
 | tags | array | 否 | 標籤名稱陣列（字串陣列） |
-| status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核，3=審核未通過（預設2） |
+| status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核（預設2），3=未過審 |
 
-**請求範例**:
+**video物件結構**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| url | string | 是 | 視頻檔案URL |
+| coverUrl | string | 否 | 視頻封面圖片URL |
+
+**請求示例（圖文筆記）**:
 ```json
 {
   "title": "分享一個美好的下午",
   "content": "今天天氣很好，在公園裡散步...",
   "category_id": 5,
+  "type": 1,
   "images": [
     "https://example.com/image1.jpg",
     "https://example.com/image2.jpg"
@@ -1170,30 +1379,46 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
+**請求示例（視頻筆記）**:
+```json
+{
+  "title": "美麗的風景影片",
+  "content": "記錄下這美好的一刻...",
+  "category_id": 5,
+  "type": 2,
+  "video": {
+    "url": "https://video.example.com/video.mp4",
+    "coverUrl": "https://img.example.com/video_cover.jpg"
+  },
+  "tags": ["生活", "視頻", "分享"],
+  "status": 0
+}
+```
+
 ### 5. 取得筆記評論
 **接口地址**: `GET /api/posts/:id/comments`
 
 **路徑參數**:
-| 參數 | 過類型 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| id | int | 是 | 笔記ID |
+| id | int | 是 | 筆記ID |
 
 **請求參數**:
-| 參數 | 過類型 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 
 ### 6. 收藏筆記
 **接口地址**: `POST /api/posts/:id/collect`
 **需要認證**: 是
 
 **路徑參數**:
-| 參數 | 過類型 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| id | int | 是 | 笔記ID |
+| id | int | 是 | 筆記ID |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1205,14 +1430,14 @@ Authorization: Bearer <your_jwt_token>
 **接口地址**: `GET /api/posts/search`
 
 **請求參數**:
-| 參數 | 過類型 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | keyword | string | 是 | 搜尋關鍵詞（支持標題和內容搜尋） |
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| category_id | int | 否 | 分類ID過濾 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| category_id | int | 否 | 分類ID篩選 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1256,22 +1481,67 @@ Authorization: Bearer <your_jwt_token>
 **接口地址**: `PUT /api/posts/:id`
 **需要認證**: 是
 
-**路径參數**:
-| 參數 | 類型 | 必填 | 說明 |
-|------|------|------|------|
-| id | int | 是 | 笔記ID |
-
----
-### 9. 刪除筆記
-**接口地址**: `DELETE /api/posts/:id`
-**需要驗證**: 是
-
-**路径參數**:
+**路徑參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 筆記ID |
 
-**响应示例**:
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| title | string | 否 | 筆記標題（發佈時必填，草稿時可選） |
+| content | string | 否 | 筆記內容（發佈時必填，草稿時可選） |
+| category_id | int | 否 | 分類ID（發佈時必填，草稿時可選） |
+| images | array | 否 | 圖片URL陣列（圖文筆記使用） |
+| video | object | 否 | 視頻資訊物件（視頻筆記使用） |
+| tags | array | 否 | 標籤名稱陣列（字串陣列） |
+| status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核（預設2），3=未過審 |
+
+**video物件結構**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| url | string | 是 | 視頻檔案URL |
+| coverUrl | string | 否 | 視頻封面圖片URL |
+
+**請求示例**:
+```json
+{
+  "title": "更新後的標題",
+  "content": "更新後的內容",
+  "category_id": 2,
+  "images": [
+    "https://example.com/new_image1.jpg"
+  ],
+  "tags": ["生活", "日常", "分享"],
+  "status": 0
+}
+```
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "筆記更新成功",
+  "data": {
+    "id": 1,
+    "title": "更新後的標題",
+    "content": "更新後的內容",
+    "category": "生活",
+    "updated_at": "2025-01-02T00:00:00.000Z"
+  }
+}
+```
+
+### 9. 刪除筆記
+**接口地址**: `DELETE /api/posts/:id`
+**需要認證**: 是
+
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 筆記ID |
+
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1279,17 +1549,16 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
----
 ### 10. 取消收藏筆記
 **接口地址**: `DELETE /api/posts/:id/collect`
-**需要驗證**: 是
+**需要認證**: 是
 
-**路径參數**:
+**路徑參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 筆記ID |
 
-**响应示例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1297,19 +1566,18 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
----
-### 11. 获取草稿列表
+### 11. 取得草稿列表
 **接口地址**: `GET /api/posts/drafts`
-**需要驗證**: 是
+**需要認證**: 是
 
-**请求参数**:
-| 参数 | 类型 | 必填 | 說明 |
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| keyword | string | 否 | 搜索關鍵詞 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| keyword | string | 否 | 搜尋關鍵詞 |
 
-**响应示例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1337,63 +1605,27 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-
----
-### 4. 刪除評論
-**接口地址**: `DELETE /api/comments/:id`
-**需要驗證**: 是
-
-**功能說明**: 評論作者或帖子作者均可刪除評論；刪除父評論會同時刪除其下所有子評論。
-
-**路径參數**:
-| 參數 | 類型 | 必填 | 說明 |
-|------|------|------|------|
-| id | int | 是 | 評論ID |
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "評論刪除成功"
-}
-```
-
----
-### 4. 获取筆記評論
-**接口地址**: `GET /api/posts/:id/comments`
-
-**路徑參數**:
-| 參數 | 型別 | 必填 | 說明 |
-|------|------|------|------|
-| id | int | 是 | 記錄ID |
-
-**請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
-|------|------|------|------|
-| page | int | 否 | 頁碼，預設1 |
-| limit | int | 否 | 每頁數量，預設20 |
-
 ---
 
-## 評論相關介面
+## 評論相關接口
 
 ### 1. 取得評論清單
-**介面地址**: `GET /api/posts/:id/comments`
+**接口地址**: `GET /api/posts/:id/comments`
 **需要認證**: 否（選擇性）
 
 **路徑參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 記錄ID |
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | page | int | 否 | 頁碼，預設1 |
 | limit | int | 否 | 每頁數量，預設20 |
 | sort | string | 否 | 排序方式：desc（降序，預設）或 asc（升序），置頂評論始終排在清單最前 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1445,19 +1677,18 @@ Authorization: Bearer <your_jwt_token>
 - `content` 欄位可能包含HTML格式的@用戶標籤
 - 前端需要正確渲染HTML內容以顯示@用戶連結
 - @用戶連結包含 `href`、`data-user-id`、`class` 等屬性用於前端處理
-```
 
 ### 2. 創建評論
-**介面地址**: `POST /api/posts/:id/comments`
+**接口地址**: `POST /api/posts/:id/comments`
 **需要認證**: 是
 
 **路徑參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 記錄ID |
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | content | string | 是 | 評論內容（支持@功能的HTML格式） |
 | parent_id | int | 否 | 父評論ID（回覆評論時使用） |
@@ -1466,19 +1697,18 @@ Authorization: Bearer <your_jwt_token>
 - 評論內容支持@用戶功能
 - @用戶的HTML格式：`<a href="/user/{user_id}" data-user-id="{user_id}" class="mention-link" contenteditable="false">@{nickname}</a>`
 - 系統會自動解析@用戶標籤並發送通知給被@的用戶
-- 支持在一条評論中@多個用戶
+- 支持在一條評論中@多個用戶
 
-**請求範例**:
-```
+**請求示例**:
 
 ```json
 {
-  "content": "这是一条普通评论",
+  "content": "這是一條普通評論",
   "parent_id": null
 }
 ```
 
-**包含@用户的請求示例**:
+**包含@用戶的請求示例**:
 ```json
 {
   "content": "<p><a href=\"/user/user012\" data-user-id=\"user012\" class=\"mention-link\" contenteditable=\"false\">@攝影愛好者</a>&nbsp;你的作品真的很棒！</p>",
@@ -1508,20 +1738,20 @@ Authorization: Bearer <your_jwt_token>
   3. 向被@用戶發送mention類型的通知
   4. 不會向自己發送@通知
 
-### 3. 获取評論回覆
+### 3. 取得評論回覆
 **接口地址**: `GET /api/comments/:id/replies`
 **需要認證**: 否（選擇）
 
 **路徑參數**:
-| 參數 | 类型 | 必填 | 说明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 評論ID |
 
 **請求參數**:
-| 參數 | 类型 | 必填 | 说明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認10 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設10 |
 
 **響應示例**:
 ```json
@@ -1532,7 +1762,7 @@ Authorization: Bearer <your_jwt_token>
     "replies": [
       {
         "id": 2,
-        "content": "這是一條回复",
+        "content": "這是一條回覆",
         "user_id": 2,
         "nickname": "李四",
         "user_avatar": "https://img.example.com/avatar2.jpg",
@@ -1559,7 +1789,7 @@ Authorization: Bearer <your_jwt_token>
 **功能說明**: 評論作者或帖子作者均可刪除評論；刪除父評論會同時刪除其下所有子評論。
 
 **路徑參數**:
-| 參數 | 类型 | 必填 | 说明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 評論ID |
 
@@ -1572,7 +1802,7 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 ### 5. 置頂/取消置頂評論
-**介面地址**: `PUT /api/comments/:id/pin`
+**接口地址**: `PUT /api/comments/:id/pin`
 **需要認證**: 是（僅帖子作者）
 
 **功能說明**: 帖子作者可對頂級評論進行置頂或取消置頂，置頂評論在評論區始終優先展示。
@@ -1601,28 +1831,28 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
-## 訊息相關接口
+## 通知相關接口
 
-### 訊息類型說明
-訊息系統支援以下類型：
-- **1**: 赞好筆記
-- **2**: 赞好評論
+### 通知類型說明
+通知系統支援以下類型：
+- **1**: 按讚筆記
+- **2**: 按讚評論
 - **3**: 收藏筆記
 - **4**: 評論筆記
 - **5**: 回覆評論
-- **6**: 关注用戶
+- **6**: 關注用戶
 - **7**: 評論提及（在評論中@用戶）
 - **8**: 筆記提及（在筆記中@用戶）
 
-### 1. 获取評論訊息
+### 1. 取得評論通知
 **接口地址**: `GET /api/notifications/comments`
 **需要認證**: 是
 
 **請求參數**:
-| 參數 | 类型 | 必填 | 说明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 
 **響應示例**:
 ```json
@@ -1633,91 +1863,66 @@ Authorization: Bearer <your_jwt_token>
     "notifications": [
       {
         "id": 1,
-        "type": 1,
-        "user_id": 2,
-        "nickname": "王五",
-        "content": "你發佈的筆記被贊了",
+        "type": "comment",
+        "sender_id": 2,
+        "sender_nickname": "用戶2",
+        "sender_avatar": "https://example.com/avatar2.jpg",
+        "sender_verified": 0,
+        "post_id": 1,
+        "post_title": "筆記標題",
+        "post_author_id": "author_001",
+        "comment_content": "評論內容",
+        "is_read": 0,
         "created_at": "2025-08-30T00:00:00.000Z"
-      },
-      {
-        "id": 2,
-        "type": 2,
-        "user_id": 3,
-        "nickname": "趙六",
-        "content": "你的評論被贊了",
-        "created_at": "2025-08-30T01:00:00.000Z"
-      }
-    ]
-  }
-}
-```
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "通知": [
-      {
-        "識別碼": 1,
-        "類型": "評論",
-        "發送者識別碼": 2,
-        "發送者別名": "用戶2",
-        "發送者頭像": "https://example.com/avatar2.jpg",
-        "發送者驗證": 0,
-        "貼文識別碼": 1,
-        "貼文標題": "筆記標題",
-        "評論內容": "評論內容",
-        "是否已讀": 0,
-        "創建時間": "2025-08-30T00:00:00.000Z"
       }
     ],
-    "分頁": {
-      "頁數": 1,
-      "每頁限制": 20,
-      "總數": 10,
-      "頁數總數": 1
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 10,
+      "pages": 1
     }
   }
 }
 ```
 
-### 2. 取得讚同通知
+### 2. 取得按讚通知
 **接口地址**: `GET /api/notifications/likes`
 **需要認證**: 是
 
 **請求參數**:
-| 參數 | 種類 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| 頁數 | int | 否 | 頁碼，默認1 |
-| 每頁數量 | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
-  "message": "成功",
+  "message": "success",
   "data": {
-    "通知": [
+    "notifications": [
       {
-        "識別碼": 2,
-        "類型": "讚同",
-        "發送者識別碼": 3,
-        "發送者別名": "用戶3",
-        "發送者頭像": "https://example.com/avatar3.jpg",
-        "發送者驗證": 0,
-        "目標類型": "貼文",
-        "貼文識別碼": 1,
-        "貼文標題": "筆記標題",
-        "是否已讀": 0,
-        "創建時間": "2025-08-30T00:00:00.000Z"
+        "id": 2,
+        "type": "like",
+        "sender_id": 3,
+        "sender_nickname": "用戶3",
+        "sender_avatar": "https://example.com/avatar3.jpg",
+        "sender_verified": 0,
+        "target_type": "post",
+        "post_id": 1,
+        "post_title": "筆記標題",
+        "post_author_id": "author_001",
+        "is_read": 0,
+        "created_at": "2025-08-30T00:00:00.000Z"
       }
     ],
-    "分頁": {
-      "頁數": 1,
-      "每頁限制": 20,
-      "總數": 5,
-      "頁數總數": 1
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "pages": 1
     }
   }
 }
@@ -1728,166 +1933,131 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是
 
 **請求參數**:
-| 參數 | 種類 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| 頁數 | int | 否 | 頁碼，默認1 |
-| 每頁數量 | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
-  "message": "成功",
+  "message": "success",
   "data": {
-    "通知": [
+    "notifications": [
       {
-        "識別碼": 3,
-        "類型": "關注",
-        "發送者識別碼": 4,
-        "發送者別名": "用戶4",
-        "發送者頭像": "https://example.com/avatar4.jpg",
-        "發送者驗證": 0,
-        "是否已讀": 0,
-        "創建時間": "2025-08-30T00:00:00.000Z"
+        "id": 3,
+        "type": "follow",
+        "sender_id": 4,
+        "sender_nickname": "用戶4",
+        "sender_avatar": "https://example.com/avatar4.jpg",
+        "sender_verified": 0,
+        "is_read": 0,
+        "created_at": "2025-08-30T00:00:00.000Z"
       }
     ],
-    "分頁": {
-      "頁數": 1,
-      "每頁限制": 20,
-      "總數": 3,
-      "頁數總數": 1
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 3,
+      "pages": 1
     }
   }
 }
 ```
 
-### 4. 將通知標記為已讀
-**接口地址**: `PUT /api/notifications/:id/read`
-**需要認證**: 是
-
-**路徑參數**:
-| 參數 | 種類 | 必填 | 說明 |
-|------|------|------|------|
-| id | int | 是 | 通知識別碼 |
-
-**回應範例**:
-```json
-{
-  "code": 200,
-  "message": "標記成功"
-}
-```
-
-### 5. 取得收藏通知
+### 4. 取得收藏通知
 **接口地址**: `GET /api/notifications/collections`
 **需要認證**: 是
 
 **請求參數**:
-| 參數 | 種類 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| 頁數 | int | 否 | 頁碼，默認1 |
-| 每頁數量 | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
-  "message": "成功",
+  "message": "success",
   "data": {
-    "通知": [
-      // 此處應包含收藏通知的相關資訊
-    ],
-    "分頁": {
-      "頁數": 1,
-      "每頁限制": 20,
-      "總數": // 通知總數，
-      "頁數總數": // 總頁數
-    }
-  }
-}
-```
-
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "通知": [
+    "notifications": [
       {
         "id": 4,
-        "型態": "收藏",
-        "發送者ID": 5,
-        "發送者昵稱": "用戶5",
-        "發送者頭像": "https://example.com/avatar5.jpg",
-        "發送者驗證": 0,
-        "貼文ID": 1,
-        "貼文標題": "筆記標題",
-        "貼文圖片": "https://example.com/post_image.jpg",
-        "是否已讀": 0,
-        "建立時間": "2025-08-30T00:00:00.000Z"
+        "type": "collection",
+        "sender_id": 5,
+        "sender_nickname": "用戶5",
+        "sender_avatar": "https://example.com/avatar5.jpg",
+        "sender_verified": 0,
+        "post_id": 1,
+        "post_title": "筆記標題",
+        "post_image": "https://example.com/post_image.jpg",
+        "is_read": 0,
+        "created_at": "2025-08-30T00:00:00.000Z"
       }
     ],
-    "分頁": {
-      "頁數": 1,
-      "每頁數量": 20,
-      "總數": 2,
-      "頁數總數": 1
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 2,
+      "pages": 1
     }
   }
 }
 ```
 
-### 5. 獲取所有通知
+### 5. 取得所有通知
 **接口地址**: `GET /api/notifications`
 **需要認證**: 是
 
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 
-**響應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
-  "message": "成功",
+  "message": "success",
   "data": {
-    "通知": [
+    "notifications": [
       {
         "id": 1,
-        "型態": "評論",
-        "發送者ID": 2,
-        "發送者昵稱": "用戶2",
-        "發送者頭像": "https://example.com/avatar2.jpg",
-        "發送者驗證": 0,
-        "貼文ID": 1,
-        "貼文標題": "筆記標題",
-        "評論內容": "評論內容",
-        "是否已讀": 0,
-        "建立時間": "2025-08-30T00:00:00.000Z"
+        "type": "comment",
+        "sender_id": 2,
+        "sender_nickname": "用戶2",
+        "sender_avatar": "https://example.com/avatar2.jpg",
+        "sender_verified": 0,
+        "post_id": 1,
+        "post_title": "筆記標題",
+        "comment_content": "評論內容",
+        "is_read": 0,
+        "created_at": "2025-08-30T00:00:00.000Z"
       }
     ],
-    "分頁": {
-      "頁數": 1,
-      "每頁數量": 20,
-      "總數": 15,
-      "頁數總數": 1
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 15,
+      "pages": 1
     }
   }
 }
 ```
 
-### 6. 标记通知为已读
+### 6. 標記通知為已讀
 **接口地址**: `PUT /api/notifications/:id/read`
-**需要认证**: 是
+**需要認證**: 是
 
 **路徑參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 通知ID |
 
-**響應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1895,11 +2065,11 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 7. 标记所有通知为已读
+### 7. 標記所有通知為已讀
 **接口地址**: `PUT /api/notifications/read-all`
-**需要认证**: 是
+**需要認證**: 是
 
-**響應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1907,16 +2077,16 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 8. 删除通知
+### 8. 刪除通知
 **接口地址**: `DELETE /api/notifications/:id`
-**需要认证**: 是
+**需要認證**: 是
 
 **路徑參數**:
-| 参数 | 类型 | 必填 | 说明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 通知ID |
 
-**響應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1924,17 +2094,17 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-### 9. 获取未读通知数量
+### 9. 取得未讀通知數量
 **接口地址**: `GET /api/notifications/unread-count`
-**需要认证**: 是
+**需要認證**: 是
 
-**響應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
-  "message": "成功",
+  "message": "success",
   "data": {
-    "未讀通知數量": 5
+    "unread_count": 5
   }
 }
 ```
@@ -1943,7 +2113,7 @@ Authorization: Bearer <your_jwt_token>
 
 ## 圖片上傳接口
 
-### 1. 单圖片上傳
+### 1. 單圖片上傳
 **接口地址**: `POST /api/upload/single`
 **需要認證**: 是
 
@@ -1951,17 +2121,17 @@ Authorization: Bearer <your_jwt_token>
 - 使用 `multipart/form-data` 格式
 - 文件字段名: `file`
 - 支持格式: jpg, jpeg, png, webp
-- 文件大小限制: 5MB
+- 文件大小限制: 10MB
 
-**響應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
   "message": "圖片上傳成功",
   "data": {
-    "原始名稱": "image.jpg",
-    "大小": 1024000,
-    "網址": "https://img.example.com/1640995200000_image.jpg"
+    "originalname": "image.jpg",
+    "size": 1024000,
+    "url": "https://img.example.com/1640995200000_image.jpg"
   }
 }
 ```
@@ -1975,9 +2145,9 @@ Authorization: Bearer <your_jwt_token>
 - 文件欄位名: `files`
 - 最多支持9個文件
 - 支持格式: jpg, jpeg, png, webp
-- 单文件大小限制: 5MB
+- 單文件大小限制: 10MB
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -1997,7 +2167,37 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
+### 3. 單視頻上傳
+**接口地址**: `POST /api/upload/video`
+**需要認證**: 是
 
+**請求參數**:
+- 使用 `multipart/form-data` 格式
+- 文件字段名: `file`
+- 支持格式: mp4, avi, mov, wmv, flv, webm
+- 文件大小限制: 100MB
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "上傳成功",
+  "data": {
+    "originalname": "video.mp4",
+    "size": 10240000,
+    "url": "https://video.example.com/1640995200000_video.mp4",
+    "filePath": "/uploads/videos/1640995200000_video.mp4",
+    "coverUrl": "https://img.example.com/1640995200000_video_thumbnail.jpg"
+  }
+}
+```
+
+**說明**:
+- `url`: 視頻文件的訪問URL
+- `filePath`: 視頻文件在伺服器上的存儲路徑
+- `coverUrl`: 視頻封面圖片URL（如果FFmpeg可用則自動生成，否則為null）
+- 視頻封面圖片會自動從視頻第一幀提取，尺寸為640x360
+- 如果系統未安裝FFmpeg，視頻仍可正常上傳，但不會生成封面圖片
 
 ---
 
@@ -2008,21 +2208,21 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 否
 
 **路徑參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | filename | string | 是 | 圖片檔案名 |
 
 **說明**:
 - 透過 API 路由存取本地儲存的圖片檔案
 - 支援格式: jpg, jpeg, png, gif, webp
-- 自動設定正確的 Content-Type 回應標頭
+- 自動設定正確的 Content-Type 響應標頭
 - 支援瀏覽器快取（Cache-Control: public, max-age=31536000）
 
-**回應**:
+**響應**:
 - 成功: 回傳圖片檔案二進位數據
 - 失敗: 回傳 JSON 格式的錯誤資訊
 
-**錯誤範例**:
+**錯誤示例**:
 ```json
 {
   "code": 404,
@@ -2035,21 +2235,22 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 否
 
 **路徑參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | filename | string | 是 | 影片檔案名 |
 
 **說明**:
 - 透過 API 路由存取本地儲存的影片檔案
-- 支援格式: mp4, avi, mov, wmv, flv, mkv
-- 自動設定正確的 Content-Type 回應標頭
+- 支援格式: mp4, avi, mov, wmv, flv, webm
+- 自動設定正確的 Content-Type 響應標頭
 - 支援瀏覽器快取（Cache-Control: public, max-age=31536000）
+- 使用流式傳輸，最佳化大檔案處理的記憶體佔用
 
-**回應**:
+**響應**:
 - 成功: 回傳影片檔案二進位數據
 - 失敗: 回傳 JSON 格式的錯誤資訊
 
-**錯誤範例**:
+**錯誤示例**:
 ```json
 {
   "code": 404,
@@ -2058,11 +2259,11 @@ Authorization: Bearer <your_jwt_token>
 ```
 
 **安全特性**:
+- 檔名驗證（只允許字母、數字、下劃線、點、連字符）
 - 防範路徑遍歷攻擊（Path Traversal）
 - 檔案類型驗證，只允許特定格式的檔案
+- 檔案大小限制
 - 檔案存在性檢查，避免不存在的檔案請求
-- 檔案大小限制，防止過大檔案影響服務器性能
-
 
 ---
 
@@ -2073,7 +2274,7 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是
 
 **請求參數**:
-| 參數 | 階別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | target_type | int | 是 | 目標類型（1:筆記, 2:評論） |
 | target_id | int | 是 | 目標ID |
@@ -2082,7 +2283,7 @@ Authorization: Bearer <your_jwt_token>
 - 如果用戶未按讚，則執行按讚操作
 - 如果用戶已按讚，則執行取消按讚操作
 
-**請求範例**:
+**請求示例**:
 ```json
 {
   "target_type": 1,
@@ -2090,7 +2291,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -2106,12 +2307,12 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是
 
 **請求參數**:
-| 參數 | 階別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | target_type | int | 是 | 目標類型（1:筆記, 2:評論） |
 | target_id | int | 是 | 目標ID |
 
-**請求範例**:
+**請求示例**:
 ```json
 {
   "target_type": 1,
@@ -2119,7 +2320,7 @@ Authorization: Bearer <your_jwt_token>
 }
 ```
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -2132,18 +2333,18 @@ Authorization: Bearer <your_jwt_token>
 **需要認證**: 是
 
 **請求參數**:
-| 參數 | 階別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | post_id | int | 是 | 筆記ID |
 
-**請求範例**:
+**請求示例**:
 ```json
 {
   "post_id": 1
 }
 ```
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -2158,10 +2359,11 @@ Authorization: Bearer <your_jwt_token>
 
 ## 標籤相關接口
 
-### 1. 取得標籤列表
+### 1. 取得所有標籤
 **接口地址**: `GET /api/tags`
+**需要認證**: 否
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -2170,9 +2372,7 @@ Authorization: Bearer <your_jwt_token>
     {
       "id": 1,
       "name": "生活",
-      "description": "生活相關內容",
       "use_count": 100,
-      "is_hot": 1,
       "created_at": "2025-08-30T00:00:00.000Z"
     }
   ]
@@ -2181,18 +2381,14 @@ Authorization: Bearer <your_jwt_token>
 
 ### 2. 取得熱門標籤
 **接口地址**: `GET /api/tags/hot`
-
-**說明**: 返回最多10個熱門標籤
-
----
-
-## 標籤相關接口
-
-### 1. 取得所有標籤
-**接口地址**: `GET /api/tags`
 **需要認證**: 否
 
-**回應範例**:
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| limit | int | 否 | 返回數量，預設10 |
+
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -2200,33 +2396,7 @@ Authorization: Bearer <your_jwt_token>
   "data": [
     {
       "id": 1,
-      "name": "攝影",
-      "description": "攝影相關內容",
-      "use_count": 150,
-      "created_at": "2025-08-30T00:00:00.000Z"
-    }
-  ]
-}
-
-### 2. 取得熱門標籤
-**接口位置**: `GET /api/tags/hot`
-**需要認證**: 否
-
-**請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
-|------|------|------|------|
-| limit | int | 否 | 返回數量，預設10 |
-
-**回應範例**:
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "id": 1,
-      "name": "攝影",
-      "description": "攝影相關內容",
+      "name": "生活",
       "use_count": 150,
       "created_at": "2025-08-30T00:00:00.000Z"
     }
@@ -2239,10 +2409,10 @@ Authorization: Bearer <your_jwt_token>
 ## 統計相關接口
 
 ### 1. 取得系統統計資訊
-**接口位置**: `GET /api/stats`
+**接口地址**: `GET /api/stats`
 **需要認證**: 否
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -2261,10 +2431,10 @@ Authorization: Bearer <your_jwt_token>
 ## 健康檢查接口
 
 ### 1. 健康檢查
-**接口位置**: `GET /api/health`
+**接口地址**: `GET /api/health`
 **需要認證**: 否
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -2279,11 +2449,11 @@ Authorization: Bearer <your_jwt_token>
 ## 搜尋相關接口
 
 ### 1. 通用搜尋
-**接口位置**: `GET /api/search`
+**接口地址**: `GET /api/search`
 **需要認證**: 否（選擇性）
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | keyword | string | 否 | 搜尋關鍵詞 |
 | tag | string | 否 | 標籤搜尋 |
@@ -2291,7 +2461,7 @@ Authorization: Bearer <your_jwt_token>
 | page | int | 否 | 頁碼，預設1 |
 | limit | int | 否 | 每頁數量，預設20 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -2346,277 +2516,84 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
-## 統計相關接口
-
-### 1. 取得統計數據
-**接口位置**: `GET /api/stats`
-
-**回應範例**:
-```json
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "users": 1000,
-    "posts": 5000,
-    "comments": 10000,
-    "likes": 20000
-  }
-}
-```
-
----
-
----
-
 ## 錯誤碼說明
 
 | 錯誤碼 | 說明 |
-|--------|------|
+|------|------|
 | 400 | 請求參數錯誤 |
 | 404 | 資源不存在 |
 | 500 | 伺服器內部錯誤 |
 
-## 使用範例
+---
 
-### 使用curl測試接口
+## 使用示例
+
+### 使用 curl 測試接口
 
 ```bash
-# 使用者註冊
+# 用戶註冊
 curl -X POST "http://localhost:3001/api/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "test_user",
-    "nickname": "測試使用者",
-    "password": "123456"
-  }'
+  -d '{"user_id": "test_user", "nickname": "測試用戶", "password": "123456"}'
 
-# 使用者登錄
+# 用戶登錄
 curl -X POST "http://localhost:3001/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "test_user",
-    "password": "123456"
-  }'
+  -d '{"user_id": "test_user", "password": "123456"}'
 
-# 獲取當前使用者信息（需要認證）
+# 需要認證的接口統一攜帶 JWT
 curl -X GET "http://localhost:3001/api/auth/me" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
-# 獲取使用者列表
-curl -X GET "http://localhost:3001/api/users?page=1&limit=10"
-
-# 獲取筆記詳情
-curl -X GET "http://localhost:3001/api/posts/1"
-
-# 創建筆記（需要認證）
-curl -X POST "http://localhost:3001/api/posts" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "title": "測試筆記",
-    "content": "這是測試內容",
-    "category_id": 1
-  }'
-
-# 創建評論（需要認證）
-curl -X POST "http://localhost:3001/api/comments" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "post_id": 1,
-    "content": "這是一條測試評論"
-  }'
-
-# 按讚筆記（需要認證）
-curl -X POST "http://localhost:3001/api/posts/1/like" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# 收藏筆記（需要認證）
-curl -X POST "http://localhost:3001/api/posts/1/collect" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# 关注使用者（需要認證）
-curl -X POST "http://localhost:3001/api/users/2/follow" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# 上傳單個文件（需要認證）
+# 表單類請求（文件上傳）使用 multipart/form-data
 curl -X POST "http://localhost:3001/api/upload/single" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -F "file=@/path/to/your/image.jpg"
-
-# 獲取通知（需要認證）
-curl -X GET "http://localhost:3001/api/notifications/comments" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# 搜尋筆記
-curl -X GET "http://localhost:3001/api/search?keyword=生活"
 ```
 
-### 使用JavaScript測試接口
+### 使用 JavaScript 調用接口
 
 ```javascript
-// 設置基礎URL和token
 const API_BASE = 'http://localhost:3001';
-let authToken = localStorage.getItem('auth_token');
 
-// 通用請求函數
 async function apiRequest(url, options = {}) {
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers
-    },
+  const response = await fetch(`${API_BASE}${url}`, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options
-  };
-  
-  if (authToken && !config.headers.Authorization) {
-    config.headers.Authorization = `Bearer ${authToken}`;
-  }
-  
-  const response = await fetch(`${API_BASE}${url}`, config);
+  });
   return response.json();
 }
-```
 
-// 用戶註冊
-async function register() {
-  const result = await apiRequest('/api/auth/register', {
-    method: 'POST',
-    body: JSON.stringify({
-      user_id: 'test_user',
-      nickname: '測試用戶',
-      password: '123456'
-    })
-  });
-  
-  if (result.code === 200) {
-    authToken = result.data.tokens.access_token;
-    localStorage.setItem('auth_token', authToken);
-  }
-  
-  return result;
-}
-
-// 用戶登錄
-async function login() {
-  const result = await apiRequest('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({
-      user_id: 'test_user',
-      password: '123456'
-    })
-  });
-  
-  if (result.code === 200) {
-    authToken = result.data.tokens.access_token;
-    localStorage.setItem('auth_token', authToken);
-  }
-  
-  return result;
-}
-
-// 獲取當前用戶信息
-async function getCurrentUser() {
-  return await apiRequest('/api/auth/me');
-}
-
-// 獲取筆記列表
-async function getPosts(page = 1, limit = 10) {
-  return await apiRequest(`/api/posts?page=${page}&limit=${limit}`);
-}
-
-// 創建筆記
-async function createPost(postData) {
-  return await apiRequest('/api/posts', {
-    method: 'POST',
-    body: JSON.stringify(postData)
-  });
-}
-
-// 赞同筆記
-async function likePost(postId) {
-  return await apiRequest(`/api/posts/${postId}/like`, {
-    method: 'POST'
-  });
-}
-
-// 收藏筆記
-async function collectPost(postId) {
-  return await apiRequest(`/api/posts/${postId}/collect`, {
-    method: 'POST'
-  });
-}
-
-// 关注用戶
-async function followUser(userId) {
-  return await apiRequest(`/api/users/${userId}/follow`, {
-    method: 'POST'
-  });
-}
-
-// 上傳文件
-async function uploadFile(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  return await apiRequest('/api/upload/single', {
-    method: 'POST',
-    headers: {
-      // 不設定Content-Type，讓瀏覽器自動設定multipart/form-data
-      Authorization: `Bearer ${authToken}`
-    },
-    body: formData
-  });
-}
-
-// 獲取通知
-async function getNotifications(type = 'comments', page = 1) {
-  return await apiRequest(`/api/notifications/${type}?page=${page}`);
-}
-
-// 使用範例
 async function example() {
-  try {
-    // 登錄
-    const loginResult = await login();
-    console.log('登錄結果:', loginResult);
-    
-    // 獲取筆記列表
-    const posts = await getPosts();
-    console.log('筆記列表:', posts);
-    
-    // 創建筆記
-    const newPost = await createPost({
-      title: '測試筆記',
-      content: '這是測試內容',
-      category_id: 1
-    });
-    console.log('創建筆記結果:', newPost);
-    
-    // 赞同筆記
-    if (posts.data.posts.length > 0) {
-      const likeResult = await likePost(posts.data.posts[0].id);
-      console.log('赞同結果:', likeResult);
-    }
-    
-  } catch (error) {
-    console.error('API調用錯誤:', error);
-  }
+  // 登錄並保存訪問令牌
+  const login = await apiRequest('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: 'test_user', password: '123456' })
+  });
+  const token = login.data.tokens.access_token;
+
+  // 攜帶令牌調用受保護接口
+  const profile = await apiRequest('/api/auth/me', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  console.log(profile);
 }
+
+example();
+```
 
 ---
 
 ## 注意事項
 
-1. **認證要求**: 需要認證的接口必须在請求頭中攜帶有效的JWT token
-2. **Token管理**: 存取令牌有效期为1小時，刷新令牌有效期为7天
+1. **認證要求**: 需要認證的接口必須在請求頭中攜帶有效的JWT token
+2. **Token管理**: 存取令牌有效期為7天，刷新令牌有效期為30天，服務端會話7天且每次刷新令牌後順延，詳見「通用說明 - 認證說明」
 3. **請求格式**: 所有POST/PUT請求需要設置`Content-Type: application/json`（文件上傳除外）
-4. **圖片上傳**: 圖片上傳接口使用`multipart/form-data`格式，支持jpg、jpeg、png、gif、webp格式，單圖片最大5MB
+4. **圖片上傳**: 圖片上傳接口使用`multipart/form-data`格式，支持jpg、jpeg、png、gif、webp格式，單圖片最大10MB
 5. **狀態切換**: 按讚、收藏、關注等操作支持切換狀態（已按讚則取消按讚）
-6. **自動更新**: 访問筆記詳情會自動增加瀏覽量，創建評論會自動更新筆記的評論數
+6. **自動更新**: 訪問筆記詳情會自動增加瀏覽量，創建評論會自動更新筆記的評論數
 7. **關係更新**: 關注操作會自動更新用戶的關注數和粉絲數
-8. **搜索功能**: 搜索功能支持標題和內容的模糊匹配
+8. **搜尋功能**: 搜尋功能支持標題和內容的模糊匹配
 9. **通知系統**: 評論、按讚、關注等操作會自動生成通知
 10. **數據驗證**: 用戶註冊時會驗證用戶ID唯一性和密碼強度（6-20位）
 
@@ -2628,6 +2605,8 @@ async function example() {
 管理員接口使用JWT認證方式：
 - 管理員需要先透過登錄接口獲取JWT token
 - 在後續請求中在請求頭中攜帶 `Authorization: Bearer <token>`
+- 管理員令牌攜帶 `type: 'admin'` 聲明，會話記錄存放在 `admin_sessions` 表，與用戶端令牌互不通用，不能跨端調用
+- 管理員會話有效期為7天，調用 `POST /api/auth/admin/refresh` 可刷新令牌並順延會話
 
 ### 1. 管理員登錄
 **接口地址**: `POST /api/auth/admin/login`
@@ -2638,7 +2617,7 @@ async function example() {
 | username | string | 是 | 管理員用戶名 |
 | password | string | 是 | 管理員密碼 |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -2661,7 +2640,7 @@ async function example() {
 **接口地址**: `GET /api/auth/admin/me`
 **需要認證**: 是（JWT）
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -2671,25 +2650,48 @@ async function example() {
     "username": "admin"
   }
 }
+```
 
-### 3. 用戶管理
+### 3. 管理員刷新令牌
+**接口地址**: `POST /api/auth/admin/refresh`
 
-#### 3.1 獲取用戶清單
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| refresh_token | string | 是 | 管理員刷新令牌 |
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "令牌刷新成功",
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expires_in": 3600
+  }
+}
+```
+
+### 4. 用戶管理
+
+#### 4.1 獲取用戶清單
 **接口地址**: `GET /api/admin/users`
 **需要認證**: 是
 
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| user_display_id | string | 否 | 小石榴號搜索 |
-| nickname | string | 否 | 昵稱搜索 |
-| status | int | 否 | 狀態過濾（1=活躍，0=禁用） |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| user_display_id | string | 否 | 小石榴號搜尋 |
+| nickname | string | 否 | 昵稱搜尋 |
+| status | int | 否 | 狀態篩選（1=活躍，0=禁用） |
+| ban_status | string | 否 | 封禁狀態篩選（normal=正常，banned=封禁） |
 | sortField | string | 否 | 排序字段（id, fans_count, like_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 3.2 創建用戶
+#### 4.2 創建用戶
 **接口地址**: `POST /api/admin/users`
 **需要認證**: 是
 
@@ -2703,15 +2705,15 @@ async function example() {
 | bio | string | 否 | 個人簡介 |
 | location | string | 否 | 所在地 |
 
-#### 3.3 更新用戶
+#### 4.3 更新用戶
 **接口地址**: `PUT /api/admin/users/:id`
 **需要認證**: 是
 
-#### 3.4 刪除用戶
+#### 4.4 刪除用戶
 **接口地址**: `DELETE /api/admin/users/:id`
 **需要認證**: 是
 
-#### 3.5 批量刪除用戶
+#### 4.5 批量刪除用戶
 **接口地址**: `DELETE /api/admin/users`
 **需要認證**: 是
 
@@ -2720,556 +2722,610 @@ async function example() {
 |------|------|------|------|
 | ids | array | 是 | 用戶ID陣列 |
 
-### 4. 記錄管理
+#### 4.6 封禁用戶
+**接口地址**: `POST /api/admin/users/:id/ban`
+**需要認證**: 是
 
-#### 4.1 獲取記錄清單
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 用戶ID |
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| reason | string | 是 | 封禁原因 |
+| end_time | string | 否 | 封禁結束時間（格式：YYYY-MM-DD HH:MM:SS，留空為永久封禁） |
+
+**請求示例**:
+```json
+{
+  "reason": "發布違規內容",
+  "end_time": "2026-03-31 23:59:59"
+}
+```
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "用戶封禁成功"
+}
+```
+
+**功能說明**:
+- 封禁用戶會自動設置用戶的 is_active 為 0，禁止用戶登錄
+- 封禁記錄會保存到 user_ban 表
+- 如果指定了 end_time，系統會在到期時自動解封並恢復 is_active
+- 如果不指定 end_time，則為永久封禁
+
+#### 4.7 解封用戶
+**接口地址**: `POST /api/admin/users/:id/unban`
+**需要認證**: 是
+
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 用戶ID |
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "用戶解封成功"
+}
+```
+
+**功能說明**:
+- 解封用戶會自動恢復用戶的 is_active 為 1，允許用戶登錄
+- 所有活躍的封禁記錄狀態會更新為「管理員解封」
+- 會顯示封禁的詳細信息（原因、結束時間、創建時間）
+
+### 5. 筆記管理
+
+#### 5.1 獲取筆記列表
 **接口地址**: `GET /api/admin/posts`
 **需要認證**: 是
 
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| title | string | 否 | 标題搜索 |
-| user_display_id | string | 否 | 作者小石榴號過濾 |
-| category_id | int | 否 | 分類ID過濾 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| title | string | 否 | 標題搜尋 |
+| user_display_id | string | 否 | 作者小石榴號篩選 |
+| category_id | int | 否 | 分類ID篩選 |
 | sortField | string | 否 | 排序字段（id, view_count, like_count, collect_count, comment_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 4.2 創建記錄
-**接口地址**: `POST /api/admin/posts`
-**需要認證**: 是
-
-#### 4.3 更新記錄
-**接口地址**: `PUT /api/admin/posts/:id`
-**需要認證**: 是
-
-#### 4.4 刪除記錄
-**接口地址**: `DELETE /api/admin/posts/:id`
-**需要認證**: 是
-
-#### 4.5 批量刪除記錄
-**接口地址**: `DELETE /api/admin/posts`
-**需要認證**: 是
-
-#### 4.6 獲取記錄詳情
+#### 5.2 獲取筆記詳情
 **接口地址**: `GET /api/admin/posts/:id`
 **需要認證**: 是
 
 **路徑參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| id | int | 是 | 記錄ID |
+| id | int | 是 | 筆記ID |
 
-**說明**: 管理員可查看所有狀態的記錄（包括草稿和待審核）
+**說明**: 管理員可查看所有狀態的筆記（包括草稿和待審核）
 
-### 5. 記錄審核管理
+#### 5.3 創建筆記
+**接口地址**: `POST /api/admin/posts`
+**需要認證**: 是
 
-#### 5.1 獲取待審核記錄清單
+#### 5.4 更新筆記
+**接口地址**: `PUT /api/admin/posts/:id`
+**需要認證**: 是
+
+#### 5.5 刪除筆記
+**接口地址**: `DELETE /api/admin/posts/:id`
+**需要認證**: 是
+
+#### 5.6 批量刪除筆記
+**接口地址**: `DELETE /api/admin/posts`
+**需要認證**: 是
+
+### 6. 筆記審核管理
+
+#### 6.1 獲取待審核筆記列表
 **接口地址**: `GET /api/admin/posts-audit`
 **需要認證**: 是
 
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| keyword | string | 否 | 搜索關鍵詞（標題或內容） |
-| user_display_id | string | 否 | 按作者小石榴號過濾 |
-| category_id | int/string | 否 | 分類ID過濾，傳"null"過濾未分類記錄 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| keyword | string | 否 | 搜尋關鍵詞（標題或內容） |
+| user_display_id | string | 否 | 按作者小石榴號篩選 |
+| category_id | int/string | 否 | 分類ID篩選，傳"null"篩選未分類筆記 |
 
 **響應數據**:
 | 字段 | 類型 | 說明 |
 |------|------|------|
-| id | int | 記錄ID |
-| title | string | 記錄標題 |
-| content | string | 記錄內容 |
-| type | int | 記錄類型：1-圖文，2-視頻 |
+| id | int | 筆記ID |
+| title | string | 筆記標題 |
+| content | string | 筆記內容 |
+| type | int | 筆記類型：1-圖文，2-視頻 |
 | category | string | 分類名稱 |
-| status | int | 記錄狀態：2-待審核 |
+| status | int | 筆記狀態：2-待審核 |
 | user_display_id | string | 作者小石榴號 |
 | nickname | string | 作者昵稱 |
 | tags | array | 標籤清單 |
 | images | array | 圖片URL清單 |
 | created_at | datetime | 創建時間 |
 
-#### 5.2 審核通過
+#### 6.2 審核通過
 **接口地址**: `PUT /api/admin/posts-audit/:id/approve`
 **需要認證**: 是
 
 **路徑參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| id | int | 是 | 記錄ID |
+| id | int | 是 | 筆記ID |
 
-**說明**: 將記錄狀態更新為已發布（status=0），同時更新審核記錄
+**說明**: 將筆記狀態更新為已發布（status=0），同時更新審核記錄
 
-#### 5.3 拒絕發布
+#### 6.3 拒絕發布
 **接口地址**: `PUT /api/admin/posts-audit/:id/reject`
 **需要認證**: 是
 
 **路徑參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| id | int | 是 | 記錄ID |
+| id | int | 是 | 筆記ID |
 
-**說明**: 將記錄狀態更新為草稿（status=1），同時更新審核記錄
+**說明**: 將筆記狀態更新為草稿（status=1），同時更新審核記錄
 
-#### 5.4 批量刪除待審核記錄
+#### 6.4 批量刪除待審核筆記
 **接口地址**: `DELETE /api/admin/posts-audit`
 **需要認證**: 是
 
 **請求體**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| ids | array | 是 | 要刪除的記錄ID數組 |
+| ids | array | 是 | 要刪除的筆記ID數組 |
 
-### 6. 評論管理
+### 7. 評論管理
 
-#### 6.1 獲取評論清單
+#### 7.1 獲取評論清單
 **接口地址**: `GET /api/admin/comments`
 **需要認證**: 是
 
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| content | string | 否 | 內容搜索 |
-| user_display_id | string | 否 | 評論者小石榴號過濾 |
-| post_id | int | 否 | 記錄ID過濾 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| content | string | 否 | 內容搜尋 |
+| user_display_id | string | 否 | 評論者小石榴號篩選 |
+| post_id | int | 否 | 記錄ID篩選 |
 | sortField | string | 否 | 排序字段（id, like_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 6.2 創建評論
-```
-
-**接口位置**: `POST /api/admin/comments`
-**需要驗證**: 是
+#### 7.2 創建評論
+**接口地址**: `POST /api/admin/comments`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | content | string | 是 | 評論內容 |
 | user_id | int | 是 | 評論者ID |
-| post_id | int | 是 | 詩篇ID |
+| post_id | int | 是 | 筆記ID |
 | parent_id | int | 否 | 父評論ID（回覆評論時使用） |
 
-#### 6.3 更新評論
-**接口位置**: `PUT /api/admin/comments/:id`
-**需要驗證**: 是
+#### 7.3 更新評論
+**接口地址**: `PUT /api/admin/comments/:id`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | content | string | 否 | 評論內容 |
 
-#### 6.4 刪除評論
-**接口位置**: `DELETE /api/admin/comments/:id`
-**需要驗證**: 是
+#### 7.4 刪除評論
+**接口地址**: `DELETE /api/admin/comments/:id`
+**需要認證**: 是
 
-#### 6.5 批量刪除評論
-**接口位置**: `DELETE /api/admin/comments`
-**需要驗證**: 是
+#### 7.5 批量刪除評論
+**接口地址**: `DELETE /api/admin/comments`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | ids | array | 是 | 評論ID陣列 |
 
-#### 6.6 獲取單個評論詳情
-**接口位置**: `GET /api/admin/comments/:id`
-**需要驗證**: 是
+#### 7.6 獲取單個評論詳情
+**接口地址**: `GET /api/admin/comments/:id`
+**需要認證**: 是
 
-### 7. 標籤管理
+### 8. 標籤管理
 
-#### 7.1 獲取標籤清單
-**接口位置**: `GET /api/admin/tags`
-**需要驗證**: 是
+#### 8.1 獲取標籤清單
+**接口地址**: `GET /api/admin/tags`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| name | string | 否 | 標籤名稱搜索 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| name | string | 否 | 標籤名稱搜尋 |
 | sortField | string | 否 | 排序字段（id, use_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 7.2 創建標籤
-**接口位置**: `POST /api/admin/tags`
-**需要驗證**: 是
+#### 8.2 創建標籤
+**接口地址**: `POST /api/admin/tags`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | name | string | 是 | 標籤名稱 |
 | description | string | 否 | 標籤描述 |
 
-#### 7.3 更新標籤
-**接口位置**: `PUT /api/admin/tags/:id`
-**需要驗證**: 是
+#### 8.3 更新標籤
+**接口地址**: `PUT /api/admin/tags/:id`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | name | string | 否 | 標籤名稱 |
 | description | string | 否 | 標籤描述 |
 
-#### 7.4 刪除標籤
-**接口位置**: `DELETE /api/admin/tags/:id`
-**需要驗證**: 是
+#### 8.4 刪除標籤
+**接口地址**: `DELETE /api/admin/tags/:id`
+**需要認證**: 是
 
-#### 7.5 批量刪除標籤
-**接口位置**: `DELETE /api/admin/tags`
-**需要驗證**: 是
+#### 8.5 批量刪除標籤
+**接口地址**: `DELETE /api/admin/tags`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | ids | array | 是 | 標籤ID陣列 |
 
-#### 7.6 獲取單個標籤詳情
-**接口位置**: `GET /api/admin/tags/:id`
-**需要驗證**: 是
+#### 8.6 獲取單個標籤詳情
+**接口地址**: `GET /api/admin/tags/:id`
+**需要認證**: 是
 
-### 8. 證書審核管理
+### 9. 認證審核管理
 
-#### 8.1 獲取證書申請清單
-**接口位置**: `GET /api/admin/audit`
-**需要驗證**: 是
+#### 9.1 獲取認證申請列表
+**接口地址**: `GET /api/admin/audit`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型別 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| type | int | 否 | 證書類型篩選（1-個人證書，2-企業證書） |
-| status | int | 否 | 审核狀態篩選（0-待審核，1-已通過，2-已拒絕） |
-| user_display_id | string | 否 | 用戶小石榴號搜索 |
-| real_name | string | 否 | 真實姓名搜索 |
-| 排序欄位 | 字串 | 否 | 排序欄位（id, created_at, audit_time） |
-| 排序順序 | 字串 | 否 | 排序順序（ASC, DESC） |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| type | int | 否 | 認證類型篩選（1-個人認證，2-企業認證） |
+| status | int | 否 | 審核狀態篩選（0-待審核，1-已通過，2-已拒絕） |
+| user_display_id | string | 否 | 用戶小石榴號搜尋 |
+| real_name | string | 否 | 真實姓名搜尋 |
+| sortField | string | 否 | 排序字段（id, created_at, audit_time） |
+| sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-**回應範例**:
-```
-
+**響應示例**:
+```json
 {
   "code": 200,
-  "message": "成功",
+  "message": "success",
   "data": {
-    "核對": [
+    "audits": [
       {
         "id": 1,
         "user_id": 1,
-        "型態": 1,
-        "真實姓名": "張三",
-        "身份證號": "110101199001011234",
-        "身份證正面": "https://example.com/id_front.jpg",
-        "身份證背面": "https://example.com/id_back.jpg",
-        "聯繫電話": "13800138000",
-        "聯繫電子郵件": "zhangsan@example.com",
-        "說明": "申請個人認證",
-        "狀態": 0,
-        "核對時間": null,
-        "拒絕原因": null,
-        "建立時間": "2025-01-02T00:00:00.000Z",
-        "使用者": {
+        "type": 1,
+        "real_name": "張三",
+        "id_card": "110101199001011234",
+        "id_card_front": "https://example.com/id_front.jpg",
+        "id_card_back": "https://example.com/id_back.jpg",
+        "contact_phone": "13800138000",
+        "contact_email": "zhangsan@example.com",
+        "description": "申請個人認證",
+        "status": 0,
+        "audit_time": null,
+        "remark": null,
+        "created_at": "2025-01-02T00:00:00.000Z",
+        "user": {
           "id": 1,
-          "使用者ID": "user_001",
-          "暱稱": "張三",
-          "頭像": "https://example.com/avatar.jpg"
+          "user_id": "user_001",
+          "nickname": "張三",
+          "avatar": "https://example.com/avatar.jpg"
         }
       }
     ],
-    "分頁": {
-      "頁數": 1,
-      "限制": 20,
-      "總數": 1,
-      "頁數總計": 1
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 1,
+      "pages": 1
     }
   }
 }
 ```
 
-#### 8.2 取得認證申請詳情
-**接口位置**: `GET /api/admin/audit/:id`
+#### 9.2 獲取認證申請詳情
+**接口地址**: `GET /api/admin/audit/:id`
 **需要認證**: 是
 
 **路徑參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 認證申請ID |
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
-  "message": "成功",
+  "message": "success",
   "data": {
     "id": 1,
     "user_id": 1,
     "type": 1,
-    "真實姓名": "張三",
-    "身份證號": "110101199001011234",
-    "身份證正面": "https://example.com/id_front.jpg",
-    "身份證背面": "https://example.com/id_back.jpg",
-    "聯繫電話": "13800138000",
-    "聯繫電子郵件": "zhangsan@example.com",
-    "說明": "申請個人認證",
-    "狀態": 0,
-    "核對時間": null,
-    "拒絕原因": null,
-    "建立時間": "2025-01-02T00:00:00.000Z",
-    "使用者": {
+    "real_name": "張三",
+    "id_card": "110101199001011234",
+    "id_card_front": "https://example.com/id_front.jpg",
+    "id_card_back": "https://example.com/id_back.jpg",
+    "contact_phone": "13800138000",
+    "contact_email": "zhangsan@example.com",
+    "description": "申請個人認證",
+    "status": 0,
+    "audit_time": null,
+    "reject_reason": null,
+    "created_at": "2025-01-02T00:00:00.000Z",
+    "user": {
       "id": 1,
-      "使用者ID": "user_001",
-      "暱稱": "張三",
-      "頭像": "https://example.com/avatar.jpg",
-      "驗證": 0
+      "user_id": "user_001",
+      "nickname": "張三",
+      "avatar": "https://example.com/avatar.jpg",
+      "verified": 0
     }
   }
 }
 ```
 
-#### 8.3 核對認證申請（通過）
-**接口位置**: `PUT /api/admin/audit/:id/approve`
+#### 9.3 審核認證申請（通過）
+**接口地址**: `PUT /api/admin/audit/:id/approve`
 **需要認證**: 是
 
 **路徑參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 認證申請ID |
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| remark | string | 否 | 核對備註 |
+| remark | string | 否 | 審核備註 |
 
 **功能說明**:
-- 核對通過後，用戶的認證狀態會自動更新為已認證
-- 系統會記錄核對時間和核對人
-- 可選填寫核對備註
+- 審核通過後，用戶的認證狀態會自動更新為已認證
+- 系統會記錄審核時間和審核人
+- 可選填寫審核備註
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
-  "message": "認證申請核對通過"
+  "message": "認證申請審核通過"
 }
 ```
 
-#### 8.4 核對認證申請（拒絕）
-**接口位置**: `PUT /api/admin/audit/:id/reject`
+#### 9.4 審核認證申請（拒絕）
+**接口地址**: `PUT /api/admin/audit/:id/reject`
 **需要認證**: 是
 
 **路徑參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | id | int | 是 | 認證申請ID |
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| remark | string | 否 | 核對備註 |
+| remark | string | 否 | 審核備註 |
 
 **功能說明**:
-- 核對拒絕後，用戶可以查看拒絕原因
+- 審核拒絕後，用戶可以查看拒絕原因
 - 用戶可以撤回申請後重新提交
 
-**回應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
   "message": "認證申請已拒絕"
 }
+```
 
-### 8. 按讚管理
+### 10. 按讚管理
 
-#### 8.1 獲取按讚清單
-**接口位置**: `GET /api/admin/likes`
-**需要驗證**: 是
+#### 10.1 獲取按讚清單
+**接口地址**: `GET /api/admin/likes`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | page | int | 否 | 頁碼，預設1 |
 | limit | int | 否 | 每頁數量，預設20 |
-| user_display_id | string | 否 | 使用者小石榴號過濾 |
+| user_display_id | string | 否 | 用戶小石榴號篩選 |
 | target_type | int | 否 | 目標類型（1=筆記，2=評論） |
 | sortField | string | 否 | 排序字段（id, user_id, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 8.2 建立按讚
-**接口位置**: `POST /api/admin/likes`
-**需要驗證**: 是
+#### 10.2 建立按讚
+**接口地址**: `POST /api/admin/likes`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | user_id | int | 是 | 用戶ID |
 | target_id | int | 是 | 目標ID（筆記ID或評論ID） |
 | target_type | int | 是 | 目標類型（1=筆記，2=評論） |
 
-#### 8.3 更新按讚
-**接口位置**: `PUT /api/admin/likes/:id`
-**需要驗證**: 是
+#### 10.3 更新按讚
+**接口地址**: `PUT /api/admin/likes/:id`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | target_type | int | 否 | 目標類型（1=筆記，2=評論） |
 
-#### 8.4 刪除按讚
-**接口位置**: `DELETE /api/admin/likes/:id`
-**需要驗證**: 是
+#### 10.4 刪除按讚
+**接口地址**: `DELETE /api/admin/likes/:id`
+**需要認證**: 是
 
-#### 8.5 批量刪除按讚
-**接口位置**: `DELETE /api/admin/likes`
-**需要驗證**: 是
+#### 10.5 批量刪除按讚
+**接口地址**: `DELETE /api/admin/likes`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | ids | array | 是 | 按讚ID陣列 |
 
-#### 8.6 獲取單個按讚詳情
-**接口位置**: `GET /api/admin/likes/:id`
-**需要驗證**: 是
+#### 10.6 獲取單個按讚詳情
+**接口地址**: `GET /api/admin/likes/:id`
+**需要認證**: 是
 
-### 8. 收藏管理
+### 11. 收藏管理
 
-#### 8.1 獲取收藏清單
-**接口位置**: `GET /api/admin/collections`
-**需要驗證**: 是
+#### 11.1 獲取收藏清單
+**接口地址**: `GET /api/admin/collections`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | page | int | 否 | 頁碼，預設1 |
 | limit | int | 否 | 每頁數量，預設20 |
-| user_display_id | string | 否 | 使用者小石榴號過濾 |
+| user_display_id | string | 否 | 用戶小石榴號篩選 |
 | sortBy | string | 否 | 排序字段（id, user_id, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 8.2 建立收藏
-**接口位置**: `POST /api/admin/collections`
-**需要驗證**: 是
+#### 11.2 建立收藏
+**接口地址**: `POST /api/admin/collections`
+**需要認證**: 是
 
-#### 8.3 刪除收藏
-**接口位置**: `DELETE /api/admin/collections/:id`
-**需要驗證**: 是
+#### 11.3 刪除收藏
+**接口地址**: `DELETE /api/admin/collections/:id`
+**需要認證**: 是
 
-#### 8.4 批量刪除收藏
-**接口位置**: `DELETE /api/admin/collections`
-**需要驗證**: 是
+#### 11.4 批量刪除收藏
+**接口地址**: `DELETE /api/admin/collections`
+**需要認證**: 是
 
-### 9. 关注管理
+### 12. 關注管理
 
-#### 9.1 獲取關注清單
-**接口位置**: `GET /api/admin/follows`
-**需要驗證**: 是
+#### 12.1 獲取關注清單
+**接口地址**: `GET /api/admin/follows`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 型態 | 必填 | 說明 |
+| 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | page | int | 否 | 頁碼，預設1 |
 | limit | int | 否 | 每頁數量，預設20 |
-| user_display_id | string | 否 | 使用者小石榴號過濾 |
+| user_display_id | string | 否 | 用戶小石榴號篩選 |
 | sortField | string | 否 | 排序字段（id, follower_id, following_id, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 9.2 建立關注關係
-**接口位置**: `POST /api/admin/follows`
-**需要驗證**: 是
+#### 12.2 建立關注關係
+**接口地址**: `POST /api/admin/follows`
+**需要認證**: 是
 
-#### 9.3 刪除關注關係
-```
+#### 12.3 刪除關注關係
+**接口地址**: `DELETE /api/admin/follows/:id`
+**需要認證**: 是
 
-**接口位置**: `DELETE /api/admin/follows/:id`
-**需要驗證**: 是
+#### 12.4 批量刪除關注關係
+**接口地址**: `DELETE /api/admin/follows`
+**需要認證**: 是
 
-#### 9.4 批量刪除關注關係
-**接口位置**: `DELETE /api/admin/follows`
-**需要驗證**: 是
+### 13. 通知管理
 
-### 10. 通知管理
-
-#### 10.1 獲取通知列表
-**接口位置**: `GET /api/admin/notifications`
-**需要驗證**: 是
+#### 13.1 獲取通知列表
+**接口地址**: `GET /api/admin/notifications`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 項目類型 | 必填 | 說明 |
-|------|----------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| user_display_id | string | 否 | 使用者小石榴號篩選 |
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| user_display_id | string | 否 | 用戶小石榴號篩選 |
 | type | string | 否 | 通知類型篩選 |
 | is_read | int | 否 | 已讀狀態（0=未讀，1=已讀） |
 | sortField | string | 否 | 排序字段（id, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 10.2 創建通知
-**接口位置**: `POST /api/admin/notifications`
-**需要驗證**: 是
+#### 13.2 創建通知
+**接口地址**: `POST /api/admin/notifications`
+**需要認證**: 是
 
-#### 10.3 更新通知
-**接口位置**: `PUT /api/admin/notifications/:id`
-**需要驗證**: 是
+#### 13.3 更新通知
+**接口地址**: `PUT /api/admin/notifications/:id`
+**需要認證**: 是
 
-#### 10.4 刪除通知
-**接口位置**: `DELETE /api/admin/notifications/:id`
-**需要驗證**: 是
+#### 13.4 刪除通知
+**接口地址**: `DELETE /api/admin/notifications/:id`
+**需要認證**: 是
 
-#### 10.5 批量刪除通知
-**接口位置**: `DELETE /api/admin/notifications`
-**需要驗證**: 是
+#### 13.5 批量刪除通知
+**接口地址**: `DELETE /api/admin/notifications`
+**需要認證**: 是
 
-### 11. 会话管理
+### 14. 會話管理
 
-#### 11.1 獲取會話列表
-**接口位置**: `GET /api/admin/sessions`
-**需要驗證**: 是
+#### 14.1 獲取會話列表
+**接口地址**: `GET /api/admin/sessions`
+**需要認證**: 是
 
 **請求參數**:
-| 參數 | 項目類型 | 必填 | 說明 |
-|------|----------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| user_display_id | string | 否 | 使用者小石榴號篩選 |
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| user_display_id | string | 否 | 用戶小石榴號篩選 |
 | is_active | int | 否 | 活躍狀態（0=非活躍，1=活躍） |
 | sortField | string | 否 | 排序字段（id, is_active, expires_at, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 11.2 創建會話
-**接口位置**: `POST /api/admin/sessions`
-**需要驗證**: 是
+#### 14.2 創建會話
+**接口地址**: `POST /api/admin/sessions`
+**需要認證**: 是
 
-#### 11.3 更新會話
-**接口位置**: `PUT /api/admin/sessions/:id`
-**需要驗證**: 是
+#### 14.3 更新會話
+**接口地址**: `PUT /api/admin/sessions/:id`
+**需要認證**: 是
 
-#### 11.4 刪除會話
-**接口位置**: `DELETE /api/admin/sessions/:id`
-**需要驗證**: 是
+#### 14.4 刪除會話
+**接口地址**: `DELETE /api/admin/sessions/:id`
+**需要認證**: 是
 
-#### 11.5 批量刪除會話
-**接口位置**: `DELETE /api/admin/sessions`
-**需要驗證**: 是
+#### 14.5 批量刪除會話
+**接口地址**: `DELETE /api/admin/sessions`
+**需要認證**: 是
 
-### 12. 管理員管理
+### 15. 管理員管理
 
-#### 12.1 測試接口
-**接口位置**: `GET /api/admin/test-users`
-**需要驗證**: 是
+#### 15.1 測試接口
+**接口地址**: `GET /api/admin/test-users`
+**需要認證**: 是
 
-**說明**: 临时測試接口，用於檢查使用者數據
+**說明**: 臨時測試接口，用於檢查用戶數據
 
-**回應範例**:
-```
-
+**響應示例**:
+```json
 {
   "code": 200,
   "data": [
@@ -3282,20 +3338,20 @@ async function example() {
 }
 ```
 
-#### 12.2 獲取管理員清單
+#### 15.2 獲取管理員清單
 **接口地址**: `GET /api/admin/admins` 或 `GET /api/auth/admin/admins`
 **需要認證**: 是
 
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
-| username | string | 否 | 用戶名搜索 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
+| username | string | 否 | 用戶名搜尋 |
 | sortField | string | 否 | 排序字段（username, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
-#### 12.2 創建管理員
+#### 15.3 創建管理員
 **接口地址**: `POST /api/admin/admins` 或 `POST /api/auth/admin/admins`
 **需要認證**: 是
 
@@ -3305,42 +3361,38 @@ async function example() {
 | username | string | 是 | 管理員用戶名 |
 | password | string | 是 | 管理員密碼 |
 
-#### 12.3 更新管理員
+#### 15.4 更新管理員
 **接口地址**: `PUT /api/admin/admins/:id` 或 `PUT /api/auth/admin/admins/:id`
 **需要認證**: 是
 
-#### 12.4 刪除管理員
+#### 15.5 刪除管理員
 **接口地址**: `DELETE /api/admin/admins/:id` 或 `DELETE /api/auth/admin/admins/:id`
 **需要認證**: 是
 
-#### 12.5 批量刪除管理員
+#### 15.6 批量刪除管理員
 **接口地址**: `DELETE /api/admin/admins` 或 `DELETE /api/auth/admin/admins`
 **需要認證**: 是
 
-#### 12.6 修改管理員密碼
+#### 15.7 修改管理員密碼
 **接口地址**: `PUT /api/auth/admin/admins/:id/password`
 **需要認證**: 是（JWT）
 
-#### 12.7 修改管理員狀態
-**接口地址**: `PUT /api/auth/admin/admins/:id/status`
-**需要認證**: 是（JWT）
+### 16. 監控管理
 
-### 13. 監控管理
-
-#### 13.1 獲取系統活動監控
+#### 16.1 獲取系統活動監控
 **接口地址**: `GET /api/admin/monitor/activities`
 **需要認證**: 是
 
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
-| page | int | 否 | 頁碼，默認1 |
-| limit | int | 否 | 每頁數量，默認20 |
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設20 |
 | date_from | string | 否 | 開始日期（YYYY-MM-DD） |
 | date_to | string | 否 | 結束日期（YYYY-MM-DD） |
 | activity_type | string | 否 | 活動類型篩選 |
 
-**響應範例**:
+**響應示例**:
 ```json
 {
   "code": 200,
@@ -3365,7 +3417,7 @@ async function example() {
 }
 ```
 
-### 管理員接口使用範例
+### 管理員接口使用示例
 
 ```bash
 # 管理員登錄

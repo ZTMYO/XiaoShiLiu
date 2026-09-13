@@ -1,135 +1,199 @@
-# 部署指南
+# 小石榴圖文社區部署指南
 
-本文件提供 XiaoShiLiu 圖文社區項目的部署流程及配置說明。
+## 系統需求
 
-## 部署方法
+- **Docker 部署**：Docker 20.10+、Docker Compose 2.0+
+- **傳統部署**：Node.js 18+、MySQL 5.7+、npm 或 yarn
 
-項目支援兩種部署方法：
-
-1. **Docker 一鍵部署**（推薦）- 簡單快捷，適合生產環境
-2. **傳統部署** - 手動配置，適合開發環境
-
-> 💡 **寶塔面板部署**：如果您使用寶塔面板，可以參考這個詳細的圖文教程：[使用寶塔搭建小石榴圖文社區完整教程](https://www.sakuraidc.cc/forum-post/3116.html)
+> 💡 使用寶塔面板部署可參考：[使用寶塔搭建小石榴圖文社區完整教程](https://www.sakuraidc.cc/forum-post/3116.html)
 
 ---
 
-## 🐳 Docker 一鍵部署（推薦）
+## 🐋 Docker 一鍵部署（推薦）
 
-### 環境需求
-
-- Docker >= 20.0
-- Docker Compose >= 2.0
-- 可用記憶體 >= 2GB
-- 可用磁碟空間 >= 5GB
-
-### 圖像和版本說明
-
-| 部件 | 圖像/來源 | 版本/標籤 | 說明 |
-|------|-----------|-------------|-------------|
-| 數據庫 | mysql | 5.7 | 使用官方圖像 `mysql:5.7`，默認配置為 utf8mb4 |
-| 後端運行時 | node | 18-alpine | `express-project/Dockerfile` 使用 `node:18-alpine` |
-| 前端編譯 | node | 18-alpine | `vue3-project/Dockerfile` 在編譯階段使用此圖像 |
-| 前端運行時 | nginx | alpine | 使用 `nginx:alpine` 提供靜態文件 |
-| Compose 健康檢查 | wget | - | 前端健康檢查使用 `wget --spider http://localhost/` |
-
-> 記錄：上述版本與 `docker-compose.yml` 及前端和後端 `Dockerfile` 的版本一致；如需進行修改，請同步調整相關文件和文件說明。
-### 快速啟動
-
-#### 1. 克隆項目
+### 1. 複製專案
 
 ```bash
-git clone https://github.com/ZTMYO/XiaoShiLiu.git
+git clone https://github.com/ZTMYO/XiaoShiLiu
 cd XiaoShiLiu
 ```
 
-#### 2. 配置環境變數
+### 2. 設定環境變數
 
-複製環境配置文件：
+Docker 部署只用根目錄這一份 `.env`，無需再改 `express-project/.env` 和 `vue3-project/.env`：
+
 ```bash
 cp .env.docker .env
 ```
 
-編輯 `.env` 文件，根據需要修改配置：
+真機部署必須檢查的關鍵項：
 
 ```env
-# 資料庫配置
-DB_HOST=mysql
-DB_USER=xiaoshiliu_user
+# ① 資料庫密碼
 DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-DB_PORT=3306
 
-# JWT配置
+# ② JWT 金鑰
 JWT_SECRET=xiaoshiliu_secret_key_2025_docker
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_EXPIRES_IN=30d
 
-# 上傳配置
-# 單張圖片最大文件大小
-IMAGE_MAX_SIZE=10mb
-# 上傳配置
-# 單張圖片最大文件大小
-IMAGE_MAX_SIZE=10mb
-# 單個視頻最大文件大小
-VIDEO_MAX_SIZE=100mb
-# 圖片上傳策略 (local: 本地儲存, imagehost: 第三方圖床, r2: Cloudflare R2, aliyun: 阿里雲 OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# 視頻上傳策略 (local: 本地儲存, r2: Cloudflare R2)
-VIDEO_UPLOAD_STRATEGY=local
-
-# 本地儲存配置
-LOCAL_UPLOAD_DIR=uploads
+# ③ 圖片對外存取地址（改用域名/伺服器 IP 時同步修改，否則圖片裂圖）
 LOCAL_BASE_URL=http://localhost:3001
-VIDEO_UPLOAD_DIR=uploads/videos
-VIDEO_COVER_DIR=uploads/covers
-
-# 第三方圖床配置（當IMAGE_UPLOAD_STRATEGY=imagehost時使用）
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
-IMAGEHOST_TIMEOUT=60000
-
-# Cloudflare R2 配置（當IMAGE_UPLOAD_STRATEGY=r2或VIDEO_UPLOAD_STRATEGY=r2時使用）
-# 如需使用R2儲存，請取消註釋並填入真實配置
-# R2_ACCESS_KEY_ID=your_r2_access_key_id_here
-# R2_SECRET_ACCESS_KEY=your_r2_secret_access_key_here
-# R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
-# R2_BUCKET_NAME=your_bucket_name_here
-# R2_ACCOUNT_ID=your_account_id_here
-# R2_REGION=auto
-# R2_PUBLIC_URL=https://your-custom-domain.com
-
-# 阿里雲 OSS 配置（當 IMAGE_UPLOAD_STRATEGY=aliyun 時使用）
-# 建議使用 RAM 子帳號的 AccessKey，並只授予該 Bucket 的讀寫權限
-# OSS_REGION=oss-cn-hongkong
-# OSS_BUCKET_NAME=your_bucket_name_here
-# OSS_ACCESS_KEY_ID=your_access_key_id_here
-# OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
-# 可選：綁定自訂網域或 CDN 後設定，留空則使用預設網域
-# OSS_PUBLIC_URL=https://img.example.com
-# 可選：物件目錄前綴，按環境或用途隔離圖片（預設 images/）
-# OSS_IMAGE_PREFIX=images/
-
-# API配置
 API_BASE_URL=http://localhost:3001
 
-# 郵件服務配置
-# 是否啟用郵件功能 (true/false)，預設不啟用
+# ④ 需要郵箱驗證時開啟並填寫 SMTP（預設關閉）
 EMAIL_ENABLED=false
-# SMTP伺服器地址
-SMTP_HOST=smtp.qq.com
-# SMTP伺服器端口
-SMTP_PORT=465
-# 是否使用SSL/TLS (true/false)
-SMTP_SECURE=true
-# 郵箱賬號
-SMTP_USER=your_email@example.com
-# 郵箱密碼/授權碼
-SMTP_PASSWORD=your_email_password
-# 發件人郵箱
-EMAIL_FROM=your_email@example.com
-# 發件人名稱
-EMAIL_FROM_NAME=小石榴校園圖文社區
+```
 
-# IP屬地查詢配置
+> 全部變數及註解見 [.env.docker](../../.env.docker)。
+> 宿主機端口固定為 8080（前端）、3001（後端）、3307（資料庫），需要調整請改 [docker-compose.yml](../../docker-compose.yml) 的 `ports` 段，而不是改 `.env`。
+
+### 3. 啟動服務
+
+Windows 推薦使用 PowerShell 腳本：
+
+```powershell
+.\deploy.ps1            # 啟動
+.\deploy.ps1 -Build     # 重新建構並啟動
+.\deploy.ps1 -Seed      # 啟動並灌裝示例資料
+.\deploy.ps1 -Help      # 檢視說明
+```
+
+其他平台使用 Docker Compose：
+
+```bash
+docker-compose up -d
+docker-compose up -d --build   # 重新建構並啟動
+```
+
+> 首次在伺服器啟動前，可先執行 `docker compose config` 驗證編排配置是否合法。
+
+### 4. 存取應用
+
+| 服務 | 地址 |
+|---|---|
+| 前端介面 | http://localhost:8080 |
+| 後端 API | http://localhost:3001 |
+| 資料庫 | localhost:3307 |
+
+部署到伺服器後，把 `localhost` 換成公網 IP 或域名即可存取。資料庫端口 3307 **不要**對公網開放，僅允許本機/內網存取更安全。
+
+### 5. 常用指令
+
+```powershell
+.\deploy.ps1 -Status    # 檢視服務狀態
+.\deploy.ps1 -Logs      # 檢視日誌
+.\deploy.ps1 -Stop      # 停止服務
+.\deploy.ps1 -Clean     # 清理所有資料（謹慎使用）
+```
+
+---
+
+## 🛠️ 傳統部署
+
+### 1. 環境準備
+
+確保已安裝 Node.js 18+、MySQL 5.7+、Git。
+
+### 2. 後端配置
+
+```bash
+cd express-project
+cp .env.example .env
+npm install
+```
+
+編輯 `.env`，以下四項必須確認：
+
+```env
+DB_PASSWORD=123456                      # 資料庫密碼
+JWT_SECRET=xiaoshiliu_secret_key_2025   # JWT 金鑰，生產環境務必更換
+API_BASE_URL=http://localhost:3001      # 後端對外存取地址
+CORS_ORIGIN=http://localhost:5173       # 允許跨域的前端地址
+```
+
+其餘變數（上傳策略、郵件、IP 屬地、違規詞檢測等）保持預設即可，變數的完整列表和註解見 [.env.example](../../express-project/.env.example)，各項含義見下方「配置說明」。
+
+初始化資料庫並啟動服務：
+
+```bash
+npm run init-db        # 建庫建表
+npm run generate-data  # 生成示例資料（可選）
+npm start              # 啟動服務，預設 http://localhost:3001
+```
+
+> 資料庫相關腳本都在 `express-project/scripts/` 下：`init-database.js`（建庫建表）、`init-database.sql`（純 SQL 版，可直接在 MySQL 用戶端執行）、`generate-data.js`（生成示例資料）、`update-sample-images.js`（更新示例圖連結）。
+
+### 3. 前端配置
+
+```bash
+cd vue3-project
+cp .env.example .env
+npm install
+npm run dev            # 開發模式，預設 http://localhost:5173
+```
+
+生產模式建構與預覽：
+
+```bash
+npm run build          # 建構到 dist/
+npm run preview        # 本機預覽，預設 http://localhost:4173
+```
+
+前端 `.env` 預設指向 `http://localhost:3001/api`，後端改端口時需同步修改 `VITE_API_BASE_URL`。
+
+### 4. 存取應用
+
+| 服務 | 地址 |
+|---|---|
+| 前端（開發模式） | http://localhost:5173 |
+| 前端（生產預覽） | http://localhost:4173 |
+| 後端 API | http://localhost:3001 |
+
+---
+
+## 🔧 配置說明
+
+### 上傳配置
+
+圖片上傳策略由 `IMAGE_UPLOAD_STRATEGY` 選擇，共四種：
+
+| 策略 | 取值 | 說明 | 需要配置的變數 |
+|---|---|---|---|
+| 本地儲存 | `local` | 存到伺服器磁碟 | `LOCAL_UPLOAD_DIR`、`LOCAL_BASE_URL` |
+| 第三方圖床 | `imagehost` | 上傳到第三方圖床（預設） | `IMAGEHOST_API_URL`、`IMAGEHOST_TIMEOUT` |
+| Cloudflare R2 | `r2` | 存到 R2 儲存桶 | `R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_ENDPOINT`、`R2_BUCKET_NAME`、`R2_ACCOUNT_ID`、`R2_REGION` |
+| 阿里雲 OSS | `aliyun` | 存到 OSS 儲存桶 | `OSS_REGION`、`OSS_BUCKET_NAME`、`OSS_ACCESS_KEY_ID`、`OSS_ACCESS_KEY_SECRET`、`OSS_IMAGE_PREFIX` |
+
+視頻上傳策略由 `VIDEO_UPLOAD_STRATEGY` 選擇，只支援 `local` 和 `r2`。檔案大小上限由 `IMAGE_MAX_SIZE`（預設 10mb）和 `VIDEO_MAX_SIZE`（預設 100mb）控制。
+
+> 使用 `local` 策略時，`LOCAL_BASE_URL` 必須是瀏覽器能存取到的地址，否則圖片會裂圖。
+
+### Cloudflare R2 配置
+
+1. 登入 Cloudflare 控制台，進入 R2 Object Storage
+2. 建立儲存桶
+3. 生成 API 權杖，權限選擇 R2:Edit
+4. 取得帳戶 ID
+5. 將 `R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_ENDPOINT`、`R2_BUCKET_NAME`、`R2_ACCOUNT_ID`、`R2_REGION=auto` 填入 `.env`
+6. 綁定自訂域名後可另行設定 `R2_PUBLIC_URL`，留空則使用 R2 預設域名
+
+### 阿里雲 OSS 配置
+
+1. 登入阿里雲控制台，進入物件儲存 OSS
+2. 建立 Bucket（推薦使用 `oss-cn-hongkong`，讀寫權限按需設定）
+3. 建立 RAM 子帳號並生成 AccessKey，只授予該 Bucket 的讀寫權限
+4. 將 `OSS_REGION`、`OSS_BUCKET_NAME`、`OSS_ACCESS_KEY_ID`、`OSS_ACCESS_KEY_SECRET` 填入 `.env`
+5. 綁定自訂域名或 CDN 後可另行設定 `OSS_PUBLIC_URL`；`OSS_IMAGE_PREFIX` 用於按環境或用途隔離圖片，預設 `images/`
+
+### 郵件功能配置
+
+`EMAIL_ENABLED` 控制註冊是否需要郵箱驗證：
+
+- `false`（預設）：註冊不需要郵箱驗證，無需配置 SMTP
+- `true`：註冊需填寫郵箱並驗證，需同時配置 `SMTP_HOST`、`SMTP_PORT`、`SMTP_SECURE`、`SMTP_USER`、`SMTP_PASSWORD`、`EMAIL_FROM`、`EMAIL_FROM_NAME`
+
+### IP屬地查詢配置
+
+```env
 # 主API地址
 IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
 # 主API超時時間（毫秒）
@@ -138,458 +202,75 @@ IP_LOCATION_PRIMARY_TIMEOUT=10000
 IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
 # 備用API超時時間（毫秒）
 IP_LOCATION_BACKUP_TIMEOUT=5000
-
-# 前端構建配置
-VITE_API_BASE_URL=http://localhost:3001/api
-
-# 服務端口配置
-FRONTEND_PORT=80
-BACKEND_PORT=3001
-DB_PORT_EXTERNAL=3306
-
-# 生產環境標識
-NODE_ENV=production
 ```
 
-#### 3. 一鍵啟動
+系統會在主 API 失敗時自動切換到備用 API，超時時間可根據網路情況調整。
 
-**Windows 用戶：**
+### 違規詞檢測配置
 
-```powershell
-#啟動服務
-.\deploy.ps1
-
-# 重新編譯並啟動
-.\deploy.ps1 -Build
-
-# 啟動並種植範例數據（選擇性）
-.\deploy.ps1 -Build -Seed
-# 或者服務啟動後分別種植數據
-.\deploy.ps1 -Seed
-
-# 檢查服務狀態
-.\deploy.ps1 -Status
-
-# 檢視日誌
-.\deploy.ps1 -Logs
-
-# 停止服務
-.\deploy.ps1 -Stop
-```
-
-**Linux/macOS 用戶：**
-
-```bash
-# 賦予腳本執行權限
-chmod +x deploy.sh
-
-# 啟動服務
-./deploy.sh
-
-# 重新編譯並啟動
-./deploy.sh --build
-
-# 檢查服務狀態
-./deploy.sh --status
-
-# 檢視日誌
-./deploy.sh --logs
-
-# 停止服務
-./deploy.sh --stop
-```
-
-#### 4. 存取應用程序
-
-服務成功啟動後，您可以通过以下地址存取應用程序：
-
-| 服務 | 地址 | 說明 |
-|------|------|------|
-| 前端介面 | http://localhost:8080 | 主要存取入口 |
-| 後端 API | http://localhost:3001 | API 服務 |
-| 數據庫 | localhost:3307 | MySQL 數據庫 |
-
-### Docker 部署架構
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   前端          │    │    後端          │    │     MySQL       │
-│   (Nginx)       │◄───┤   (Express)     │◄───┤   (資料庫)      │
-│   網路通訊埠: 80 │    │   網路通訊埠: 3001│    │   網路通訊埠: 3306│
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-### 環境變數配置
-
-此專案使用 `.env` 文件進行配置，為前端和後端提供分離的環境配置：
-
-#### 後端環境變數 (.env)
+`SENSITIVE_WORD_CHECK_ENABLED` 控制開關：
 
 ```env
-# 伺服器配置
-PORT=3001
-NODE_ENV=development
-
-# JWT 配置
-JWT_SECRET=xiaoshiliu_secret_key_2025
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_EXPIRES_IN=30d
-
-# 資料庫配置
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-DB_PORT=3306
-
-# 上傳配置
-# 單張圖片最大文件大小
-IMAGE_MAX_SIZE=10mb
-# 單個視頻最大文件大小
-VIDEO_MAX_SIZE=100mb
-# 圖片上傳策略 (local: 本地儲存空間, imagehost: 第三方圖片伺服，r2: Cloudflare R2 儲存空間, aliyun: 阿里雲 OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# 視頻上傳策略 (local: 本地儲存空間, r2: Cloudflare R2 儲存空間)
-VIDEO_UPLOAD_STRATEGY=local
-
-# 本地儲存空間配置
-LOCAL_UPLOAD_DIR=uploads
-LOCAL_BASE_URL=http://localhost:3001
-VIDEO_UPLOAD_DIR=uploads/videos
-VIDEO_COVER_DIR=uploads/covers
-
-# 第三方圖片伺服配置
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
-IMAGEHOST_TIMEOUT=60000
-
-# Cloudflare R2 儲存空間配置
-R2_ACCESS_KEY_ID=your_r2_access_key_id
-R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
-R2_ENDPOINT=https://your_account_id.r2.cloudflarestorage.com
-R2_BUCKET_NAME=your_bucket_name
-R2_ACCOUNT_ID=your_account_id
-R2_REGION=auto
-# 選擇性：自定義域名 URL (如果已配置自定義域名)
-R2_PUBLIC_URL=https://your-custom-domain.com
-
-# 阿里雲 OSS 配置（當 IMAGE_UPLOAD_STRATEGY=aliyun 時使用）
-# 建議使用 RAM 子帳號的 AccessKey，並只授予該 Bucket 的讀寫權限
-OSS_REGION=oss-cn-hongkong
-OSS_BUCKET_NAME=your_bucket_name_here
-OSS_ACCESS_KEY_ID=your_access_key_id_here
-OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
-# 可選：綁定自訂網域或 CDN 後設定，留空則使用預設網域
-# OSS_PUBLIC_URL=https://img.example.com
-# 可選：物件目錄前綴，按環境或用途隔離圖片（預設 images/）
-OSS_IMAGE_PREFIX=images/
-# 上傳策略：local (本地儲存空間), imagehost (第三方圖片伺服), r2 (Cloudflare R2 儲存空間), 或 aliyun (阿里雲 OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# 視頻上傳策略 (local: 本地存儲, r2: Cloudflare R2 存儲)
-VIDEO_UPLOAD_STRATEGY=local
-
-# 本地儲存空間配置
-LOCAL_UPLOAD_DIR=uploads
-LOCAL_BASE_URL=http://localhost:3001
-
-# 第三方圖片伺服配置
-IMAGEHOST_API_URL=https://api.xinyew.cn/api/360tc
-IMAGEHOST_TIMEOUT=60000
-
-# API 配置
-API_BASE_URL=http://localhost:3001
-
-# CORS 配置
-CORS_ORIGIN=http://localhost:5173
-
-# 郵件服務配置
-# 是否啟用郵件功能 (true/false)
-# 設置為false時，註冊不需要郵箱驗證，適合沒有SMTP服務的用戶
-EMAIL_ENABLED=true
-# SMTP服務器地址
-SMTP_HOST=smtp.qq.com
-# SMTP服務器端口
-SMTP_PORT=465
-# 是否使用SSL/TLS (true/false)
-SMTP_SECURE=true
-# 郵箱賬號
-SMTP_USER=your_email@example.com
-# 郵箱密碼/授權碼
-SMTP_PASSWORD=your_email_password
-# 發件人郵箱
-EMAIL_FROM=your_email@example.com
-# 發件人名稱
-EMAIL_FROM_NAME=小石榴校園圖文社區
+# 是否啟用定時違規詞檢測
+SENSITIVE_WORD_CHECK_ENABLED=false
+# 白名單用戶ID，名單內用戶不參與檢測，多個用英文逗號分隔（留空表示不啟用白名單）
+SENSITIVE_WORD_CHECK_WHITELIST=
 ```
 
-#### 前端環境變數 (.env)
+- 檢測方式為關鍵詞匹配，詞庫位於 `express-project/scripts/违规词库.txt`，每行一個詞
+- 檢測範圍：小石榴號、用戶暱稱、個人簡介、標籤名、貼文標題與內容、評論
+- 命中後直接替換為"違規暱稱""違規內容""違規標題""違規評論""違規標籤"，不發送通知
+- `SENSITIVE_WORD_CHECK_WHITELIST` 中的用戶 ID 不參與檢測
+- 檢測間隔為 24 小時，後端啟動時不立即執行；未啟用時不會註冊任務
+
+需要立即檢測一次時，可手動執行（同樣受開關控制，未啟用會直接跳過）：
+
+```bash
+cd express-project
+node scripts/local-sensitive-word-check.js
+```
+
+### 反向代理配置
+
+站點掛在 Nginx 等反向代理後面（綁定域名 / HTTPS）時，按部署方式修改。
+
+**Docker 部署**：前端映像檔內建 nginx，已把 `/api` 反代到後端容器，外層 Nginx 只需把 `/api` 轉發到宿主機上後端的映射端口：
+
+```nginx
+location /api {
+    proxy_pass http://localhost:3001;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
+
+同源部署時瀏覽器請求走相對路徑 `/api`，**不需要 CORS**；僅當前端域名與後端域名不一致時才需配置：
 
 ```env
-# API 基底 URL 配置
-VITE_API_BASE_URL=http://localhost:3001/api
-
-# 使用真實 API
-VITE_USE_REAL_API=true
-
-# 應用程式標題
-VITE_APP_TITLE=Small Pear Graphic Community
-```
-
-#### Docker 環境變數說明
-
-當使用 Docker 部署時，環境變數通過 `docker-compose.yml` 配置：
-
-```env
-# 資料庫配置 (Docker 環境)
-DB_HOST=mysql
-DB_USER=小石麗珠_user
-DB_PASSWORD=123456
-DB_NAME=小石麗珠
-
-# JWT 配置
-JWT_SECRET=小石麗珠_secret_key_2025_docker
-JWT_EXPIRES_IN=7d
-
-# 上傳配置
-# 單張圖片最大文件大小
-IMAGE_MAX_SIZE=10mb
-# 單個視頻最大文件大小
-VIDEO_MAX_SIZE=100mb
-# 圖片上傳策略 (local: 本地存儲, imagehost: 第三方圖片存儲, r2: Cloudflare R2 存儲, aliyun: 阿里雲 OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# 視頻上傳策略 (local: 本地存儲, r2: Cloudflare R2 存儲)
-VIDEO_UPLOAD_STRATEGY=local
-
-# API 配置
-API_BASE_URL=http://localhost:3001
-```
-
-### 常見命令
-
-```bash
-# 檢查服務狀態
-docker-compose ps
-
-# 查看服務日誌
-docker-compose logs -f
-
-# 重啟特定服務
-docker-compose restart backend
-
-# 遷入容器 (使用 sh 為了因為 alpine 鏡像通常沒有 bash)
-docker-compose exec backend sh
-# 或遷入 MySQL 客戶端
-docker-compose exec mysql mysql -u root -p
-
-# 備份資料庫
-docker-compose exec mysql mysqldump -u root -p 小石麗珠 > backup.sql
-
-# 恢復資料庫
-docker-compose exec -T mysql mysql -u root -p 小石麗珠 < backup.sql
-```
-
-### 資料持久化
-
-Docker 使用卷來在部署中進行資料持久化：
-
-- `mysql_data`: MySQL 資料庫文件
-- `backend_uploads`: 後端上傳文件
-
-### 故障排除
-
-#### 1. 頻道衝突
-
-如果發生頻道衝突，您可以修改 `docker-compose.yml` 文件中的端口映射：
-
-```yaml
-services:
-  frontend:
-    ports:
-      - "8080:80"  # 修改前端端口
-  backend:
-    ports:
-      - "3002:3001"  # 修改後端端口
-```
-
-#### 2. 變動不夠
-
-請確保系統有足夠的記憶體，您可以使用以下命令查看資源使用情況：
-
-```bash
-docker stats
-```
-
-#### 3. 資料庫連接失敗 / 載入數據
-
-- 檢查資料庫服務是否正常啟動：
-
-```bash
-docker-compose logs mysql
-```
-
-- 載入範例數據 (Windows):
-```powershell
-.\deploy.ps1 -Seed
-```
-
-- 手動執行載入範例數據：
-```bash
-docker-compose exec -T backend node scripts/generate-data.js
-```
-
-#### 4. 文件上傳權限問題
-
-**問題現象**:
-- 從前端上傳文件時，返回 400 錯誤
-- 後端日誌顯示: `EACCES: permission denied, open '/app/uploads/xxx.png'`
-
-**原因分析**:
-Docker 容器上傳目錄的權限問題。目錄屬於 root 用戶，但應用程式在 nodejs 用戶下運行。
-
-**解決方案**:
-
-1. **檢查上傳目錄的權限**:
-```bash
-docker-compose exec backend ls -la /app/uploads
-```
-
-2. **修復權限問題**:
-```bash
-# 使用 root 用戶修改目錄所有權限
-docker-compose exec --user root backend chown -R nodejs:nodejs /app/uploads
-```
-
-3. **確認權限修復**:
-```bash
-# 確認目錄現在屬於 nodejs 用戶
-docker-compose exec backend ls -la /app/uploads
-```
-
-**預防措施**:
-- 確保 Dockerfile 中上傳目錄的權限設定正確
-- 在容器啟動時自動修復權限問題
-
-#### 5. 上傳策略配置
-
-此專案支援四種檔案上傳策略：
-
-**本地儲存模式**（推薦用於開發和小型部署）:
-```yaml
-# 設定於 docker-compose.yml
-環境變數:
-  IMAGE_UPLOAD_STRATEGY: local
-  VIDEO_UPLOAD_STRATEGY: local
-```
-
-**第三方圖片伺服器模式**（推薦用於生產環境）:
-```yaml
-# 設定於 docker-compose.yml
-環境變數:
-  IMAGE_UPLOAD_STRATEGY: imagehost
-  VIDEO_UPLOAD_STRATEGY: local
-```
-
-**Cloudflare R2 儲存模式**（推薦用於生產環境，支援 CDN 加速）:
-
-```yaml
-# 設定於 docker-compose.yml
-環境變數:
-  IMAGE_UPLOAD_STRATEGY: r2
-  VIDEO_UPLOAD_STRATEGY: r2
-  R2_ACCESS_KEY_ID: your_r2_access_key_id
-  R2_SECRET_ACCESS_KEY: your_r2_secret_access_key
-  R2_ENDPOINT: https://your_account_id.r2.cloudflarestorage.com
-  R2_BUCKET_NAME: your_bucket_name
-  R2_ACCOUNT_ID: your_account_id
-  R2_REGION: auto
-  # 可選：自定義域名
-  R2_PUBLIC_URL: https://your-custom-domain.com
-```
-
-> **注意**：要使用 Cloudflare R2 儲存，您需要先在 Cloudflare 控制台中創建 R2 桶和獲取相對應的存取金鑰。
-
-**阿里雲 OSS 儲存模式**（推薦用於生產環境，支援 CDN 加速）:
-
-```yaml
-# 設定於 docker-compose.yml
-環境變數:
-  IMAGE_UPLOAD_STRATEGY: aliyun
-  OSS_REGION: oss-cn-hongkong
-  OSS_BUCKET_NAME: your_bucket_name
-  OSS_ACCESS_KEY_ID: your_access_key_id
-  OSS_ACCESS_KEY_SECRET: your_access_key_secret
-  OSS_IMAGE_PREFIX: images/
-  # 可選：自定義域名
-  OSS_PUBLIC_URL: https://img.example.com
-```
-
-> **注意**：要使用阿里雲 OSS 儲存，您需要先在阿里雲控制台創建 OSS Bucket，建立只授予該 Bucket 讀寫權限的 RAM 子帳號，並填入其 AccessKey。
-
-#### 6. 郵件功能配置
-
-專案支援郵箱驗證功能，可通過 `EMAIL_ENABLED` 開關控制：
-
-1. **啟用郵件功能** (`EMAIL_ENABLED=true`)
-   - 註冊時需要填寫郵箱並驗證
-   - 需要配置SMTP服務器信息
-   ```env
-   EMAIL_ENABLED=true
-   SMTP_HOST=smtp.qq.com
-   SMTP_PORT=465
-   SMTP_SECURE=true
-   SMTP_USER=your_email@example.com
-   SMTP_PASSWORD=your_email_password
-   EMAIL_FROM=your_email@example.com
-   EMAIL_FROM_NAME=小石榴校園圖文社區
-   ```
-
-2. **禁用郵件功能** (`EMAIL_ENABLED=false`，預設)
-   - 註冊時不需要郵箱驗證
-   - 適合沒有SMTP服務或不需要郵箱驗證的場景
-   ```env
-   EMAIL_ENABLED=false
-   ```
-
-#### 7. 反向代理配置
-
-**重要提示**：如果您使用了 Nginx、Apache 等反向代理服務器，需要修改以下配置：
-
-**後端配置 (express-project/.env)**
-
-```env
-# 將 API_BASE_URL 改為您的域名和端口
-API_BASE_URL=https://yourdomain.com:端口號
-# 或者如果使用默認端口（80/443）
-API_BASE_URL=https://yourdomain.com
-
-# CORS配置也需要修改為前端訪問地址
 CORS_ORIGIN=https://yourdomain.com
 ```
 
-**前端配置 (vue3-project/.env)**
+使用本地儲存圖片時，務必把對外存取地址改成真實域名：
 
 ```env
-# 將 API 基礎 URL 改為您的域名和後端端口
-VITE_API_BASE_URL=https://yourdomain.com:端口號/api
-# 或者如果使用默認端口（80/443）
+LOCAL_BASE_URL=https://yourdomain.com
+API_BASE_URL=https://yourdomain.com
+```
+
+**傳統部署**：需要分別修改兩份 `.env`（前端改完需重新執行 `npm run build`）：
+
+```env
+# express-project/.env
+API_BASE_URL=https://yourdomain.com
+CORS_ORIGIN=https://yourdomain.com
+
+# vue3-project/.env
 VITE_API_BASE_URL=https://yourdomain.com/api
 ```
 
-**配置示例**
+完整的 Nginx 站點配置示例（以 `example.com` 為例）：
 
-假設您的域名是 `example.com`，後端通過反向代理映射到 3001 端口：
-
-**後端 .env：**
-```env
-API_BASE_URL=https://example.com
-CORS_ORIGIN=https://example.com
-```
-
-**前端 .env：**
-```env
-VITE_API_BASE_URL=https://example.com/api
-```
-
-**Nginx 配置示例：**
 ```nginx
 server {
     listen 80;
@@ -616,310 +297,32 @@ server {
 }
 ```
 
-#### 7. 清理與重置
+---
 
-如果您遇到問題並需要從頭開始：
+## 🚨 故障排除
 
-```bash
-# Windows
-.\deploy.ps1 -Clean
+### Docker 部署問題
 
-# Linux/macOS
-./deploy.sh --clean
-```
+| 問題 | 排查方式 |
+|---|---|
+| 端口衝突 | `netstat -ano \| findstr :8080` 檢視佔用；端口映射在 docker-compose.yml 的 `ports` 段修改，改完重新 `docker compose up -d` |
+| 容器啟動失敗 | `docker-compose logs` 檢視日誌，`docker-compose up -d --build` 重新建構 |
+| 資料庫連接失敗 | `docker-compose ps` 檢視容器狀態，`docker-compose restart mysql` 重啟資料庫 |
+
+### 傳統部署問題
+
+| 問題 | 排查方式 |
+|---|---|
+| Node.js 版本不相容 | `node --version` 確認版本不低於 18，用 nvm 切換：`nvm use 18` |
+| 資料庫連接失敗 | 檢查 MySQL 是否啟動、資料庫用戶權限、防火牆設定 |
+| 依賴安裝失敗 | `npm cache clean --force`，刪除 `node_modules` 後重新 `npm install` |
 
 ---
 
-## 📋 傳統部署方法
+## 📝 注意事項
 
-## 系統需求
+- **生產環境**：更換預設資料庫密碼與 `JWT_SECRET`，配置 HTTPS，設定防火牆規則，定期備份資料
+- **不要**將 `.env` 檔案提交到版本控制
+- 建議使用 CDN 加速靜態資源，並定期更新依賴套件
 
-| 槽件 | 版本要求 | 描述 |
-|------|----------|------|
-| Node.js | >= 16.0.0 | 运行環境 |
-| MySQL | >= 5.7 | 數據庫 |
-| MariaDB | >= 10.3 | 數據庫（選擇性） |
-| npm | >= 8.0.0 | 對象管理器 |
-| yarn | >= 1.22.0 | 對象管理器（選擇性） |
-| Browser | 支援 ES6+ | 現代瀏覽器 |
-
-## 快速開始
-
-### 1. 安裝依賴項
-
-```bash
-# 使用 cnpm
-cnpm install
-# 或使用 yarn
-yarn install
-```
-
-### 2. 設定後端 API 地址
-
-建立環境配置檔案（可選）:
-
-```bash
-# 複製環境配置範本
-cp .env.example .env
-```
-
-編輯 `.env` 檔案以設定後端 API 地址：
-
-```env
-# 後端 API 地址
-VITE_API_BASE_URL=http://localhost:3001
-
-# 其他設定...
-```
-
-### 3. 啟動開發伺服器
-
-```bash
-# 啟動開發伺服器
-npm run dev
-
-# 或使用 yarn
-yarn dev
-```
-
-開發伺服器將在 `http://localhost:5173` 啟動。
-
-### 4. 建立生產版本
-
-```bash
-# 建立生產版本
-npm run build
-
-# 預覽生產版本
-npm run preview
-```
-
-## 後端服務配置
-
-⚠️ **重要提醒**：前端專案需要與後端服務一起使用。
-
-1. **啟動後端服務**：
-   ```bash
-   # 導航至後端專案目錄
-   cd ../express-project
-   
-   # 安裝後端依賴
-   npm install
-   
-   # 啟動後端服務
-   npm start
-   ```
-
-2. **後端服務地址**：`http://localhost:3001`
-
-3. **API 文件**：檢查後端專案中的 `API_DOCS.md` 文件。
-
-## 開發環境配置
-
-### 環境檢查
-
-```bash
-# 檢查 Node.js 版本
-node --version
-
-# 檢查 npm 版本
-npm --version
-
-### 開發伺服器
-
-```bash
-# 開啟開發伺服器（熱重載）
-npm run dev
-
-# 存取地址：http://localhost:5173
-```
-
-### 代碼規範
-
-- 使用 Vue 3 Composition API
-- 遵循官方 Vue.js 風格指南
-- 成分命名使用 PascalCase
-- 檔名命名使用 kebab-case
-
-## 配置檔說明
-
-### 前端配置檔（vue3-project 目錄）
-
-| 檔名 | 描述 |
-|------|-------------|
-| `.env` | 環境變數配置檔 |
-| `vite.config.js` | Vite 建置工具配置 |
-| `package.json` | 專案依賴和腳本配置 |
-| `jsconfig.json` | JavaScript 專案配置 |
-
-### 後端配置檔（express-project 目錄）
-
-| 檔名 | 描述 |
-|------|-------------|
-| `config/config.js` | 主要配置檔 |
-| `.env` | 環境變數配置檔 |
-| `database_design.md` | 資料庫設計文件 |
-| `scripts/init-database.js` | 資料庫初始化腳本 |
-| `generate-data.js` | 測試資料生成腳本 |
-
-## npm 腳本命令
-
-### 前端腳本（在 vue3-project 目錄中執行）
-
-| 命令 | 描述 |
-|---------|-------------|
-| `npm run dev` | 開啟開發伺服器 |
-| `npm run build` | 建置生產版本 |
-| `npm run preview` | 預覽生產版本 |
-
-### 後端腳本（在 express-project 目錄中執行）
-
-| 命令 | 描述 |
-|---------|-------------|
-| `npm start` | 開啟伺服器 |
-| `npm run dev` | 開啟開發伺服器（熱重載） |
-| `npm run init-db` | 初始化資料庫 |
-| `npm run generate-data` | 生成測試資料 |
-
-## 環境變數配置
-
-### 前端環境變數（vue3-project/.env）
-
-```env
-# API 伺服器地址
-VITE_API_BASE_URL=http://localhost:3001/api
-
-# 其他前端配置
-VITE_APP_TITLE=Small石榴Image and Text Community
-VITE_USE_REAL_API=true
-```
-
-### 後端環境變數（express-project/.env）
-
-```env
-# 伺服器配置
-NODE_ENV=development
-PORT=3001
-
-# JWT 配置
-JWT_SECRET=xiaoshiliu_secret_key_2025
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_EXPIRES_IN=30d
-
-# 資料庫配置
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=123456
-DB_NAME=xiaoshiliu
-DB_PORT=3306
-
-# API 配置
-API_BASE_URL=http://localhost:3001
-
-# 上傳配置
-# 單張圖片最大文件大小
-IMAGE_MAX_SIZE=10mb
-# 單個視頻最大文件大小
-VIDEO_MAX_SIZE=100mb
-# 圖片上傳策略 (local: 本地存儲, imagehost: 第三方圖片存儲, r2: Cloudflare R2 存儲, aliyun: 阿里雲 OSS)
-IMAGE_UPLOAD_STRATEGY=imagehost
-# 視頻上傳策略 (local: 本地存儲, r2: Cloudflare R2 存儲)
-VIDEO_UPLOAD_STRATEGY=local
-```
-
-## 資料庫腳本說明
-
-專案中相關的資料庫腳本都放在 `express-project/scripts/` 目錄中，以便於管理和使用：
-
-### 腳本檔案介紹
-
-#### 1. 資料庫初始化腳本
-- **檔案位置**: `scripts/init-database.js`
-- **功能**: 創建資料庫和所有表結構
-- **使用方法**:
-  ```bash
-  cd express-project
-  node scripts/init-database.js
-
-- **描述**：必須執行首次部署，將自動建立 `xiaoshiliu` 資料庫及 12 個資料表
-
-#### 2. 測試資料生成腳本
-- **檔案位置**：`scripts/generate-data.js`
-- **功能**：生成模擬用戶、筆記、評論及其他測試資料
-- **使用方法**：
-  ```bash
-  cd express-project
-  node scripts/generate-data.js
-  ```
-- **描述**：可選執行，用於快速填充測試資料，包括 50 個用戶、200 則筆記、800 則評論等。
-
-#### 3. SQL 初始化檔案
-- **檔案位置**：`scripts/init-database.sql`
-- **功能**：資料庫初始化腳本的純 SQL 版本
-- **使用方法**：可直接在 MySQL 客戶端執行
-- **描述**：與 `init-database.js` 有相同功能，提供 SQL 版本供參考
-
-#### 4. 示範圖片更新腳本
-- **檔案位置**：`scripts/update-sample-images.js`
-- **功能**：自動獲取最新圖片鏈接並更新資料庫中的示範圖片
-- **使用方法**：
-  ```bash
-  cd express-project
-  node scripts/update-sample-images.js
-  ```
-
-- **描述**：
-  - 自動從 Liziwen API 獲取最新圖片鏈接
-  - 更新 `imgLinks/avatar_link.txt`（50 個頭像鏈接）
-  - 更新 `imgLinks/post_img_link.txt`（300 則筆記圖片鏈接）
-  - 批量更新資料庫中的用戶頭像和筆記圖片
-  - 支援顯示更新前後圖片數量的統計數據
-
-## 開發環境啟動流程
-
-### 1. 啟動後端服務
-
-```bash
-# 開啟第一個終端，切換到後端目錄
-cd express-project
-
-# 安裝後端依賴（首次運行）
-npm install
-
-# 配置資料庫（首次運行）
-# 編輯 config/config.js 或 .env 檔案
-
-# 初始化資料庫（首次運行）
-node scripts/init-database.js
-
-# 生成測試資料（可選）
-node scripts/generate-data.js
-
-# 啟動後端服務
-npm start
-# 後端服務運行於 http://localhost:3001
-```
-
-### 2. 啟動前端服務
-
-```bash
-# 開啟第二個終端，切換到前端目錄
-cd vue3-project
-
-# 安裝前端依賴（首次運行）
-npm install
-
-# 配置 API 地址（可選）
-# 編輯 .env 檔案，設定 VITE_API_BASE_URL
-
-# 啟動前端開發服務器
-npm run dev
-# 前端服務運行於 http://localhost:5173
-```
-
-### 3. 適用服務
-
-| 服務 | 地址 |
-|------|------|
-| 前端介面 | http://localhost:5173 |
-| 後端 API | http://localhost:3001 |
+**祝您部署順利！** 🎉
