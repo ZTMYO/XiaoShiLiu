@@ -87,8 +87,8 @@ const config = {
     video: {
       maxSize: process.env.VIDEO_MAX_SIZE || '100mb',
       allowedTypes: ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'],
-      // 视频上传策略配置（只支持本地和R2，不支持第三方图床）
-      strategy: process.env.VIDEO_UPLOAD_STRATEGY || 'local', // 'local' 或 'r2'
+      // 视频上传策略配置（不支持第三方图床）
+      strategy: process.env.VIDEO_UPLOAD_STRATEGY || 'local', // 'local'、'r2' 或 'aliyun'
       // 本地存储配置
       local: {
         uploadDir: process.env.VIDEO_LOCAL_UPLOAD_DIR || 'uploads/videos',
@@ -103,6 +103,16 @@ const config = {
         endpoint: process.env.R2_ENDPOINT,
         publicUrl: process.env.R2_PUBLIC_URL, // 可选：自定义域名
         region: process.env.R2_REGION || 'auto'
+      },
+      // 阿里云 OSS配置
+      aliyun: {
+        region: process.env.OSS_REGION || 'oss-cn-hongkong',
+        accessKeyId: process.env.OSS_ACCESS_KEY_ID,
+        accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
+        bucketName: process.env.OSS_BUCKET_NAME,
+        publicUrl: process.env.OSS_PUBLIC_URL, // 可选：自定义域名或 CDN
+        // 对象前缀，用于按环境或用途隔离视频
+        videoPrefix: process.env.OSS_VIDEO_PREFIX || 'videos/'
       }
     }
   },

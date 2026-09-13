@@ -163,7 +163,7 @@ npm run preview        # 本地预览，默认 http://localhost:4173
 | Cloudflare R2 | `r2` | 存到 R2 存储桶 | `R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_ENDPOINT`、`R2_BUCKET_NAME`、`R2_ACCOUNT_ID`、`R2_REGION` |
 | 阿里云 OSS | `aliyun` | 存到 OSS 存储桶 | `OSS_REGION`、`OSS_BUCKET_NAME`、`OSS_ACCESS_KEY_ID`、`OSS_ACCESS_KEY_SECRET`、`OSS_IMAGE_PREFIX` |
 
-视频上传策略由 `VIDEO_UPLOAD_STRATEGY` 选择，只支持 `local` 和 `r2`。文件大小上限由 `IMAGE_MAX_SIZE`（默认 10mb）和 `VIDEO_MAX_SIZE`（默认 100mb）控制。
+视频上传策略由 `VIDEO_UPLOAD_STRATEGY` 选择，支持 `local`、`r2` 和 `aliyun`（`aliyun` 复用图片的 OSS 变量，可用 `OSS_VIDEO_PREFIX` 指定视频目录前缀，默认 `videos/`）。文件大小上限由 `IMAGE_MAX_SIZE`（默认 10mb）和 `VIDEO_MAX_SIZE`（默认 100mb）控制。
 
 > 使用 `local` 策略时，`LOCAL_BASE_URL` 必须是浏览器能访问到的地址，否则图片会裂图。
 
@@ -182,7 +182,7 @@ npm run preview        # 本地预览，默认 http://localhost:4173
 2. 创建 Bucket（推荐使用 `oss-cn-hongkong`，读写权限按需设置）
 3. 创建 RAM 子账号并生成 AccessKey，只授予该 Bucket 的读写权限
 4. 将 `OSS_REGION`、`OSS_BUCKET_NAME`、`OSS_ACCESS_KEY_ID`、`OSS_ACCESS_KEY_SECRET` 填入 `.env`
-5. 绑定自定义域名或 CDN 后可另行设置 `OSS_PUBLIC_URL`；`OSS_IMAGE_PREFIX` 用于按环境或用途隔离图片，默认 `images/`
+5. 绑定自定义域名或 CDN 后可另行设置 `OSS_PUBLIC_URL`；`OSS_IMAGE_PREFIX` 与 `OSS_VIDEO_PREFIX` 分别用于按环境或用途隔离图片与视频，默认 `images/`、`videos/`
 
 ### 邮件功能配置
 

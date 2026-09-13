@@ -163,7 +163,7 @@ The image upload strategy is selected by `IMAGE_UPLOAD_STRATEGY`, and there are 
 | Cloudflare R2 | `r2` | Stored in an R2 bucket | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET_NAME`, `R2_ACCOUNT_ID`, `R2_REGION` |
 | Alibaba Cloud OSS | `aliyun` | Stored in an OSS bucket | `OSS_REGION`, `OSS_BUCKET_NAME`, `OSS_ACCESS_KEY_ID`, `OSS_ACCESS_KEY_SECRET`, `OSS_IMAGE_PREFIX` |
 
-The video upload strategy is selected by `VIDEO_UPLOAD_STRATEGY`, which supports only `local` and `r2`. The file size limits are controlled by `IMAGE_MAX_SIZE` (default 10mb) and `VIDEO_MAX_SIZE` (default 100mb).
+The video upload strategy is selected by `VIDEO_UPLOAD_STRATEGY`, which supports `local`, `r2` and `aliyun` (`aliyun` reuses the image OSS variables, and `OSS_VIDEO_PREFIX` sets the video directory prefix, defaulting to `videos/`). The file size limits are controlled by `IMAGE_MAX_SIZE` (default 10mb) and `VIDEO_MAX_SIZE` (default 100mb).
 
 > When using the `local` strategy, `LOCAL_BASE_URL` must be an address that the browser can reach, otherwise images will break.
 

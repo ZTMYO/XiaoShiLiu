@@ -66,7 +66,7 @@ const docLink = computed(() => (route.params.lang ? `/${route.params.lang}/doc` 
         </DropdownMenu>
 
         <button class="site-icon-btn" @click="themeStore.toggleTwoTheme($event)">
-          <SvgIcon :name="themeStore.isDark ? 'sun' : 'moon'" width="18" height="18" />
+          <SvgIcon :name="themeStore.isDark ? 'sun' : 'moon'" width="20" height="20" />
         </button>
 
         <slot name="actions"></slot>
@@ -200,6 +200,19 @@ const docLink = computed(() => (route.params.lang ? `/${route.params.lang}/doc` 
   .site-nav-link.active,
   .site-divider {
     display: none;
+  }
+
+  /* 点击区域与图标尺寸对齐主站移动端 header */
+  .site-nav-link {
+    height: 40px;
+    padding: 0 12px;
+    font-size: 15px;
+  }
+
+  .site-icon-btn {
+    min-width: 40px;
+    height: 40px;
+    font-size: 15px;
   }
 }
 </style>

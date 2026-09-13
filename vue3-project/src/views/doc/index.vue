@@ -51,6 +51,20 @@ const currentName = computed(() => route.params.name || DEFAULT_DOC)
 // 语言层前缀：URL 已带 /zh、/en 时保持，未带时不主动加
 const langPrefix = computed(() => (route.params.lang ? `/${route.params.lang}` : ''))
 const docPath = (name) => (name ? `${langPrefix.value}/doc/${name}` : `${langPrefix.value}/doc`)
+
+// 文档文件名的语言后缀，与后端 LANG_SUFFIX 对应，用于把正文里的 .md 相对链接映射回文档名
+const DOC_FILE_SUFFIX = ['', '_En', '_zh-Hant']
+const docFileMap = computed(() => {
+  const map = {}
+  for (const item of docs.value) {
+    if (!item.file) continue
+    const base = item.file.replace(/\.md$/, '')
+    DOC_FILE_SUFFIX.forEach((suffix) => {
+      map[`${base}${suffix}.md`] = item.name
+    })
+  }
+  return map
+})
 const langLabel = computed(() => (DOC_LANGS.find((item) => item.value === lang.value) || {}).label || '')
 
 const visibleToc = computed(() => toc.value.filter((item) => item.level > 1))
@@ -339,6 +353,18 @@ function onCrumbHome(event) {
   if (route.fullPath !== target) router.replace(target)
 }
 
+// 正文里的站内链接：.md 相对引用按文件名映射回站内文档，其余站内路径直接跳转，避免整页刷新
+function onContentClick(event) {
+  const link = event.target.closest('a.doc-internal-link')
+  if (!link) return
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+  const href = link.getAttribute('href') || ''
+  const name = docFileMap.value[href.replace(/^\.\//, '')]
+  if (!name && !href.startsWith('/')) return
+  event.preventDefault()
+  router.push(name ? docPath(name) : href)
+}
+
 // 章节 id 可能是中文，取 hash 时解码
 function readHash() {
   const raw = window.location.hash.replace(/^#/, '')
@@ -425,7 +451,7 @@ onBeforeUnmount(() => {
     <SiteHeader :progress="progress">
       <template #actions>
         <button type="button" class="doc-menu-btn" aria-label="章节菜单" @click="menuOpen = !menuOpen">
-          <SvgIcon name="menu" width="18" height="18" />
+          <SvgIcon name="menu" width="20" height="20" />
         </button>
       </template>
     </SiteHeader>
@@ -490,7 +516,8 @@ onBeforeUnmount(() => {
               <span>{{ langLabel }}</span>
               <span v-if="docMeta?.updatedAt">更新于 {{ formatDate(docMeta.updatedAt) }}</span>
             </div>
-            <div class="doc-content" v-html="pageHtml"></div>
+            <div class="doc-content" :class="{ 'doc-overview': currentName === DEFAULT_DOC }" v-html="pageHtml"
+              @click="onContentClick"></div>
 
             <nav v-if="readingNav.prev || readingNav.next" class="page-nav">
               <a v-if="readingNav.prev" class="pager-item" :href="readingNav.prev.href"
@@ -1079,6 +1106,8 @@ onBeforeUnmount(() => {
 
   .doc-menu-btn {
     display: flex;
+    width: 40px;
+    height: 40px;
   }
 
   .doc-main {

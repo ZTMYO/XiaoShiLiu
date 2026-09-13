@@ -2503,6 +2503,7 @@ Content-Type: application/json
 **请求参数**:
 - 使用 `multipart/form-data` 格式
 - 文件字段名: `file`
+- 可选封面字段名: `thumbnail`（图片文件，作为视频封面）
 - 支持格式: mp4, avi, mov, wmv, flv, webm
 - 文件大小限制: 100MB
 
@@ -2522,11 +2523,9 @@ Content-Type: application/json
 ```
 
 **说明**:
-- `url`: 视频文件的访问URL
-- `filePath`: 视频文件在服务器上的存储路径
-- `coverUrl`: 视频封面图片URL（如果FFmpeg可用则自动生成，否则为null）
-- 视频封面图片会自动从视频第一帧提取，尺寸为640x360
-- 如果系统未安装FFmpeg，视频仍可正常上传，但不会生成封面图片
+- `url`: 视频文件的访问URL，实际存储位置由 `VIDEO_UPLOAD_STRATEGY` 决定（`local` 存在服务器磁盘、`r2` 存到 Cloudflare R2、`aliyun` 存到阿里云 OSS）
+- `filePath`: 视频文件在服务器上的存储路径，仅 `local` 策略返回
+- `coverUrl`: 视频封面图片URL，由前端从视频中截帧生成并随 `thumbnail` 字段一起上传，未上传时为 null
 
 ---
 

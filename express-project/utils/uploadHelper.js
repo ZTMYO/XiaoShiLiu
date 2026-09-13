@@ -471,6 +471,75 @@ async function uploadVideoToR2(fileBuffer, filename, mimetype) {
 }
 
 /**
+ * 上传视频到阿里云 OSS
+ * @param {Buffer} fileBuffer - 文件缓冲区
+ * @param {string} filename - 文件名
+ * @param {string} mimetype - 文件MIME类型
+ * @returns {Promise<{success: boolean, url?: string, message?: string}>}
+ */
+async function uploadVideoToOSS(fileBuffer, filename, mimetype) {
+  try {
+    const ossConfig = config.upload.video.aliyun;
+
+    // 验证必要的配置
+    if (!ossConfig.accessKeyId || !ossConfig.accessKeySecret || !ossConfig.bucketName) {
+      throw new Error('阿里云 OSS 配置不完整');
+    }
+
+    const client = new OSS({
+      region: ossConfig.region,
+      accessKeyId: ossConfig.accessKeyId,
+      accessKeySecret: ossConfig.accessKeySecret,
+      bucket: ossConfig.bucketName,
+      secure: true
+    });
+
+    // MIME类型到扩展名的映射
+    const mimeToExt = {
+      'video/mp4': '.mp4',
+      'video/avi': '.avi',
+      'video/mov': '.mov',
+      'video/wmv': '.wmv',
+      'video/flv': '.flv',
+      'video/webm': '.webm'
+    };
+
+    // 根据MIME类型获取正确的扩展名
+    let ext = mimeToExt[mimetype] || path.extname(filename);
+    // 确保扩展名以.开头
+    if (!ext.startsWith('.')) {
+      ext = '.' + ext;
+    }
+    // 如果没有扩展名，使用.mp4作为默认
+    if (ext === '.') {
+      ext = '.mp4';
+    }
+
+    // 以内容哈希命名，重复上传同一个视频会命中同一对象，天然去重
+    const hash = crypto.createHash('md5').update(fileBuffer).digest('hex');
+    const prefix = (ossConfig.videoPrefix || 'videos/').replace(/^\/+|\/+$/g, '');
+    const uniqueFilename = `${prefix}/${hash.slice(0, 12)}${ext}`;
+
+    await client.put(uniqueFilename, fileBuffer, { mime: mimetype });
+
+    const baseUrl = ossConfig.publicUrl
+      ? ossConfig.publicUrl.replace(/\/+$/, '')
+      : `https://${ossConfig.bucketName}.${ossConfig.region}.aliyuncs.com`;
+
+    return {
+      success: true,
+      url: `${baseUrl}/${uniqueFilename}`
+    };
+  } catch (error) {
+    console.error('阿里云 OSS 视频上传失败:', error.message);
+    return {
+      success: false,
+      message: error.message || '阿里云 OSS 视频上传失败'
+    };
+  }
+}
+
+/**
  * 从文件路径上传到图床
  * @param {string} filePath - 文件路径
  * @param {string} originalname - 原始文件名
@@ -580,6 +649,8 @@ async function uploadVideo(fileBuffer, filename, mimetype) {
     return await saveVideoToLocal(fileBuffer, filename, mimetype);
   } else if (strategy === 'r2') {
     return await uploadVideoToR2(fileBuffer, filename, mimetype);
+  } else if (strategy === 'aliyun') {
+    return await uploadVideoToOSS(fileBuffer, filename, mimetype);
   } else {
     return {
       success: false,
@@ -612,6 +683,7 @@ module.exports = {
   uploadImageToR2,
   uploadVideoToR2,
   uploadImageToOSS,
+  uploadVideoToOSS,
   uploadImage,
   uploadVideo,
   uploadFile,

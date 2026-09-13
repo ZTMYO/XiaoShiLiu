@@ -2174,6 +2174,7 @@ Authorization: Bearer <access_token>
 **請求參數**:
 - 使用 `multipart/form-data` 格式
 - 文件字段名: `file`
+- 可選封面字段名: `thumbnail`（圖片檔案，作為視頻封面）
 - 支持格式: mp4, avi, mov, wmv, flv, webm
 - 文件大小限制: 100MB
 
@@ -2193,11 +2194,9 @@ Authorization: Bearer <access_token>
 ```
 
 **說明**:
-- `url`: 視頻文件的訪問URL
-- `filePath`: 視頻文件在伺服器上的存儲路徑
-- `coverUrl`: 視頻封面圖片URL（如果FFmpeg可用則自動生成，否則為null）
-- 視頻封面圖片會自動從視頻第一幀提取，尺寸為640x360
-- 如果系統未安裝FFmpeg，視頻仍可正常上傳，但不會生成封面圖片
+- `url`: 視頻文件的訪問URL，實際存儲位置由 `VIDEO_UPLOAD_STRATEGY` 決定（`local` 存在伺服器磁碟、`r2` 存到 Cloudflare R2、`aliyun` 存到阿里雲 OSS）
+- `filePath`: 視頻文件在伺服器上的存儲路徑，僅 `local` 策略返回
+- `coverUrl`: 視頻封面圖片URL，由前端從視頻中截幀生成並隨 `thumbnail` 欄位一起上傳，未上傳時為 null
 
 ---
 

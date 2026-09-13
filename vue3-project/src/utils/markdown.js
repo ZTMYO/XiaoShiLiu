@@ -36,6 +36,12 @@ function inlineToPlain(text) {
     .trim()
 }
 
+// 站内链接：以 / 开头，或文档之间的 .md 相对引用（由文档页转成站内路由），不加新窗口
+function isInternalLink(href) {
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//')) return false
+  return href.startsWith('/') || /\.md(#.*)?$/.test(href)
+}
+
 // 渲染行内样式：行内代码/加粗/斜体/删除线/链接/图片
 function renderInline(text) {
   const codeSpans = []
@@ -45,7 +51,11 @@ function renderInline(text) {
     return `\u0000${codeSpans.length - 1}\u0000`
   })
   html = html.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, '<img src="$2" alt="$1" loading="lazy" />')
-  html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+  html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, href) =>
+    isInternalLink(href)
+      ? `<a class="doc-internal-link" href="${href}">${label}</a>`
+      : `<a href="${href}" target="_blank" rel="noopener">${label}</a>`
+  )
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>')
   html = html.replace(/(^|[^*\w])\*([^*\n]+)\*/g, '$1<em>$2</em>')

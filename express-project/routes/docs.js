@@ -64,6 +64,7 @@ router.get('/docs', (req, res) => {
       return {
         name: docItem.name,
         title: docItem.title,
+        file: docItem.file,
         languages,
         updatedAt: doc ? doc.updatedAt : null
       };

@@ -163,7 +163,7 @@ npm run preview        # 本機預覽，預設 http://localhost:4173
 | Cloudflare R2 | `r2` | 存到 R2 儲存桶 | `R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_ENDPOINT`、`R2_BUCKET_NAME`、`R2_ACCOUNT_ID`、`R2_REGION` |
 | 阿里雲 OSS | `aliyun` | 存到 OSS 儲存桶 | `OSS_REGION`、`OSS_BUCKET_NAME`、`OSS_ACCESS_KEY_ID`、`OSS_ACCESS_KEY_SECRET`、`OSS_IMAGE_PREFIX` |
 
-視頻上傳策略由 `VIDEO_UPLOAD_STRATEGY` 選擇，只支援 `local` 和 `r2`。檔案大小上限由 `IMAGE_MAX_SIZE`（預設 10mb）和 `VIDEO_MAX_SIZE`（預設 100mb）控制。
+視頻上傳策略由 `VIDEO_UPLOAD_STRATEGY` 選擇，支援 `local`、`r2` 和 `aliyun`（`aliyun` 沿用圖片的 OSS 變數，可用 `OSS_VIDEO_PREFIX` 指定視頻目錄前綴，預設 `videos/`）。檔案大小上限由 `IMAGE_MAX_SIZE`（預設 10mb）和 `VIDEO_MAX_SIZE`（預設 100mb）控制。
 
 > 使用 `local` 策略時，`LOCAL_BASE_URL` 必須是瀏覽器能存取到的地址，否則圖片會裂圖。
 
