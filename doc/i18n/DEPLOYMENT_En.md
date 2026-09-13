@@ -221,7 +221,7 @@ SENSITIVE_WORD_CHECK_WHITELIST=
 - Detection scope: XiaoShiLiu ID, user nickname, personal bio, tag names, post titles and content, comments
 - On a match, the content is directly replaced with "违规昵称", "违规内容", "违规标题", "违规评论", "违规标签", and no notification is sent
 - User IDs in `SENSITIVE_WORD_CHECK_WHITELIST` are excluded from detection
-- The detection interval is 24 hours; it is not executed immediately when the backend starts, and no task is registered when it is not enabled
+- The detection interval is 24 hours; detection runs once when the backend starts and then repeats at that interval, and no task is registered when it is not enabled
 
 To run detection once immediately, you can execute it manually (also controlled by the switch, and skipped directly when not enabled):
 

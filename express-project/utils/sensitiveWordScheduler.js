@@ -8,12 +8,16 @@ const startSensitiveWordCheckService = (interval = 24 * 60 * 60 * 1000) => {
     return null
   }
 
-  // 不在启动时立即执行，避免频繁重启触发重复的全表扫描
-  const intervalId = setInterval(() => {
+  const runTask = () => {
     runCheck().catch((error) => {
       console.error('违规词检测任务执行失败:', error)
     })
-  }, interval)
+  }
+
+  // 启动时先执行一次：监控脚本会定期重启后端，内存计时器随重启归零，只靠定时器会导致任务永不触发
+  runTask()
+
+  const intervalId = setInterval(runTask, interval)
 
   console.log(`● 违规词检测已启用，每 ${Math.floor(interval / (60 * 60 * 1000))} 小时执行一次`)
 
