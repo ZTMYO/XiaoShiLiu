@@ -5,6 +5,40 @@ import vEscapeKey from './escapeKey'
 import defaultAvatar from '@/assets/imgs/avatar.png'
 import defaultPlaceholder from '@/assets/imgs/未加载.png'
 
+// 图片失败重试策略：最多重试 3 次，间隔按 1.5s 指数退避
+const MAX_RETRY_COUNT = 3
+const RETRY_BASE_DELAY = 1500
+
+// 每个图片元素的重试状态（重试次数、进行中的定时器）
+const imageRetryStates = new WeakMap()
+
+const isAvatarElement = (el) => el.classList.contains('lazy-avatar')
+
+const getPlaceholderImage = (el) => (isAvatarElement(el) ? defaultAvatar : defaultPlaceholder)
+
+const getRetryState = (el) => {
+  let state = imageRetryStates.get(el)
+  if (!state) {
+    state = { count: 0, timer: null }
+    imageRetryStates.set(el, state)
+  }
+  return state
+}
+
+const resetRetryState = (el) => {
+  const state = imageRetryStates.get(el)
+  if (state && state.timer) {
+    clearTimeout(state.timer)
+  }
+  imageRetryStates.set(el, { count: 0, timer: null })
+}
+
+const revealImage = (el) => {
+  el.style.opacity = '1'
+  el.style.visibility = 'visible'
+  el.classList.add('fade-in')
+}
+
 // 图片加载队列管理
 class ImageLoadQueue {
   constructor(maxConcurrent = 6) {
@@ -119,31 +153,21 @@ class StuckItemManager {
     // 强制加载图片，不使用队列
     const img = new Image()
     img.onload = () => {
+      resetRetryState(el)
       el.src = binding.value
       el.classList.add('fade-in')
       el.dispatchEvent(new Event('load'))
       this.removeItem(el)
     }
     img.onerror = () => {
-      // 根据图片类型选择不同的占位图
-      const isAvatar = el.classList.contains('lazy-avatar')
-      const placeholderImg = isAvatar ? defaultAvatar : defaultPlaceholder
-      el.src = placeholderImg
-      el.alt = '图片加载失败'
-      el.dispatchEvent(new Event('load'))
-      this.removeItem(el)
+      // 交由统一的失败重试流程处理
+      handleImageLoadFailure(el, binding.value)
     }
 
     // 添加5秒超时
     setTimeout(() => {
       if (!el.src || el.src === 'data:' || el.src.includes('blob:')) {
-        // 根据图片类型选择不同的占位图
-        const isAvatar = el.classList.contains('lazy-avatar')
-        const placeholderImg = isAvatar ? defaultAvatar : defaultPlaceholder
-        el.src = placeholderImg
-        el.alt = '图片加载超时'
-        el.dispatchEvent(new Event('load'))
-        this.removeItem(el)
+        handleImageLoadFailure(el, binding.value)
       }
     }, 5000)
 
@@ -153,6 +177,103 @@ class StuckItemManager {
 
 export const stuckItemManager = new StuckItemManager()
 
+// 达到重试上限后展示可点击的重试占位图
+const showRetryPlaceholder = (el) => {
+  const state = getRetryState(el)
+  if (state.timer) {
+    clearTimeout(state.timer)
+    state.timer = null
+  }
+
+  el.src = getPlaceholderImage(el)
+  el.alt = '图片加载失败，点击重试'
+  revealImage(el)
+  el.classList.add('img-retryable')
+
+  // 头像点击用于跳转用户主页，仅对封面图绑定点击重试
+  if (!isAvatarElement(el) && el.dataset.retryClickBound !== '1') {
+    el.dataset.retryClickBound = '1'
+    el.addEventListener('click', handleRetryClick)
+  }
+
+  el.dispatchEvent(new Event('load'))
+}
+
+// 用户点击占位图时手动重新加载
+const handleRetryClick = (event) => {
+  const el = event.currentTarget
+  if (!el.classList.contains('img-retryable')) return
+
+  event.stopPropagation()
+  el.classList.remove('img-retryable')
+  resetRetryState(el)
+  retryImageLoad(el)
+}
+
+// 加载失败入口：未达上限则安排指数退避重试，超限则展示占位图
+const handleImageLoadFailure = (el, src) => {
+  stuckItemManager.removeItem(el)
+
+  const state = getRetryState(el)
+  if (state.timer) return
+
+  if (state.count >= MAX_RETRY_COUNT) {
+    showRetryPlaceholder(el)
+    return
+  }
+
+  state.count += 1
+  const delay = RETRY_BASE_DELAY * Math.pow(2, state.count - 1)
+  state.timer = setTimeout(() => {
+    state.timer = null
+    retryImageLoad(el, src)
+  }, delay)
+}
+
+// 通过预加载重新拉取图片，成功后写入真实 src
+const retryImageLoad = (el, src) => {
+  const targetSrc = src || el.getAttribute('v-img-lazy') || el.dataset.src
+  if (!targetSrc) {
+    showRetryPlaceholder(el)
+    return
+  }
+
+  const img = new Image()
+
+  const timeout = setTimeout(() => {
+    img.onload = null
+    img.onerror = null
+    handleImageLoadFailure(el, targetSrc)
+  }, 8000)
+
+  img.onload = () => {
+    clearTimeout(timeout)
+    resetRetryState(el)
+    el.classList.remove('img-retryable')
+    el.removeAttribute('img-retryable')
+    el.src = targetSrc
+    el.alt = ''
+    revealImage(el)
+    el.dispatchEvent(new Event('load'))
+  }
+
+  img.onerror = () => {
+    clearTimeout(timeout)
+    img.onload = null
+    img.onerror = null
+    handleImageLoadFailure(el, targetSrc)
+  }
+
+  img.src = targetSrc
+}
+
+// 供组件监听 img error 事件时调用，触发重新加载流程
+export const retryFailedImage = (el) => {
+  if (!el) return
+  const src = el.getAttribute('v-img-lazy') || el.dataset.src
+  handleImageLoadFailure(el, src)
+}
+
 // 立即加载图片函数（用于首屏图片）
 const loadImageImmediately = (el, src) => {
   const img = new Image()
@@ -160,19 +281,12 @@ const loadImageImmediately = (el, src) => {
   const timeout = setTimeout(() => {
     img.onload = null
     img.onerror = null
-    // 根据图片类型选择不同的占位图
-    const isAvatar = el.classList.contains('lazy-avatar')
-    const placeholderImg = isAvatar ? defaultAvatar : defaultPlaceholder
-    el.src = placeholderImg
-    el.alt = '图片加载超时'
-    el.style.opacity = '1'
-    el.style.visibility = 'visible'
-    el.dispatchEvent(new Event('load'))
-    stuckItemManager.removeItem(el)
+    handleImageLoadFailure(el, src)
   }, 3000) // 首屏图片缩短超时时间
 
   img.onload = () => {
     clearTimeout(timeout)
+    resetRetryState(el)
     el.src = src
     el.style.opacity = '1'
     el.style.visibility = 'visible'
@@ -183,15 +297,9 @@ const loadImageImmediately = (el, src) => {
 
   img.onerror = () => {
     clearTimeout(timeout)
-    // 根据图片类型选择不同的占位图
-    const isAvatar = el.classList.contains('lazy-avatar')
-    const placeholderImg = isAvatar ? defaultAvatar : defaultPlaceholder
-    el.src = placeholderImg
-    el.alt = '图片加载失败'
-    el.style.opacity = '1'
-    el.style.visibility = 'visible'
-    el.dispatchEvent(new Event('load'))
-    stuckItemManager.removeItem(el)
+    img.onload = null
+    img.onerror = null
+    handleImageLoadFailure(el, src)
   }
 
   img.src = src
@@ -243,6 +351,7 @@ export const lazyPlugin = {
 
                   img.onload = () => {
                     clearTimeout(loadTimeout)
+                    resetRetryState(el)
                     el.src = binding.value
                     el.style.opacity = '1'
                     el.style.visibility = 'visible'
@@ -254,30 +363,17 @@ export const lazyPlugin = {
 
                   img.onerror = () => {
                     clearTimeout(loadTimeout)
-                    // 根据图片类型选择不同的占位图
-                    const isAvatar = el.classList.contains('lazy-avatar')
-                    const placeholderImg = isAvatar ? defaultAvatar : defaultPlaceholder
-                    el.src = placeholderImg
-                    el.alt = '图片加载失败'
-                    el.style.opacity = '1'
-                    el.style.visibility = 'visible'
-                    el.dispatchEvent(new Event('load'))
-                    stuckItemManager.removeItem(el)
+                    img.onload = null
+                    img.onerror = null
+                    handleImageLoadFailure(el, binding.value)
                     resolve()
                   }
 
                   img.src = binding.value
                 })
               }).catch(() => {
-                // 队列加载失败，显示默认图片
-                const isAvatar = el.classList.contains('lazy-avatar')
-                const placeholderImg = isAvatar ? defaultAvatar : defaultPlaceholder
-                el.src = placeholderImg
-                el.alt = '图片加载失败'
-                el.style.opacity = '1'
-                el.style.visibility = 'visible'
-                el.dispatchEvent(new Event('load'))
-                stuckItemManager.removeItem(el)
+                // 队列加载失败，进入统一重试流程
+                handleImageLoadFailure(el, binding.value)
               })
 
               stop()
@@ -305,7 +401,9 @@ export const lazyPlugin = {
         // 处理更新时的情况
         if (binding.value !== binding.oldValue) {
           if (el.src !== binding.value) {
-            // 重新触发懒加载
+            // 换了图片地址，重置重试状态后重新触发懒加载
+            resetRetryState(el)
+            el.classList.remove('img-retryable')
             el.style.opacity = '0'
             stuckItemManager.addItem(el, binding)
           }
@@ -314,6 +412,11 @@ export const lazyPlugin = {
 
       unmounted(el) {
         // 清理资源
+        const state = imageRetryStates.get(el)
+        if (state && state.timer) {
+          clearTimeout(state.timer)
+        }
+        el.removeEventListener('click', handleRetryClick)
         stuckItemManager.removeItem(el)
       }
     })

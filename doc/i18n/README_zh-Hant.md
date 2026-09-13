@@ -205,7 +205,7 @@ API_BASE_URL=http://localhost:3001
 IMAGE_MAX_SIZE=10mb
 # 單個視頻最大文件大小
 VIDEO_MAX_SIZE=100mb
-# 圖片上傳策略 (local: 本地儲存, imagehost: 第三方圖床, r2: Cloudflare R2)
+# 圖片上傳策略 (local: 本地儲存, imagehost: 第三方圖床, r2: Cloudflare R2, aliyun: 阿里雲 OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 視頻上傳策略 (local: 本地儲存, r2: Cloudflare R2)
 VIDEO_UPLOAD_STRATEGY=local
@@ -231,6 +231,17 @@ R2_ACCOUNT_ID=your_account_id_here
 R2_REGION=auto
 # 可選：如果有自定義域名，可以設置 R2_PUBLIC_URL
 # R2_PUBLIC_URL=https://your-custom-domain.com
+
+# 阿里雲 OSS 配置（當 IMAGE_UPLOAD_STRATEGY=aliyun 時使用）
+# 建議使用 RAM 子帳號的 AccessKey，並只授予該 Bucket 的讀寫權限
+OSS_REGION=oss-cn-hongkong
+OSS_BUCKET_NAME=your_bucket_name_here
+OSS_ACCESS_KEY_ID=your_access_key_id_here
+OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
+# 可選：綁定自訂網域或 CDN 後設定，留空則使用預設網域
+# OSS_PUBLIC_URL=https://img.example.com
+# 可選：物件目錄前綴，按環境或用途隔離圖片（預設 images/）
+OSS_IMAGE_PREFIX=images/
 
 # CORS配置
 CORS_ORIGIN=http://localhost:5173
@@ -276,7 +287,7 @@ VITE_APP_TITLE=小石榴圖文社區
 ```
 
 > 💡 **配置說明**：
-> - 後端支援本地儲存、第三方圖床和 Cloudflare R2 三種上傳策略
+> - 後端支援本地儲存、第三方圖床、Cloudflare R2 和阿里雲 OSS 四種上傳策略
 > - 圖片和視頻可以分別配置不同的上傳策略
 > - 郵件功能預設關閉，啟用後支援郵箱驗證註冊和找回密碼
 > - 前端使用 Vite 環境變數，變數名需以 `VITE_` 開頭

@@ -51,7 +51,7 @@ const config = {
       maxSize: process.env.IMAGE_MAX_SIZE || '10mb',
       allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
       // 图片上传策略配置
-      strategy: process.env.IMAGE_UPLOAD_STRATEGY || 'imagehost', // 'local', 'imagehost' 或 'r2'
+      strategy: process.env.IMAGE_UPLOAD_STRATEGY || 'imagehost', // 'local', 'imagehost', 'r2' 或 'aliyun'
       // 本地存储配置
       local: {
         uploadDir: process.env.IMAGE_LOCAL_UPLOAD_DIR || 'uploads/images',
@@ -71,6 +71,16 @@ const config = {
         endpoint: process.env.R2_ENDPOINT,
         publicUrl: process.env.R2_PUBLIC_URL, // 可选：自定义域名
         region: process.env.R2_REGION || 'auto'
+      },
+      // 阿里云 OSS配置
+      aliyun: {
+        region: process.env.OSS_REGION || 'oss-cn-hongkong',
+        accessKeyId: process.env.OSS_ACCESS_KEY_ID,
+        accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
+        bucketName: process.env.OSS_BUCKET_NAME,
+        publicUrl: process.env.OSS_PUBLIC_URL, // 可选：自定义域名或 CDN
+        // 对象前缀，用于按环境或用途隔离图片
+        imagePrefix: process.env.OSS_IMAGE_PREFIX || 'images/'
       }
     },
     // 视频上传配置

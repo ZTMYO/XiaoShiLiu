@@ -69,7 +69,7 @@ REFRESH_TOKEN_EXPIRES_IN=30d
 IMAGE_MAX_SIZE=10mb
 # Single video max file size
 VIDEO_MAX_SIZE=100mb
-# Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2)
+# Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2, aliyun: Alibaba Cloud OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # Video upload strategy (local: local storage, r2: Cloudflare R2)
 VIDEO_UPLOAD_STRATEGY=local
@@ -93,6 +93,17 @@ IMAGEHOST_TIMEOUT=60000
 # R2_ACCOUNT_ID=your_account_id_here
 # R2_REGION=auto
 # R2_PUBLIC_URL=https://your-custom-domain.com
+
+# Alibaba Cloud OSS configuration (when IMAGE_UPLOAD_STRATEGY=aliyun)
+# Use a RAM sub-account AccessKey with read/write permission limited to this bucket
+# OSS_REGION=oss-cn-hongkong
+# OSS_BUCKET_NAME=your_bucket_name_here
+# OSS_ACCESS_KEY_ID=your_access_key_id_here
+# OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
+# Optional: set after binding a custom domain or CDN; otherwise the default domain is used
+# OSS_PUBLIC_URL=https://img.example.com
+# Optional: object directory prefix, isolates images by environment or purpose (default images/)
+# OSS_IMAGE_PREFIX=images/
 
 # API configuration
 API_BASE_URL=http://localhost:3001
@@ -233,7 +244,7 @@ DB_PORT=3306
 IMAGE_MAX_SIZE=10mb
 # Single video max file size
 VIDEO_MAX_SIZE=100mb
-# Image Upload Strategy (local: Local Storage, imagehost: Third-party Image Hosting, r2: Cloudflare R2 Storage)
+# Image Upload Strategy (local: Local Storage, imagehost: Third-party Image Hosting, r2: Cloudflare R2 Storage, aliyun: Alibaba Cloud OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # Video Upload Strategy (local: local storage, r2: Cloudflare R2 Storage)
 VIDEO_UPLOAD_STRATEGY=local
@@ -257,7 +268,18 @@ R2_ACCOUNT_ID=your_account_id
 R2_REGION=auto
 # Optional: Custom Domain URL (if a custom domain is configured)
 R2_PUBLIC_URL=https://your-custom-domain.com
-# Upload Strategy: local (Local Storage), imagehost (Third-party Image Hosting), or r2 (Cloudflare R2 Storage)
+
+# Alibaba Cloud OSS configuration (when IMAGE_UPLOAD_STRATEGY=aliyun)
+# Use a RAM sub-account AccessKey with read/write permission limited to this bucket
+OSS_REGION=oss-cn-hongkong
+OSS_BUCKET_NAME=your_bucket_name_here
+OSS_ACCESS_KEY_ID=your_access_key_id_here
+OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
+# Optional: set after binding a custom domain or CDN; otherwise the default domain is used
+# OSS_PUBLIC_URL=https://img.example.com
+# Optional: object directory prefix, isolates images by environment or purpose (default images/)
+OSS_IMAGE_PREFIX=images/
+# Upload Strategy: local (Local Storage), imagehost (Third-party Image Hosting), r2 (Cloudflare R2 Storage), or aliyun (Alibaba Cloud OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # Video Upload Strategy: local (Local Storage), or r2 (Cloudflare R2 Storage)
 VIDEO_UPLOAD_STRATEGY=local
@@ -337,7 +359,7 @@ JWT_EXPIRES_IN=7d
 IMAGE_MAX_SIZE=10mb
 # Single video max file size
 VIDEO_MAX_SIZE=100mb
-# Image Upload Strategy (local: Local Storage, imagehost: Third-party Image Hosting, r2: Cloudflare R2 Storage)
+# Image Upload Strategy (local: Local Storage, imagehost: Third-party Image Hosting, r2: Cloudflare R2 Storage, aliyun: Alibaba Cloud OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # Video Upload Strategy (local: local storage, r2: Cloudflare R2 Storage)
 VIDEO_UPLOAD_STRATEGY=local
@@ -453,7 +475,7 @@ docker-compose exec backend ls -la /app/uploads
 
 #### 5. Upload Strategy Configuration
 
-The project supports three file upload strategies:
+The project supports four file upload strategies:
 
 **Local Storage Mode** (recommended for development and small deployments):
 ```yaml
@@ -488,6 +510,23 @@ environment:
   R2_PUBLIC_URL: https://your-custom-domain.com
 
 > **Note**: To use Cloudflare R2 storage, you need to first create an R2 bucket and obtain the corresponding access key in the Cloudflare console.
+
+**Alibaba Cloud OSS Storage Mode** (recommended for production environments, supports CDN acceleration):
+
+```yaml
+# Setting in docker-compose.yml
+environment:
+  IMAGE_UPLOAD_STRATEGY: aliyun
+  OSS_REGION: oss-cn-hongkong
+  OSS_BUCKET_NAME: your_bucket_name
+  OSS_ACCESS_KEY_ID: your_access_key_id
+  OSS_ACCESS_KEY_SECRET: your_access_key_secret
+  OSS_IMAGE_PREFIX: images/
+  # Optional: Custom domain
+  OSS_PUBLIC_URL: https://img.example.com
+```
+
+> **Note**: To use Alibaba Cloud OSS storage, you need to first create an OSS bucket in the Alibaba Cloud console, create a RAM sub-account and grant it read/write permission only for that bucket, then fill in its AccessKey.
 
 #### 6. Email Feature Configuration
 
@@ -787,7 +826,7 @@ API_BASE_URL=http://localhost:3001
 IMAGE_MAX_SIZE=10mb
 # Single video max file size
 VIDEO_MAX_SIZE=100mb
-# Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2)
+# Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2, aliyun: Alibaba Cloud OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # Video upload strategy (local: local storage, r2: Cloudflare R2)
 VIDEO_UPLOAD_STRATEGY=local

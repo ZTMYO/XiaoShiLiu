@@ -12,9 +12,8 @@ import { useLikeStore } from '@/stores/like.js'
 import { useCollectStore } from '@/stores/collect.js'
 import { useAuthStore } from '@/stores/auth'
 import { getPostList } from '@/api/posts.js'
-import defaultAvatar from '@/assets/imgs/avatar.png'
-import defaultPlaceholder from '@/assets/imgs/未加载.png'
-import { stuckItemManager } from '@/directives/index.js'
+import { stuckItemManager, retryFailedImage } from '@/directives/index.js'
+import { getThumbnailUrl } from '@/utils/imageUtils.js'
 
 const props = defineProps({
     refreshKey: {
@@ -664,18 +663,11 @@ const forceCheckFirstScreenImages = () => {
 const loadImageDirectly = (imgElement, src) => {
     const img = new Image()
 
-    // 5秒超时机制
+    // 失败时统一交由指令层的指数退避重试机制处理
     const timeout = setTimeout(() => {
         img.onload = null
         img.onerror = null
-        // 根据图片类型选择不同的占位图
-        const isAvatar = imgElement.classList.contains('lazy-avatar')
-        const placeholderImg = isAvatar ? defaultAvatar : defaultPlaceholder
-        imgElement.src = placeholderImg
-        imgElement.alt = '图片加载超时'
-        imgElement.style.opacity = '1'
-        imgElement.style.visibility = 'visible'
-        imgElement.dispatchEvent(new Event('load'))
+        retryFailedImage(imgElement)
     }, 5000)
 
     img.onload = () => {
@@ -689,14 +681,9 @@ const loadImageDirectly = (imgElement, src) => {
 
     img.onerror = () => {
         clearTimeout(timeout)
-        // 根据图片类型选择不同的占位图
-        const isAvatar = imgElement.classList.contains('lazy-avatar')
-        const placeholderImg = isAvatar ? defaultAvatar : defaultPlaceholder
-        imgElement.src = placeholderImg
-        imgElement.alt = '图片加载失败'
-        imgElement.style.opacity = '1'
-        imgElement.style.visibility = 'visible'
-        imgElement.dispatchEvent(new Event('load'))
+        img.onload = null
+        img.onerror = null
+        retryFailedImage(imgElement)
     }
 
     img.src = src
@@ -861,17 +848,17 @@ function onFadeInEnd(item) {
     }
 }
 
-// 处理头像加载失败
+// 处理头像加载失败：交由指令层做指数退避重试
 function handleAvatarError(event) {
     if (event.target) {
-        event.target.src = defaultAvatar
+        retryFailedImage(event.target)
     }
 }
 
-// 处理封面图加载失败
+// 处理封面图加载失败：交由指令层做指数退避重试
 function handleImageError(event) {
     if (event.target) {
-        event.target.src = defaultPlaceholder
+        retryFailedImage(event.target)
     }
 }
 
@@ -920,7 +907,7 @@ function handleImageError(event) {
 
                     <div class="item-content" :class="{ 'content-hidden': !isItemFullyLoaded(item.id) }">
                         <div class="content-img" @click="onCardClick(item, $event)">
-                            <img v-img-lazy="item.image" alt="" class="lazy-image" @error="handleImageError"
+                            <img v-img-lazy="getThumbnailUrl(item.image, 480)" alt="" class="lazy-image" @error="handleImageError"
                                 @load="onImageLoaded(item.id, 'imageLoaded')">
                             <!-- 视频笔记标志 -->
                             <div v-if="item.type === 2" class="video-indicator">
@@ -929,7 +916,7 @@ function handleImageError(event) {
                         </div>
                         <div class="content-title">{{ item.title }}</div>
                         <div class="contentlist">
-                            <img v-img-lazy="item.avatar" alt="" class="lazy-avatar clickable-avatar"
+                            <img v-img-lazy="getThumbnailUrl(item.avatar, 120)" alt="" class="lazy-avatar clickable-avatar"
                                 @error="handleAvatarError" @load="onImageLoaded(item.id, 'avatarLoaded')"
                                 @click="onUserClick(item.author_account, $event)">
                             <div class="contentlist-name clickable-name"
@@ -1127,6 +1114,15 @@ function handleImageError(event) {
 .lazy-image.fade-in {
     opacity: 1 !important;
     visibility: visible !important;
+}
+
+/* 重试占位图：封面图可点击重新加载 */
+.img-retryable:not(.lazy-avatar) {
+    cursor: pointer;
+}
+
+.img-retryable {
+    filter: none !important;
 }
 
 /* 加载完成的图片确保显示 */

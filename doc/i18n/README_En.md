@@ -204,7 +204,7 @@ API_BASE_URL=http://localhost:3001
 IMAGE_MAX_SIZE=10mb
 # Single video max file size
 VIDEO_MAX_SIZE=100mb
-# Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2)
+# Image upload strategy (local: local storage, imagehost: third-party image hosting, r2: Cloudflare R2, aliyun: Alibaba Cloud OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # Video upload strategy (local: local storage, r2: Cloudflare R2)
 VIDEO_UPLOAD_STRATEGY=local
@@ -230,6 +230,17 @@ R2_ACCOUNT_ID=your_account_id_here
 R2_REGION=auto
 # Optional: If you have a custom domain, you can set R2_PUBLIC_URL
 # R2_PUBLIC_URL=https://your-custom-domain.com
+
+# Alibaba Cloud OSS configuration (when IMAGE_UPLOAD_STRATEGY=aliyun)
+# Use a RAM sub-account AccessKey with read/write permission limited to this bucket
+OSS_REGION=oss-cn-hongkong
+OSS_BUCKET_NAME=your_bucket_name_here
+OSS_ACCESS_KEY_ID=your_access_key_id_here
+OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
+# Optional: set after binding a custom domain or CDN; otherwise the default domain is used
+# OSS_PUBLIC_URL=https://img.example.com
+# Optional: object directory prefix, isolates images by environment or purpose (default images/)
+OSS_IMAGE_PREFIX=images/
 
 # CORS configuration
 CORS_ORIGIN=http://localhost:5173
@@ -275,7 +286,7 @@ VITE_APP_TITLE=XiaoShiLiu Image-Text Community
 ```
 
 > 💡 **Configuration Notes**:
-> - Backend supports local storage, third-party image hosting, and Cloudflare R2 upload strategies
+> - Backend supports local storage, third-party image hosting, Cloudflare R2, and Alibaba Cloud OSS upload strategies
 > - Images and videos can be configured with different upload strategies
 > - Email functionality is disabled by default; when enabled, it supports email verification registration and password recovery
 > - Frontend uses Vite environment variables, variable names must start with `VITE_`

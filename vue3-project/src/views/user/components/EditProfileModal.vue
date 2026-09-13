@@ -39,7 +39,7 @@
             <div class="bio-input-wrapper">
               <ContentEditableInput ref="bioTextarea" v-model="form.bio" :input-class="'content-textarea'"
                 :placeholder="'请输入个人简介'" :enable-mention="true" :mention-users="mentionUsers"
-                @mention="handleMentionInput" @keydown="handleInputKeydown" />
+                @mention="handleMentionInput" />
               <div class="bio-actions">
                 <button type="button" class="mention-btn" @click="toggleMentionPanel">
                   <SvgIcon name="mention" class="mention-icon" width="20" height="20" />
@@ -649,50 +649,6 @@ const handleMentionInput = () => {
   if (!showMentionPanel.value) {
     showMentionPanel.value = true
     currentMentionField.value = 'bio'
-  }
-}
-
-// 处理键盘事件，实现mention链接整体删除
-const handleInputKeydown = (event) => {
-  if (event.key === 'Backspace') {
-    // 处理mention链接的整体删除
-    const selection = window.getSelection()
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0)
-      const container = range.startContainer
-
-      // 检查光标是否在mention链接之后
-      if (container.nodeType === Node.TEXT_NODE && container.previousSibling) {
-        const prevElement = container.previousSibling
-        if (prevElement.nodeType === Node.ELEMENT_NODE &&
-          prevElement.tagName === 'A' &&
-          prevElement.classList.contains('mention-link')) {
-          // 如果光标在mention链接后的文本节点开始位置
-          if (range.startOffset === 0) {
-            event.preventDefault()
-            // 删除整个mention链接
-            prevElement.remove()
-            // 更新form.bio的值
-            form.bio = event.target.textContent || ''
-
-            // 重新设置光标位置
-            nextTick(() => {
-              const newRange = document.createRange()
-              const newSelection = window.getSelection()
-              if (container.textContent.length > 0) {
-                newRange.setStart(container, 0)
-                newRange.setEnd(container, 0)
-              } else {
-                newRange.selectNodeContents(event.target)
-                newRange.collapse(false)
-              }
-              newSelection.removeAllRanges()
-              newSelection.addRange(newRange)
-            })
-          }
-        }
-      }
-    }
   }
 }
 

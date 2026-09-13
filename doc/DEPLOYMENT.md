@@ -162,7 +162,7 @@ API_BASE_URL=http://localhost:3001
 IMAGE_MAX_SIZE=10mb
 # 单个视频最大文件大小
 VIDEO_MAX_SIZE=100mb
-# 图片上传策略 (local: 本地存储, imagehost: 第三方图床, r2: Cloudflare R2)
+# 图片上传策略 (local: 本地存储, imagehost: 第三方图床, r2: Cloudflare R2, aliyun: 阿里云 OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 视频上传策略 (local: 本地存储, r2: Cloudflare R2)
 VIDEO_UPLOAD_STRATEGY=local
@@ -185,6 +185,17 @@ R2_ACCOUNT_ID=your_account_id_here
 R2_REGION=auto
 # 可选：如果有自定义域名，可以设置 R2_PUBLIC_URL
 # R2_PUBLIC_URL=https://your-custom-domain.com
+
+# 阿里云 OSS 配置（当UPLOAD_STRATEGY=aliyun时使用）
+# 建议使用 RAM 子账号的 AccessKey，并只授予该 Bucket 的读写权限
+OSS_REGION=oss-cn-hongkong
+OSS_BUCKET_NAME=your_bucket_name_here
+OSS_ACCESS_KEY_ID=your_access_key_id_here
+OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
+# 可选：绑定自定义域名或 CDN 后设置，留空则使用默认域名
+# OSS_PUBLIC_URL=https://img.example.com
+# 可选：对象目录前缀，按环境或用途隔离图片（默认 images/）
+OSS_IMAGE_PREFIX=images/
 
 # IP属地查询配置
 # 主API地址
@@ -314,7 +325,7 @@ XiaoShiLiu/
 1. **图片上传配置**
    ```env
    IMAGE_MAX_SIZE=10mb           # 单张图片最大文件大小
-   IMAGE_UPLOAD_STRATEGY=imagehost  # 上传策略：local/imagehost/r2
+   IMAGE_UPLOAD_STRATEGY=imagehost  # 上传策略：local/imagehost/r2/aliyun
    ```
    
 2. **视频上传配置**
@@ -324,7 +335,7 @@ XiaoShiLiu/
    ```
 
 3. **上传策略配置**
-项目支持三种图片上传策略：
+项目支持四种图片上传策略：
 
 1. **本地存储** (`UPLOAD_STRATEGY=local`)
    ```env
@@ -348,6 +359,15 @@ XiaoShiLiu/
    R2_REGION=auto
    ```
 
+4. **阿里云 OSS** (`UPLOAD_STRATEGY=aliyun`)
+   ```env
+   OSS_REGION=oss-cn-hongkong
+   OSS_BUCKET_NAME=your_bucket_name
+   OSS_ACCESS_KEY_ID=your_access_key
+   OSS_ACCESS_KEY_SECRET=your_secret_key
+   OSS_IMAGE_PREFIX=images/
+   ```
+
 ### Cloudflare R2 配置步骤
 
 1. 登录 Cloudflare 控制台
@@ -356,6 +376,15 @@ XiaoShiLiu/
 4. 生成 API 令牌（权限：R2:Edit）
 5. 获取账户 ID
 6. 配置环境变量
+
+### 阿里云 OSS 配置步骤
+
+1. 登录阿里云控制台
+2. 进入对象存储 OSS
+3. 创建 Bucket（建议区域 oss-cn-hongkong，读写权限按需设置）
+4. 创建 RAM 子账号并生成 AccessKey
+5. 只授予该 Bucket 的读写权限
+6. 配置环境变量（OSS_REGION、OSS_BUCKET_NAME、OSS_ACCESS_KEY_ID、OSS_ACCESS_KEY_SECRET）
 
 ### 邮件功能配置
 

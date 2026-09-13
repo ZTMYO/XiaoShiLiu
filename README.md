@@ -204,7 +204,7 @@ API_BASE_URL=http://localhost:3001
 IMAGE_MAX_SIZE=10mb
 # 单个视频最大文件大小
 VIDEO_MAX_SIZE=100mb
-# 图片上传策略 (local: 本地存储, imagehost: 第三方图床, r2: Cloudflare R2)
+# 图片上传策略 (local: 本地存储, imagehost: 第三方图床, r2: Cloudflare R2, aliyun: 阿里云 OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 视频上传策略 (local: 本地存储, r2: Cloudflare R2)
 VIDEO_UPLOAD_STRATEGY=local
@@ -230,6 +230,17 @@ R2_ACCOUNT_ID=your_account_id_here
 R2_REGION=auto
 # 可选：如果有自定义域名，可以设置 R2_PUBLIC_URL
 # R2_PUBLIC_URL=https://your-custom-domain.com
+
+# 阿里云 OSS 配置（当IMAGE_UPLOAD_STRATEGY=aliyun时使用）
+# 建议使用 RAM 子账号的 AccessKey，并只授予该 Bucket 的读写权限
+OSS_REGION=oss-cn-hongkong
+OSS_BUCKET_NAME=your_bucket_name_here
+OSS_ACCESS_KEY_ID=your_access_key_id_here
+OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
+# 可选：绑定自定义域名或 CDN 后设置，留空则使用默认域名
+# OSS_PUBLIC_URL=https://img.example.com
+# 可选：对象目录前缀，按环境或用途隔离图片（默认 images/）
+OSS_IMAGE_PREFIX=images/
 
 # CORS配置
 CORS_ORIGIN=http://localhost:5173
@@ -277,7 +288,7 @@ VITE_APP_TITLE=小石榴图文社区
 ```
 
 > 💡 **配置说明**：
-> - 后端支持本地存储、第三方图床和 Cloudflare R2 三种上传策略
+> - 后端支持本地存储、第三方图床、Cloudflare R2 和阿里云 OSS 四种上传策略
 > - 图片和视频可以分别配置不同的上传策略
 > - 邮件功能默认关闭，启用后支持邮箱验证注册和找回密码
 > - IP属地查询支持主备双API，自动切换保证服务可用性

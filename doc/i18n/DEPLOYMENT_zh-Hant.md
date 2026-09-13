@@ -72,7 +72,7 @@ IMAGE_MAX_SIZE=10mb
 IMAGE_MAX_SIZE=10mb
 # 單個視頻最大文件大小
 VIDEO_MAX_SIZE=100mb
-# 圖片上傳策略 (local: 本地儲存, imagehost: 第三方圖床, r2: Cloudflare R2)
+# 圖片上傳策略 (local: 本地儲存, imagehost: 第三方圖床, r2: Cloudflare R2, aliyun: 阿里雲 OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 視頻上傳策略 (local: 本地儲存, r2: Cloudflare R2)
 VIDEO_UPLOAD_STRATEGY=local
@@ -96,6 +96,17 @@ IMAGEHOST_TIMEOUT=60000
 # R2_ACCOUNT_ID=your_account_id_here
 # R2_REGION=auto
 # R2_PUBLIC_URL=https://your-custom-domain.com
+
+# 阿里雲 OSS 配置（當 IMAGE_UPLOAD_STRATEGY=aliyun 時使用）
+# 建議使用 RAM 子帳號的 AccessKey，並只授予該 Bucket 的讀寫權限
+# OSS_REGION=oss-cn-hongkong
+# OSS_BUCKET_NAME=your_bucket_name_here
+# OSS_ACCESS_KEY_ID=your_access_key_id_here
+# OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
+# 可選：綁定自訂網域或 CDN 後設定，留空則使用預設網域
+# OSS_PUBLIC_URL=https://img.example.com
+# 可選：物件目錄前綴，按環境或用途隔離圖片（預設 images/）
+# OSS_IMAGE_PREFIX=images/
 
 # API配置
 API_BASE_URL=http://localhost:3001
@@ -236,7 +247,7 @@ DB_PORT=3306
 IMAGE_MAX_SIZE=10mb
 # 單個視頻最大文件大小
 VIDEO_MAX_SIZE=100mb
-# 圖片上傳策略 (local: 本地儲存空間, imagehost: 第三方圖片伺服，r2: Cloudflare R2 儲存空間)
+# 圖片上傳策略 (local: 本地儲存空間, imagehost: 第三方圖片伺服，r2: Cloudflare R2 儲存空間, aliyun: 阿里雲 OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 視頻上傳策略 (local: 本地儲存空間, r2: Cloudflare R2 儲存空間)
 VIDEO_UPLOAD_STRATEGY=local
@@ -260,7 +271,18 @@ R2_ACCOUNT_ID=your_account_id
 R2_REGION=auto
 # 選擇性：自定義域名 URL (如果已配置自定義域名)
 R2_PUBLIC_URL=https://your-custom-domain.com
-# 上傳策略：local (本地儲存空間), imagehost (第三方圖片伺服), 或 r2 (Cloudflare R2 儲存空間)
+
+# 阿里雲 OSS 配置（當 IMAGE_UPLOAD_STRATEGY=aliyun 時使用）
+# 建議使用 RAM 子帳號的 AccessKey，並只授予該 Bucket 的讀寫權限
+OSS_REGION=oss-cn-hongkong
+OSS_BUCKET_NAME=your_bucket_name_here
+OSS_ACCESS_KEY_ID=your_access_key_id_here
+OSS_ACCESS_KEY_SECRET=your_access_key_secret_here
+# 可選：綁定自訂網域或 CDN 後設定，留空則使用預設網域
+# OSS_PUBLIC_URL=https://img.example.com
+# 可選：物件目錄前綴，按環境或用途隔離圖片（預設 images/）
+OSS_IMAGE_PREFIX=images/
+# 上傳策略：local (本地儲存空間), imagehost (第三方圖片伺服), r2 (Cloudflare R2 儲存空間), 或 aliyun (阿里雲 OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 視頻上傳策略 (local: 本地存儲, r2: Cloudflare R2 存儲)
 VIDEO_UPLOAD_STRATEGY=local
@@ -332,7 +354,7 @@ JWT_EXPIRES_IN=7d
 IMAGE_MAX_SIZE=10mb
 # 單個視頻最大文件大小
 VIDEO_MAX_SIZE=100mb
-# 圖片上傳策略 (local: 本地存儲, imagehost: 第三方圖片存儲, r2: Cloudflare R2 存儲)
+# 圖片上傳策略 (local: 本地存儲, imagehost: 第三方圖片存儲, r2: Cloudflare R2 存儲, aliyun: 阿里雲 OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 視頻上傳策略 (local: 本地存儲, r2: Cloudflare R2 存儲)
 VIDEO_UPLOAD_STRATEGY=local
@@ -448,7 +470,7 @@ docker-compose exec backend ls -la /app/uploads
 
 #### 5. 上傳策略配置
 
-此專案支援三種檔案上傳策略：
+此專案支援四種檔案上傳策略：
 
 **本地儲存模式**（推薦用於開發和小型部署）:
 ```yaml
@@ -484,6 +506,23 @@ docker-compose exec backend ls -la /app/uploads
 ```
 
 > **注意**：要使用 Cloudflare R2 儲存，您需要先在 Cloudflare 控制台中創建 R2 桶和獲取相對應的存取金鑰。
+
+**阿里雲 OSS 儲存模式**（推薦用於生產環境，支援 CDN 加速）:
+
+```yaml
+# 設定於 docker-compose.yml
+環境變數:
+  IMAGE_UPLOAD_STRATEGY: aliyun
+  OSS_REGION: oss-cn-hongkong
+  OSS_BUCKET_NAME: your_bucket_name
+  OSS_ACCESS_KEY_ID: your_access_key_id
+  OSS_ACCESS_KEY_SECRET: your_access_key_secret
+  OSS_IMAGE_PREFIX: images/
+  # 可選：自定義域名
+  OSS_PUBLIC_URL: https://img.example.com
+```
+
+> **注意**：要使用阿里雲 OSS 儲存，您需要先在阿里雲控制台創建 OSS Bucket，建立只授予該 Bucket 讀寫權限的 RAM 子帳號，並填入其 AccessKey。
 
 #### 6. 郵件功能配置
 
@@ -782,7 +821,7 @@ API_BASE_URL=http://localhost:3001
 IMAGE_MAX_SIZE=10mb
 # 單個視頻最大文件大小
 VIDEO_MAX_SIZE=100mb
-# 圖片上傳策略 (local: 本地存儲, imagehost: 第三方圖片存儲, r2: Cloudflare R2 存儲)
+# 圖片上傳策略 (local: 本地存儲, imagehost: 第三方圖片存儲, r2: Cloudflare R2 存儲, aliyun: 阿里雲 OSS)
 IMAGE_UPLOAD_STRATEGY=imagehost
 # 視頻上傳策略 (local: 本地存儲, r2: Cloudflare R2 存儲)
 VIDEO_UPLOAD_STRATEGY=local

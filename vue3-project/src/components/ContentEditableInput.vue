@@ -100,6 +100,9 @@ const convertTextToMentionLinks = (text) => {
   }
   text = decodeHtmlEntities(text)
 
+  // 历史数据可能残留块级标签，先归一化为换行，保证本函数幂等（不会层层嵌套 div）
+  text = convertMentionLinksToText(text)
+
   // 处理[@nickname:user_id]格式（兼容旧格式）
   const mentionRegex = /\[@([^:]+):([^\]]+)\]/g
   text = text.replace(mentionRegex, (match, nickname, userId) => {
@@ -113,16 +116,10 @@ const convertTextToMentionLinks = (text) => {
 
   // 处理换行符，转换为 div 结构（符合 contenteditable 默认行为）
   const lines = text.split('\n')
-  if (lines.length === 1) {
-    return text
-  }
   
-  // 第一行不包裹，后续行用 div 包裹
-  let result = lines[0]
-  for (let i = 1; i < lines.length; i++) {
-    result += `<div>${lines[i]}</div>`
-  }
-  return result
+  // 每行统一用 div 包裹，使行内的 mention 链接始终处于块级容器中，
+  // 这样在 mention 前后按回车时浏览器才能正确拆分段落
+  return lines.map((line) => `<div>${line || '<br>'}</div>`).join('')
 }
 
 // 将HTML格式的mention链接转换为[@nickname:user_id]格式，保持换行
@@ -157,7 +154,11 @@ const convertMentionLinksToText = (html) => {
           }
           result += processNode(child)
         } else if (child.tagName === 'BR') {
-          result += '\n'
+          // 块内只有 <br> 时它只是空行的占位符，换行已由 DIV 分支计入
+          const isPlaceholder = child.parentNode && child.parentNode.childNodes.length === 1
+          if (!isPlaceholder) {
+            result += '\n'
+          }
         } else if (child.tagName === 'A' && child.classList.contains('mention-link')) {
           // 保持mention链接的HTML格式
           result += child.outerHTML
@@ -306,11 +307,144 @@ const handleClick = (event) => {
 const removeMentionLink = (linkElement) => {
   if (linkElement && linkElement.classList && linkElement.classList.contains('mention-link')) {
     linkElement.remove()
-    const textContent = convertMentionLinksToText(inputRef.value.innerHTML)
-    emit('update:modelValue', textContent)
+    syncModelFromDom()
     return true
   }
   return false
+}
+
+const isMentionLinkNode = (node) => Boolean(
+  node && node.nodeType === Node.ELEMENT_NODE && node.classList && node.classList.contains('mention-link')
+)
+
+// 拆分、合并行块时浏览器会留下不显示的空文本节点，它占住 childNodes 的下标，
+// 让"光标是否紧邻 mention"的判断失效，这里统一识别并跳过
+const isEmptyTextNode = (node) => Boolean(node) && node.nodeType === Node.TEXT_NODE && node.textContent.length === 0
+
+const removeEmptyTextNodes = (block) => {
+  if (!block) return
+  Array.from(block.childNodes).forEach((child) => {
+    if (isEmptyTextNode(child)) child.remove()
+  })
+}
+
+const skipEmptyTextNodes = (node, direction) => {
+  let current = node
+  while (isEmptyTextNode(current)) {
+    current = direction === 'previous' ? current.previousSibling : current.nextSibling
+  }
+  return current
+}
+
+// 光标是否紧贴在 mention 链接的前面或后面
+const isCaretNextToMention = () => {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return false
+  const { startContainer, startOffset } = selection.getRangeAt(0)
+
+  let leftNode = null
+  let rightNode = null
+
+  if (startContainer.nodeType === Node.TEXT_NODE) {
+    const textNode = startContainer
+    if (startOffset === 0) {
+      leftNode = skipEmptyTextNodes(textNode.previousSibling, 'previous')
+      rightNode = isEmptyTextNode(textNode) ? skipEmptyTextNodes(textNode.nextSibling, 'next') : textNode
+    } else if (startOffset === textNode.textContent.length) {
+      leftNode = textNode
+      rightNode = skipEmptyTextNodes(textNode.nextSibling, 'next')
+    }
+  } else {
+    leftNode = skipEmptyTextNodes(startContainer.childNodes[startOffset - 1], 'previous')
+    rightNode = skipEmptyTextNodes(startContainer.childNodes[startOffset], 'next')
+  }
+
+  return isMentionLinkNode(leftNode) || isMentionLinkNode(rightNode)
+}
+
+// 在光标处把行块拆成两行，光标后（含 mention）的内容整体移入新行，光标落在新行开头。
+// 不用 <br>：光标定位在 <br> 之后会被浏览器归一到 <br> 之前，导致光标留在上一行末尾
+const splitLineAtCaret = () => {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return false
+  const range = selection.getRangeAt(0)
+  if (!range.collapsed) return false
+
+  let block = range.startContainer
+  if (block.nodeType === Node.TEXT_NODE) block = block.parentNode
+  while (block && block !== inputRef.value && block.nodeName !== 'DIV') {
+    block = block.parentNode
+  }
+  if (!block || block === inputRef.value) return false
+
+  const tail = document.createRange()
+  tail.setStart(range.startContainer, range.startOffset)
+  tail.setEnd(block, block.childNodes.length)
+
+  const newBlock = document.createElement('div')
+  newBlock.appendChild(tail.extractContents())
+  removeEmptyTextNodes(newBlock)
+  if (!newBlock.firstChild) newBlock.appendChild(document.createElement('br'))
+
+  block.parentNode.insertBefore(newBlock, block.nextSibling)
+  removeEmptyTextNodes(block)
+  if (!block.firstChild) block.appendChild(document.createElement('br'))
+
+  const caret = document.createRange()
+  caret.setStart(newBlock, 0)
+  caret.collapse(true)
+  selection.removeAllRanges()
+  selection.addRange(caret)
+  return true
+}
+
+// 光标停在行首时把当前行并回上一行，光标落在两行内容的衔接处。
+// 衔接处涉及 mention 时浏览器同样会丢光标，所以自己合并
+const mergeLineBackward = () => {
+  const selection = window.getSelection()
+  if (!selection || selection.rangeCount === 0) return false
+  const range = selection.getRangeAt(0)
+  if (!range.collapsed || range.startOffset !== 0) return false
+  if (range.startContainer.nodeType !== Node.ELEMENT_NODE) return false
+
+  const block = range.startContainer
+  if (block === inputRef.value || block.nodeName !== 'DIV') return false
+
+  const previous = block.previousElementSibling
+  if (!previous || previous.nodeName !== 'DIV') return false
+
+  // 只在衔接处涉及 mention 时接管，其余行交给浏览器默认行为
+  if (!block.querySelector('.mention-link') &&
+    !isMentionLinkNode(skipEmptyTextNodes(previous.lastChild, 'previous'))) return false
+
+  const isPlaceholder = block.childNodes.length === 1 && block.firstChild.nodeName === 'BR'
+  if (isPlaceholder) {
+    block.remove()
+    const caret = document.createRange()
+    caret.setStart(previous, previous.childNodes.length)
+    caret.collapse(true)
+    selection.removeAllRanges()
+    selection.addRange(caret)
+    return true
+  }
+
+  // 上一行是空行占位时先移除占位 <br>，否则合并后会多出一个空行
+  if (previous.childNodes.length === 1 && previous.firstChild.nodeName === 'BR') {
+    previous.firstChild.remove()
+  }
+
+  removeEmptyTextNodes(previous)
+  const junction = previous.childNodes.length
+  Array.from(block.childNodes).forEach((child) => previous.appendChild(child))
+  removeEmptyTextNodes(previous)
+  block.remove()
+
+  const caret = document.createRange()
+  caret.setStart(previous, junction)
+  caret.collapse(true)
+  selection.removeAllRanges()
+  selection.addRange(caret)
+  return true
 }
 
 const handleKeydown = (event) => {
@@ -322,7 +456,15 @@ const handleKeydown = (event) => {
       emit('send')
       return
     }
-    // 普通Enter键允许默认换行行为，不阻止
+
+    // 紧邻 mention 时自己拆行：交给浏览器拆段落会把不可编辑的链接挤进另一个块，
+    // 形成"光标单独占一行、链接被挤到下一行"的三行结构
+    if (isCaretNextToMention() && splitLineAtCaret()) {
+      event.preventDefault()
+      inputRef.value.dispatchEvent(new Event('input', { bubbles: true }))
+      return
+    }
+    // 其余情况沿用浏览器默认换行
   }
 
   // 阻止左右箭头键事件冒泡，避免触发父级的图片翻页功能
@@ -335,6 +477,12 @@ const handleKeydown = (event) => {
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0)
       if (range.collapsed) {
+        if (mergeLineBackward()) {
+          event.preventDefault()
+          inputRef.value.dispatchEvent(new Event('input', { bubbles: true }))
+          return
+        }
+
         if (range.startContainer.nodeType === Node.TEXT_NODE &&
           range.startOffset === range.startContainer.textContent.length) {
           const textNode = range.startContainer
@@ -349,6 +497,15 @@ const handleKeydown = (event) => {
           const textNode = range.startContainer
           const prevSibling = textNode.previousSibling
           if (removeMentionLink(prevSibling)) {
+            event.preventDefault()
+            return
+          }
+        }
+
+        // 光标停在块级容器（根节点或行 div）中、紧跟 mention 链接之后
+        if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+          const prevChild = range.startContainer.childNodes[range.startOffset - 1]
+          if (removeMentionLink(prevChild)) {
             event.preventDefault()
             return
           }
@@ -376,6 +533,15 @@ const handleKeydown = (event) => {
           const textNode = range.endContainer
           const nextSibling = textNode.nextSibling
           if (removeMentionLink(nextSibling)) {
+            event.preventDefault()
+            return
+          }
+        }
+
+        // 光标停在块级容器中、紧邻 mention 链接之前
+        if (range.startContainer.nodeType === Node.ELEMENT_NODE) {
+          const nextChild = range.startContainer.childNodes[range.startOffset]
+          if (removeMentionLink(nextChild)) {
             event.preventDefault()
             return
           }
@@ -588,6 +754,13 @@ const resetUserTypingFlag = () => {
   })
 }
 
+// 以 DOM 为准同步模型：先标记为用户操作，避免 watch 重写 innerHTML 把光标弹到开头
+const syncModelFromDom = () => {
+  isUserTyping.value = true
+  emit('update:modelValue', convertMentionLinksToText(inputRef.value.innerHTML))
+  resetUserTypingFlag()
+}
+
 const createMentionLink = (userId, nickname) => {
   const mentionLink = document.createElement('a')
   mentionLink.href = `/user/${userId}`
@@ -638,7 +811,7 @@ const insertAtSymbol = () => {
       selection.removeAllRanges()
       selection.addRange(range)
 
-      emit('update:modelValue', inputRef.value.innerHTML)
+      syncModelFromDom()
       return true
     }
   }
@@ -661,7 +834,7 @@ const insertAtSymbol = () => {
   selection.removeAllRanges()
   selection.addRange(range)
 
-  emit('update:modelValue', inputRef.value.innerHTML)
+  syncModelFromDom()
   return true
 }
 
@@ -874,8 +1047,7 @@ const convertAtMarkerToText = () => {
 
   // 触发更新事件
   if (atMarkers.length > 0) {
-    const textContent = convertMentionLinksToText(inputRef.value.innerHTML)
-    emit('update:modelValue', textContent)
+    syncModelFromDom()
   }
 }
 

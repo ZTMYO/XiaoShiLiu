@@ -131,3 +131,51 @@ export function getImageDimensions(imageData, maxWidth = null, maxHeight = null)
 export function generateFallbackImageUrl(width = 400, height = 300, text = '图片', bgColor = 'CCCCCC') {
   return new URL('@/assets/imgs/未加载.png', import.meta.url).href
 }
+
+// 支持 URL 参数缩放的服务域名，绑定自定义域名或 CDN 后可通过 VITE_OSS_IMAGE_HOSTS 追加
+const THUMBNAIL_HOSTS = (import.meta.env.VITE_OSS_IMAGE_HOSTS || 'aliyuncs.com')
+  .split(',')
+  .map(host => host.trim().toLowerCase())
+  .filter(Boolean)
+
+function supportsThumbnail(url) {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase()
+    return THUMBNAIL_HOSTS.some(host => hostname === host || hostname.endsWith('.' + host))
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 生成图片缩略图 URL
+ * 仅对支持图片处理的服务生效，其余来源（如旧图床）原样返回
+ * @param {string} url - 原图 URL
+ * @param {number} width - 目标宽度
+ * @param {Object} options - 可选参数
+ * @param {string|null} options.format - 输出格式，传 null 保持原格式
+ * @param {number|null} options.quality - 压缩质量，传 null 不压缩
+ * @returns {string} 缩略图 URL
+ */
+export function getThumbnailUrl(url, width = 480, options = {}) {
+  if (!url || typeof url !== 'string' || !supportsThumbnail(url)) {
+    return url
+  }
+
+  if (url.includes('x-oss-process=')) {
+    return url
+  }
+
+  // 动图经缩放处理后只剩第一帧，保持原图
+  if (/\.gif(\?|$)/i.test(url)) {
+    return url
+  }
+
+  const { format = 'webp', quality = 75 } = options
+  const process = ['image/resize,w_' + width]
+  if (format) process.push('format,' + format)
+  if (quality) process.push('quality,q_' + quality)
+
+  const separator = url.includes('?') ? '&' : '?'
+  return url + separator + 'x-oss-process=' + process.join('/')
+}
