@@ -4,7 +4,7 @@
  * @author ZTMYO
  * @github https://github.com/ZTMYO
  * @description 基于Express框架的图文社区后端API服务
- * @version v1.3.2
+ * @version v1.3.3
  * @license GPLv3
  */
 

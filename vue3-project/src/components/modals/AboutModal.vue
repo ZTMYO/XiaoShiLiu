@@ -9,7 +9,7 @@
 
             <h2 class="about-title">关于小石榴</h2>
           </div>
-          <p class="version">v1.3.2</p>
+          <p class="version">v1.3.3</p>
         </div>
         <button class="close-btn" @click="closeModal">
           <SvgIcon name="close" />
@@ -190,7 +190,7 @@ onMounted(() => {
 .about-header {
   position: relative;
   background: var(--bg-color-primary);
-  padding: 24px 32px;
+  padding: 24px 32px 12px 32px;
   border-radius: 16px 16px 0 0;
   flex-shrink: 0;
 }

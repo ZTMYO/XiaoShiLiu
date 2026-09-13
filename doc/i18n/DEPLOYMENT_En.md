@@ -1,15 +1,15 @@
-# XiaoShiLiu Image & Text Community Deployment Guide
+# XiaoShiLiu UGC Community Deployment Guide
 
 ## System Requirements
 
 - **Docker Deployment**: Docker 20.10+, Docker Compose 2.0+
 - **Traditional Deployment**: Node.js 18+, MySQL 5.7+, npm or yarn
 
-> 💡 For BT-Panel deployment, refer to: [Complete Tutorial for Deploying the XiaoShiLiu Image & Text Community with BT-Panel](https://www.sakuraidc.cc/forum-post/3116.html)
+> 💡 For BT-Panel deployment, refer to: [Complete Tutorial for Deploying the XiaoShiLiu UGC Community with BT-Panel](https://www.sakuraidc.cc/forum-post/3116.html)
 
 ---
 
-## 🐋 Docker One-Click Deployment (Recommended)
+## Docker One-Click Deployment (Recommended)
 
 ### 1. Clone the Project
 
@@ -87,7 +87,7 @@ After deploying to a server, replace `localhost` with the public IP or domain to
 
 ---
 
-## 🛠️ Traditional Deployment
+## Traditional Deployment
 
 ### 1. Prerequisites
 
@@ -150,7 +150,7 @@ The frontend `.env` points to `http://localhost:3001/api` by default; when the b
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Upload Configuration
 
@@ -299,7 +299,7 @@ server {
 
 ---
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Docker Deployment Issues
 
@@ -319,7 +319,7 @@ server {
 
 ---
 
-## 📝 Notes
+## Notes
 
 - **Production environment**: Change the default database password and `JWT_SECRET`, configure HTTPS, set firewall rules, and back up data regularly
 - **Do not** commit the `.env` file to version control

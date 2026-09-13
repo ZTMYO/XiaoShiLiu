@@ -165,7 +165,7 @@ const isFilterOpen = ref(false)
 
 // 判断当前页面是否需要显示筛选按钮
 const shouldShowFilter = computed(() => {
-  const noFilterRoutes = ['/admin/api-docs', '/admin/monitor']
+  const noFilterRoutes = ['/admin/monitor']
   return !noFilterRoutes.includes(route.path)
 })
 
@@ -265,7 +265,6 @@ watch(isFilterOpen, (newValue) => {
 
 // 菜单项
 const menuItems = [
-  { path: '/admin/api-docs', title: 'API文档', icon: 'data' },
   { path: '/admin/monitor', title: '动态监控', icon: 'monitor' },
   { path: '/admin/users', title: '用户管理', icon: 'user' },
   { path: '/admin/posts', title: '笔记管理', icon: 'post' },
@@ -292,7 +291,6 @@ const currentPageTitle = computed(() => {
 // 当前页面描述
 const currentPageDescription = computed(() => {
   const descriptions = {
-    '/admin/api-docs': '查看和测试API接口文档',
     '/admin/monitor': '查看系统最近动态和活动监控',
     '/admin/users': '管理用户账户和权限',
     '/admin/post-audit': '管理笔记审核',
@@ -375,8 +373,14 @@ const goBack = () => {
 <style scoped>
 .admin-layout {
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  /* 后台整体按 80% 呈现：容器放大到 125% 再缩放 0.8，视觉上正好铺满视口 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 125vw;
+  height: 125vh;
+  transform: scale(0.8);
+  transform-origin: top left;
   background-color: var(--bg-color-secondary);
   overflow: hidden;
   transition: background-color 0.3s ease;
@@ -792,7 +796,7 @@ const goBack = () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1122,8 +1126,6 @@ const goBack = () => {
   z-index: 1000;
   display: flex;
   align-items: flex-end;
-  height: 100vh;
-  height: 100dvh;
 }
 
 .filter-menu-content {

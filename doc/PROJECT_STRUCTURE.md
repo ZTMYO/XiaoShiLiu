@@ -9,10 +9,11 @@
 ├── vue3-project/            # 前端项目
 ├── express-project/         # 后端项目
 ├── doc/                     # 项目文档
+│   ├── OVERVIEW.md          # 文档总览
 │   ├── API_DOCS.md          # 接口文档
-│   ├── DATABASE_DESIGN.md   # 数据库设计
 │   ├── DEPLOYMENT.md        # 部署指南
 │   ├── PROJECT_STRUCTURE.md # 项目结构（本文档）
+│   ├── DATABASE_DESIGN.md   # 数据库设计
 │   ├── i18n/                # 文档的英/繁体版本
 │   └── imgs/                # 文档配图
 ├── docker-compose.yml       # Docker 编排
@@ -23,7 +24,7 @@
 └── README.md                # 项目主文档
 ```
 
-## 前端项目结构（vue3-project/）
+## 前端项目结构
 
 ```
 vue3-project/
@@ -50,7 +51,7 @@ vue3-project/
 └── vite.config.js           # Vite 配置
 ```
 
-## 后端项目结构（express-project/）
+## 后端项目结构
 
 ```
 express-project/
@@ -73,7 +74,7 @@ express-project/
 | 文件 | 挂载路径 | 功能 |
 |------|----------|------|
 | `auth.js` | `/api/auth` | 登录、注册、令牌校验 |
-| `users.js` | `/api/users` | 用户信息、关注关系 |
+| `users.js` | `/api/users` | 用户信息、资料统计、关注与粉丝、认证申请、修改密码 |
 | `posts.js` | `/api/posts` | 笔记发布、编辑、删除、查询 |
 | `comments.js` | `/api/comments` | 评论发布、删除、查询 |
 | `likes.js` | `/api/likes` | 笔记与评论点赞 |
@@ -84,8 +85,10 @@ express-project/
 | `stats.js` | `/api/stats` | 平台数据统计 |
 | `categories.js` | `/api/categories` | 分类查询 |
 | `files.js` | `/api/files` | 文件访问 |
-| `admin.js` | `/api/admin` | 后台管理 |
-| `docs.js` | `/api/system` | 系统信息与接口文档 |
+| `admin.js` | `/api/admin` | 后台管理（用户、内容、会话、管理员等） |
+| `docs.js` | `/api/system` | 站点文档的 Markdown 原文 |
+
+此外 `GET /api/health` 健康检查由 `app.js` 直接定义，不经过 `routes/`。
 
 ### 脚本文件说明
 
@@ -97,51 +100,82 @@ express-project/
 | `update-sample-images.js` | 批量更新示例图片链接 |
 | `local-sensitive-word-check.js` | 扫描笔记与评论中的违规词 |
 | `migrate-audit-to-verification.js` | 将 audit 表中的认证数据迁移到 user_verification |
+| `违规词库.txt` | `local-sensitive-word-check.js` 加载的违规词词库 |
 
-## 技术架构
+## 前端页面与路由
 
-### 前端架构
+### 主站页面
+
+| 页面文件 | 路由 | 说明 |
+|----------|------|------|
+| `layout/index.vue` | `/` | 主站布局（页头、侧边栏、页脚），根路径重定向到 `/explore` |
+| `explore/index.vue` | `/explore` | 发现页 |
+| `explore/ChannelPage.vue` | `/explore`、`/explore/:channel` | 频道内容流，`:channel` 无效时回退到推荐 |
+| `PostDetail.vue` | `/post` | 笔记详情 |
+| `publish/index.vue` | `/publish` | 发布笔记 |
+| `notification/index.vue` | `/notification` | 通知中心 |
+| `user/index.vue` | `/user` | 我的主页 |
+| `user/UserProfile.vue` | `/user/:userId` | 他人主页 |
+| `user/FollowList.vue` | `/follow/:type` | 关注、粉丝、互关列表，`type` 取 `mutual`、`following`、`followers` |
+| `search/SearchResult.vue` | `/search_result`、`/search_result/:tab` | 搜索结果，`tab` 取 `all`、`post`、`video`、`user` |
+| `post-management/index.vue` | `/post-management` | 笔记管理 |
+| `draft-box/index.vue` | `/draft-box` | 草稿箱 |
+| `NotFound.vue` | `/:pathMatch(.*)*` | 404 页面 |
+
+### 独立布局页面
+
+| 页面文件 | 路由 | 说明 |
+|----------|------|------|
+| `download/index.vue` | `/download` | 客户端下载页 |
+| `doc/index.vue` | `/doc/:name?`、`/:lang(zh\|en\|zh-Hant)/doc/:name?` | 文档阅读页 |
+
+### 后台管理页面
+
+| 页面文件 | 路由 | 说明 |
+|----------|------|------|
+| `admin/AdminLogin.vue` | `/admin/login` | 后台登录 |
+| `admin/AdminLayout.vue` | `/admin` | 后台布局，根路径重定向到 `/admin/monitor` |
+| `admin/AdminMonitor.vue` | `/admin/monitor` | 动态监控 |
+| `admin/UserManagement.vue` | `/admin/users` | 用户管理 |
+| `admin/PostAudit.vue` | `/admin/post-audit` | 笔记审核 |
+| `admin/PostManagement.vue` | `/admin/posts` | 笔记管理 |
+| `admin/CommentManagement.vue` | `/admin/comments` | 评论管理 |
+| `admin/CategoryManagement.vue` | `/admin/categories` | 分类管理 |
+| `admin/TagManagement.vue` | `/admin/tags` | 标签管理 |
+| `admin/LikeManagement.vue` | `/admin/likes` | 点赞管理 |
+| `admin/CollectionManagement.vue` | `/admin/collections` | 收藏管理 |
+| `admin/FollowManagement.vue` | `/admin/follows` | 关注管理 |
+| `admin/NotificationManagement.vue` | `/admin/notifications` | 通知管理 |
+| `admin/SessionManagement.vue` | `/admin/sessions` | 用户会话管理 |
+| `admin/AdminSessionManagement.vue` | `/admin/admin-sessions` | 管理员会话管理 |
+| `admin/AdminManagement.vue` | `/admin/admins` | 管理员管理 |
+| `admin/AuditManagement.vue` | `/admin/audit` | 认证审核 |
+
+## 请求生命周期
 
 ```
-┌──────────────────────────────────────┐
-│              Vue 3 App               │
-├──────────────────────────────────────┤
-│   Views (页面)  │  Components (组件)  │
-├──────────────────────────────────────┤
-│   Router (路由) │  Stores (状态管理)  │
-├──────────────────────────────────────┤
-│   API (接口)    │  Utils (工具)      │
-├──────────────────────────────────────┤
-│           Vite (构建工具)            │
-└──────────────────────────────────────┘
+浏览器
+  ↓ 前端 axios 实例（src/api/request.js）
+     请求拦截器注入 Authorization: Bearer <token>（后台页面用 admin_token）
+Vite 开发服务器 / Nginx（线上：静态托管 + /api 反向代理到后端 3001 端口）
+  ↓
+Express（app.js）
+  ├── cors
+  ├── express.json / urlencoded（请求体上限 50MB）
+  ├── 限流：/api 每 15 分钟 500 次，/api/auth 每 5 分钟 20 次，/api/upload 每 15 分钟 60 次
+  ├── 路由分发（routes/*.js，挂载路径见上表）
+  ├── 认证中间件（middleware/auth.js 的 authenticateToken、optionalAuth）
+  └── utils/dbHelper.js → MySQL 连接池（config/config.js 导出的 pool）
+  ↓ JSON 响应（统一 { code, message, data }）
+响应拦截器把 code 转成 success，401 清除令牌并跳登录，429 提示请求过于频繁
+  ↓
+Pinia store 更新状态 → 组件重新渲染
 ```
 
-### 后端架构
+## 常见改动入口
 
-```
-┌──────────────────────────────────────┐
-│           Express Server             │
-├──────────────────────────────────────┤
-│   Routes (路由) │ Middleware (中间件) │
-├──────────────────────────────────────┤
-│   Config (配置) │  Utils (工具)      │
-├──────────────────────────────────────┤
-│           MySQL Database             │
-└──────────────────────────────────────┘
-```
-
-## 数据流向
-
-```
-前端 Vue App
-     ↓ HTTP 请求
-Express 路由
-     ↓ 数据处理
-中间件验证
-     ↓ 数据库操作
-MySQL 数据库
-     ↓ 返回数据
-前端状态更新
-     ↓ 视图渲染
-用户界面展示
-```
+| 要做的事 | 需要改的文件 |
+|----------|--------------|
+| 新增前端页面 | `src/views/` 新建组件 → `src/router/index.js` 注册路由 → 需要接口时在 `src/api/` 封装、在 `src/stores/` 加状态 |
+| 新增后端接口 | 在 `routes/` 对应文件加路由，新领域则新建文件并在 `app.js` 挂载 → 需要认证时加 `middleware/auth.js` 的中间件 → 数据库操作走 `utils/dbHelper.js` |
+| 新增数据表 | `scripts/init-database.js` 与 `scripts/init-database.sql` 两处保持同步 |

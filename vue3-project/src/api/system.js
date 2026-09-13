@@ -1,4 +1,8 @@
 import request from './request.js'
 
-// 获取系统 API 接口文档（原始 Markdown 内容由后端从 doc/API_DOCS.md 读取）
-export const getApiDocs = () => request.get('/system/api-docs')
+// 获取可读文档清单（含每篇文档已有的语言版本）
+export const getDocs = () => request.get('/system/docs')
+
+// 按文档名与语言获取 Markdown 原文
+export const getDocByName = (name, lang = 'zh') =>
+  request.get(`/system/docs/${name}`, { params: { lang } })

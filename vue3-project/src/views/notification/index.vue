@@ -157,7 +157,7 @@ async function loadCommentsData(isLoadMore = false) {
         action: item.title || '评论了你的笔记',
         time: formatTime(item.created_at),
         content: isMentionPost ? '点击查看详情' : (item.comment_content || '原评论已删除'),
-        postImage: item.post_image || '/default-post.png',
+        postImage: item.post_image || imagePlaceholder,
         target_id: item.target_id,
         commentId: item.comment_id, // 评论ID，用于回复和点赞
         isLiked: item.comment_is_liked === 1, // 评论点赞状态
@@ -229,7 +229,7 @@ async function loadLikesData(isLoadMore = false) {
       verified: item.from_verified || 0,
       action: item.title || '点赞了你的内容', // 使用后端返回的正确标题
       time: formatTime(item.created_at),
-      postImage: item.post_image || '/default-post.png',
+      postImage: item.post_image || imagePlaceholder,
       target_id: item.target_id, // 添加笔记ID
       target_type: item.target_type, // 目标类型：1-笔记，2-评论
       commentId: item.comment_id, // 评论ID（当target_type为2时）
@@ -415,7 +415,7 @@ async function loadCollectionsData(isLoadMore = false) {
       verified: item.from_verified || 0,
       action: item.title || '收藏了你的笔记', // 使用后端返回的正确标题
       time: formatTime(item.created_at),
-      postImage: item.post_image || '/default-post.png',
+      postImage: item.post_image || imagePlaceholder,
       target_id: item.target_id, // 添加笔记ID
       isRead: item.is_read === 1,
       isFollowing: false // 需要额外查询关注状态

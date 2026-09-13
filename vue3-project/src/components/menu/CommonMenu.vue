@@ -8,6 +8,9 @@ import { useAboutStore } from '@/stores/about'
 import { useKeyboardShortcutsStore } from '@/stores/keyboardShortcuts'
 import { useAccountSecurityStore } from '@/stores/accountSecurity'
 import ColorPickerMenuItem from '@/components/menu/ColorPickerMenuItem.vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const aboutStore = useAboutStore()
@@ -34,6 +37,8 @@ const handleLogout = async () => {
 const handleMenuClick = (action) => {
   if (action === 'about') {
     aboutStore.openAboutModal()
+  } else if (action === 'download') {
+    router.push('/download')
   } else if (action === 'logout') {
     handleLogout()
   } else if (action === 'login') {
@@ -50,6 +55,9 @@ const handleMenuClick = (action) => {
 
   <DropdownItem @click="handleMenuClick('about')">
     关于小石榴
+  </DropdownItem>
+  <DropdownItem @click="handleMenuClick('download')">
+    下载与文档
   </DropdownItem>
   <DropdownItem @click="handleMenuClick('keyboardShortcuts')">
     键盘快捷键

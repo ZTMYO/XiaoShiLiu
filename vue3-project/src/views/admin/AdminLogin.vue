@@ -1,20 +1,28 @@
 <template>
   <div class="admin-login-page">
+    <aside class="login-brand">
+      <div class="logo" @click="router.push('/')" title="返回主站">
+        <img :src="logoUrl" alt="小石榴" />
+      </div>
+      <div class="brand-inner">
+        <h1 class="brand-title">小石榴图文社区</h1>
+        <p class="brand-slogan">让你的创作、分享与交流简单、清晰、高效。</p>
+        <p class="brand-meta">Vue3 + Express + MySQL · GPLv3 开源</p>
+      </div>
+    </aside>
+
     <div class="login-container">
       <div class="login-card">
-
         <div class="login-header">
-          <h1 class="login-title">小石榴管理后台</h1>
+          <h2 class="login-title">小石榴管理后台</h2>
+          <p class="login-subtitle">请使用管理员账号登录</p>
         </div>
-
 
         <div v-if="unifiedMessage" class="message" :class="messageType">
           {{ unifiedMessage }}
         </div>
 
-
         <form @submit.prevent="handleSubmit" class="login-form">
-
           <div class="form-group">
             <label for="username" class="form-label">用户名</label>
             <div class="input-wrapper">
@@ -24,7 +32,6 @@
             <span v-if="errors.username" class="error-message">{{ errors.username }}</span>
           </div>
 
-
           <div class="form-group">
             <label for="password" class="form-label">密码</label>
             <div class="input-wrapper">
@@ -33,7 +40,6 @@
             </div>
             <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
           </div>
-
 
           <button type="submit" class="login-button" :disabled="isSubmitting">
             <span v-if="isSubmitting">登录中...</span>
@@ -55,6 +61,8 @@ const router = useRouter()
 
 // Store
 const adminStore = useAdminStore()
+
+const logoUrl = new URL('@/assets/imgs/小石榴.png', import.meta.url).href
 
 // 响应式数据
 const isSubmitting = ref(false)
@@ -124,7 +132,7 @@ const handleSubmit = async () => {
 
       // 延迟跳转，让用户看到成功提示
       setTimeout(() => {
-        router.push('/admin/api-docs')
+        router.push('/admin/monitor')
       }, 1000)
     } else {
       unifiedMessage.value = result.message || '登录失败，请检查用户名和密码'
@@ -142,43 +150,161 @@ const handleSubmit = async () => {
 
 <style scoped>
 .admin-login-page {
+  display: flex;
+  width: 100%;
   min-height: 100vh;
   background: var(--bg-color-primary);
+}
+
+/* ===== 左侧品牌区 ===== */
+.login-brand {
+  position: relative;
+  flex: 0 0 58%;
+  max-width: 760px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 48px 64px 72px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--bg-color-secondary);
+}
+
+/* 主题色柔光，避免大面积浅色底显得空 */
+.login-brand::before,
+.login-brand::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.login-brand::before {
+  width: 520px;
+  height: 520px;
+  top: -180px;
+  right: -140px;
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  filter: blur(90px);
+  animation: brand-drift-a 24s ease-in-out infinite alternate;
+}
+
+.login-brand::after {
+  width: 420px;
+  height: 420px;
+  bottom: -180px;
+  left: -120px;
+  background: color-mix(in srgb, var(--primary-color) 7%, transparent);
+  filter: blur(90px);
+  animation: brand-drift-b 28s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes brand-drift-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-60px, 50px, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(40px, 90px, 0) scale(0.95);
+  }
+}
+
+@keyframes brand-drift-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(70px, -50px, 0) scale(1.1);
+  }
+  100% {
+    transform: translate3d(-50px, -90px, 0) scale(0.92);
+  }
+}
+
+.brand-inner {
+  position: relative;
+  max-width: 420px;
+  margin: auto 0;
+}
+
+.brand-title {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  color: var(--text-color-primary);
+}
+
+.brand-slogan {
+  margin: 22px 0 0;
+  font-size: 15px;
+  line-height: 1.9;
+  color: var(--text-color-secondary);
+}
+
+.brand-meta {
+  margin: 32px 0 0;
+  font-size: 13px;
+  color: var(--text-color-tertiary);
+}
+
+/* ===== 右侧表单区 ===== */
+.login-container {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-}
-
-.login-container {
-  width: 100%;
-  max-width: 400px;
+  padding: 48px 24px;
+  box-sizing: border-box;
 }
 
 .login-card {
-  background: var(--bg-color-primary);
-  border-radius: 8px;
-  padding: 40px;
-  box-shadow: 0 4px 12px var(--shadow-color);
-  border: 1px solid var(--border-color-primary);
+  width: 100%;
+  max-width: 380px;
 }
 
 .login-header {
-  text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 32px;
+}
+
+.logo {
+  width: 68.32px;
+  height: 32px;
+  background: var(--primary-color);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.logo img {
+  width: 68.32px;
+  height: 32px;
 }
 
 .login-title {
+  margin: 0;
   font-size: 24px;
   font-weight: 600;
   color: var(--text-color-primary);
-  margin: 0;
+}
+
+.login-subtitle {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--text-color-tertiary);
 }
 
 .message {
-  padding: 12px 16px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
   margin-bottom: 20px;
 }
 
@@ -197,19 +323,19 @@ const handleSubmit = async () => {
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .form-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--text-color-primary);
+  color: var(--text-color-secondary);
 }
 
 .input-wrapper {
@@ -218,18 +344,22 @@ const handleSubmit = async () => {
   align-items: center;
 }
 
-
 .form-input {
   width: 100%;
-  padding: 12px;
+  height: 46px;
+  padding: 0 14px;
   border: 1px solid var(--border-color-primary);
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 8px;
   background: var(--bg-color-primary);
-  transition: border-color 0.2s ease;
-  box-sizing: border-box;
   color: var(--text-color-primary);
+  font-size: 14px;
+  box-sizing: border-box;
   caret-color: var(--primary-color);
+  transition: border-color 0.2s ease;
+}
+
+.form-input::placeholder {
+  color: var(--text-color-quaternary);
 }
 
 .form-input:focus {
@@ -248,19 +378,20 @@ const handleSubmit = async () => {
 
 .login-button {
   width: 100%;
-  padding: 12px;
-  background: var(--primary-color);
-  color: white;
+  height: 46px;
+  margin-top: 4px;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 10px;
+  background: var(--primary-color);
+  color: var(--button-text-color);
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .login-button:hover:not(:disabled) {
-  background: var(--primary-color-dark);
+  background: color-mix(in srgb, var(--primary-color) 85%, #ffffff);
 }
 
 .login-button:disabled {
@@ -268,14 +399,13 @@ const handleSubmit = async () => {
   cursor: not-allowed;
 }
 
-/* 响应式设计 */
-@media (max-width: 480px) {
-  .admin-login-page {
-    padding: 10px;
+@media (max-width: 900px) {
+  .login-brand {
+    display: none;
   }
 
-  .login-card {
-    padding: 30px 20px;
+  .login-container {
+    padding: 40px 20px;
   }
 }
 </style>

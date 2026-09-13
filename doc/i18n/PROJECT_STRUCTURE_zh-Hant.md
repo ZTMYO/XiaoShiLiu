@@ -9,10 +9,11 @@
 ├── vue3-project/            # 前端項目
 ├── express-project/         # 後端項目
 ├── doc/                     # 項目文檔
+│   ├── OVERVIEW.md          # 文檔總覽
 │   ├── API_DOCS.md          # 接口文檔
-│   ├── DATABASE_DESIGN.md   # 資料庫設計
 │   ├── DEPLOYMENT.md        # 部署指南
 │   ├── PROJECT_STRUCTURE.md # 項目結構（本文檔）
+│   ├── DATABASE_DESIGN.md   # 資料庫設計
 │   ├── i18n/                # 文檔的英文/繁體版本
 │   └── imgs/                # 文檔配圖
 ├── docker-compose.yml       # Docker 編排
@@ -73,7 +74,7 @@ express-project/
 | 文件 | 掛載路徑 | 功能 |
 |------|----------|------|
 | `auth.js` | `/api/auth` | 登入、註冊、權杖校驗 |
-| `users.js` | `/api/users` | 使用者資訊、關注關係 |
+| `users.js` | `/api/users` | 使用者資訊、資料統計、關注與粉絲、認證申請、修改密碼 |
 | `posts.js` | `/api/posts` | 筆記發佈、編輯、刪除、查詢 |
 | `comments.js` | `/api/comments` | 評論發佈、刪除、查詢 |
 | `likes.js` | `/api/likes` | 筆記與評論按讚 |
@@ -84,8 +85,10 @@ express-project/
 | `stats.js` | `/api/stats` | 平台資料統計 |
 | `categories.js` | `/api/categories` | 分類查詢 |
 | `files.js` | `/api/files` | 檔案存取 |
-| `admin.js` | `/api/admin` | 後台管理 |
-| `docs.js` | `/api/system` | 系統資訊與接口文檔 |
+| `admin.js` | `/api/admin` | 後台管理（使用者、內容、會話、管理員等） |
+| `docs.js` | `/api/system` | 站點文檔的 Markdown 原文 |
+
+此外 `GET /api/health` 健康檢查由 `app.js` 直接定義，不經過 `routes/`。
 
 ### 腳本文件說明
 
@@ -97,51 +100,82 @@ express-project/
 | `update-sample-images.js` | 批次更新示例圖片連結 |
 | `local-sensitive-word-check.js` | 掃描筆記與評論中的違規詞 |
 | `migrate-audit-to-verification.js` | 將 audit 表中的認證資料遷移到 user_verification |
+| `違規詞庫.txt` | `local-sensitive-word-check.js` 載入的違規詞詞庫 |
 
-## 技術架構
+## 前端頁面與路由
 
-### 前端架構
+### 主站頁面
+
+| 頁面文件 | 路由 | 說明 |
+|----------|------|------|
+| `layout/index.vue` | `/` | 主站佈局（頁首、側邊欄、頁尾），根路徑重定向到 `/explore` |
+| `explore/index.vue` | `/explore` | 發現頁 |
+| `explore/ChannelPage.vue` | `/explore`、`/explore/:channel` | 頻道內容流，`:channel` 無效時回退到推薦 |
+| `PostDetail.vue` | `/post` | 筆記詳情 |
+| `publish/index.vue` | `/publish` | 發佈筆記 |
+| `notification/index.vue` | `/notification` | 通知中心 |
+| `user/index.vue` | `/user` | 我的主頁 |
+| `user/UserProfile.vue` | `/user/:userId` | 他人主頁 |
+| `user/FollowList.vue` | `/follow/:type` | 關注、粉絲、互關列表，`type` 取 `mutual`、`following`、`followers` |
+| `search/SearchResult.vue` | `/search_result`、`/search_result/:tab` | 搜尋結果，`tab` 取 `all`、`post`、`video`、`user` |
+| `post-management/index.vue` | `/post-management` | 筆記管理 |
+| `draft-box/index.vue` | `/draft-box` | 草稿箱 |
+| `NotFound.vue` | `/:pathMatch(.*)*` | 404 頁面 |
+
+### 獨立佈局頁面
+
+| 頁面文件 | 路由 | 說明 |
+|----------|------|------|
+| `download/index.vue` | `/download` | 客戶端下載頁 |
+| `doc/index.vue` | `/doc/:name?`、`/:lang(zh\|en\|zh-Hant)/doc/:name?` | 文檔閱讀頁 |
+
+### 後台管理頁面
+
+| 頁面文件 | 路由 | 說明 |
+|----------|------|------|
+| `admin/AdminLogin.vue` | `/admin/login` | 後台登入 |
+| `admin/AdminLayout.vue` | `/admin` | 後台佈局，根路徑重定向到 `/admin/monitor` |
+| `admin/AdminMonitor.vue` | `/admin/monitor` | 動態監控 |
+| `admin/UserManagement.vue` | `/admin/users` | 使用者管理 |
+| `admin/PostAudit.vue` | `/admin/post-audit` | 筆記審核 |
+| `admin/PostManagement.vue` | `/admin/posts` | 筆記管理 |
+| `admin/CommentManagement.vue` | `/admin/comments` | 評論管理 |
+| `admin/CategoryManagement.vue` | `/admin/categories` | 分類管理 |
+| `admin/TagManagement.vue` | `/admin/tags` | 標籤管理 |
+| `admin/LikeManagement.vue` | `/admin/likes` | 按讚管理 |
+| `admin/CollectionManagement.vue` | `/admin/collections` | 收藏管理 |
+| `admin/FollowManagement.vue` | `/admin/follows` | 關注管理 |
+| `admin/NotificationManagement.vue` | `/admin/notifications` | 通知管理 |
+| `admin/SessionManagement.vue` | `/admin/sessions` | 使用者會話管理 |
+| `admin/AdminSessionManagement.vue` | `/admin/admin-sessions` | 管理員會話管理 |
+| `admin/AdminManagement.vue` | `/admin/admins` | 管理員管理 |
+| `admin/AuditManagement.vue` | `/admin/audit` | 認證審核 |
+
+## 請求生命週期
 
 ```
-┌──────────────────────────────────────┐
-│              Vue 3 App               │
-├──────────────────────────────────────┤
-│   Views (頁面)  │  Components (元件)  │
-├──────────────────────────────────────┤
-│   Router (路由) │  Stores (狀態管理)  │
-├──────────────────────────────────────┤
-│   API (接口)    │  Utils (工具)       │
-├──────────────────────────────────────┤
-│           Vite (建置工具)            │
-└──────────────────────────────────────┘
+瀏覽器
+  ↓ 前端 axios 實例（src/api/request.js）
+     請求攔截器注入 Authorization: Bearer <token>（後台頁面用 admin_token）
+Vite 開發伺服器 / Nginx（線上：靜態託管 + /api 反向代理到後端 3001 埠）
+  ↓
+Express（app.js）
+  ├── cors
+  ├── express.json / urlencoded（請求體上限 50MB）
+  ├── 限流：/api 每 15 分鐘 500 次，/api/auth 每 5 分鐘 20 次，/api/upload 每 15 分鐘 60 次
+  ├── 路由分發（routes/*.js，掛載路徑見上表）
+  ├── 認證中間件（middleware/auth.js 的 authenticateToken、optionalAuth）
+  └── utils/dbHelper.js → MySQL 連線池（config/config.js 導出的 pool）
+  ↓ JSON 回應（統一 { code, message, data }）
+回應攔截器把 code 轉成 success，401 清除權杖並跳登入，429 提示請求過於頻繁
+  ↓
+Pinia store 更新狀態 → 元件重新渲染
 ```
 
-### 後端架構
+## 常見改動入口
 
-```
-┌──────────────────────────────────────┐
-│           Express Server             │
-├──────────────────────────────────────┤
-│   Routes (路由) │ Middleware (中間件) │
-├──────────────────────────────────────┤
-│   Config (配置) │  Utils (工具)       │
-├──────────────────────────────────────┤
-│           MySQL Database             │
-└──────────────────────────────────────┘
-```
-
-## 資料流向
-
-```
-前端 Vue App
-     ↓ HTTP 請求
-Express 路由
-     ↓ 資料處理
-中間件驗證
-     ↓ 資料庫操作
-MySQL 資料庫
-     ↓ 返回資料
-前端狀態更新
-     ↓ 視圖渲染
-使用者介面展示
-```
+| 要做的事 | 需要改的文件 |
+|----------|--------------|
+| 新增前端頁面 | `src/views/` 新建元件 → `src/router/index.js` 註冊路由 → 需要接口時在 `src/api/` 封裝、在 `src/stores/` 加狀態 |
+| 新增後端接口 | 在 `routes/` 對應文件加路由，新領域則新建文件並在 `app.js` 掛載 → 需要認證時加 `middleware/auth.js` 的中間件 → 資料庫操作走 `utils/dbHelper.js` |
+| 新增資料表 | `scripts/init-database.js` 與 `scripts/init-database.sql` 兩處保持同步 |

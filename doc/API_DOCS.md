@@ -2,7 +2,7 @@
 
 ## 项目信息
 - **项目名称**: 小石榴图文社区
-- **版本**: v1.3.2
+- **版本**: v1.3.3
 - **基础URL**: `http://localhost:3001`
 - **数据库**: xiaoshiliu (MySQL)
 - **更新时间**: 2026-09-13
@@ -2845,89 +2845,6 @@ Content-Type: application/json
 
 ---
 
-## 错误码说明
-
-| 错误码 | 说明 |
-|------|------|
-| 400 | 请求参数错误 |
-| 404 | 资源不存在 |
-| 500 | 服务器内部错误 |
-
----
-
-## 使用示例
-
-### 使用 curl 测试接口
-
-```bash
-# 用户注册
-curl -X POST "http://localhost:3001/api/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "nickname": "测试用户", "password": "123456"}'
-
-# 用户登录
-curl -X POST "http://localhost:3001/api/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "password": "123456"}'
-
-# 需要认证的接口统一携带 JWT
-curl -X GET "http://localhost:3001/api/auth/me" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# 表单类请求（文件上传）使用 multipart/form-data
-curl -X POST "http://localhost:3001/api/upload/single" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -F "file=@/path/to/your/image.jpg"
-```
-
-### 使用 JavaScript 调用接口
-
-```javascript
-const API_BASE = 'http://localhost:3001';
-
-async function apiRequest(url, options = {}) {
-  const response = await fetch(`${API_BASE}${url}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options
-  });
-  return response.json();
-}
-
-async function example() {
-  // 登录并保存访问令牌
-  const login = await apiRequest('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ user_id: 'test_user', password: '123456' })
-  });
-  const token = login.data.tokens.access_token;
-
-  // 携带令牌调用受保护接口
-  const profile = await apiRequest('/api/auth/me', {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  console.log(profile);
-}
-
-example();
-```
-
----
-
-## 注意事项
-
-1. **认证要求**: 需要认证的接口必须在请求头中携带有效的JWT token
-2. **Token管理**: 访问令牌有效期为7天，刷新令牌有效期为30天，服务端会话7天且每次刷新令牌后顺延，详见「通用说明 - 认证说明」
-3. **请求格式**: 所有POST/PUT请求需要设置`Content-Type: application/json`（文件上传除外）
-4. **图片上传**: 图片上传接口使用`multipart/form-data`格式，支持jpg、jpeg、png、gif、webp格式，单图片最大10MB
-5. **状态切换**: 点赞、收藏、关注等操作支持切换状态（已点赞则取消点赞）
-6. **自动更新**: 访问笔记详情会自动增加浏览量，创建评论会自动更新笔记的评论数
-7. **关系更新**: 关注操作会自动更新用户的关注数和粉丝数
-8. **搜索功能**: 搜索功能支持标题和内容的模糊匹配
-9. **通知系统**: 评论、点赞、关注等操作会自动生成通知
-10. **数据验证**: 用户注册时会验证用户ID唯一性和密码强度（6-20位）
-
----
-
 ## 管理员相关接口
 
 ### 认证说明
@@ -3780,3 +3697,87 @@ curl -X DELETE "http://localhost:3001/api/admin/comments" \
   -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN" \
   -d '{"ids": [1, 2, 3]}'
 ```
+
+---
+
+## 错误码说明
+
+| 错误码 | 说明 |
+|------|------|
+| 400 | 请求参数错误 |
+| 404 | 资源不存在 |
+| 500 | 服务器内部错误 |
+
+---
+
+## 使用示例
+
+### 使用 curl 测试接口
+
+```bash
+# 用户注册
+curl -X POST "http://localhost:3001/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "test_user", "nickname": "测试用户", "password": "123456"}'
+
+# 用户登录
+curl -X POST "http://localhost:3001/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "test_user", "password": "123456"}'
+
+# 需要认证的接口统一携带 JWT
+curl -X GET "http://localhost:3001/api/auth/me" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 表单类请求（文件上传）使用 multipart/form-data
+curl -X POST "http://localhost:3001/api/upload/single" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "file=@/path/to/your/image.jpg"
+```
+
+### 使用 JavaScript 调用接口
+
+```javascript
+const API_BASE = 'http://localhost:3001';
+
+async function apiRequest(url, options = {}) {
+  const response = await fetch(`${API_BASE}${url}`, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options
+  });
+  return response.json();
+}
+
+async function example() {
+  // 登录并保存访问令牌
+  const login = await apiRequest('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: 'test_user', password: '123456' })
+  });
+  const token = login.data.tokens.access_token;
+
+  // 携带令牌调用受保护接口
+  const profile = await apiRequest('/api/auth/me', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  console.log(profile);
+}
+
+example();
+```
+
+---
+
+## 注意事项
+
+1. **认证要求**: 需要认证的接口必须在请求头中携带有效的JWT token
+2. **Token管理**: 访问令牌有效期为7天，刷新令牌有效期为30天，服务端会话7天且每次刷新令牌后顺延，详见「通用说明 - 认证说明」
+3. **请求格式**: 所有POST/PUT请求需要设置`Content-Type: application/json`（文件上传除外）
+4. **图片上传**: 图片上传接口使用`multipart/form-data`格式，支持jpg、jpeg、png、gif、webp格式，单图片最大10MB
+5. **状态切换**: 点赞、收藏、关注等操作支持切换状态（已点赞则取消点赞）
+6. **自动更新**: 访问笔记详情会自动增加浏览量，创建评论会自动更新笔记的评论数
+7. **关系更新**: 关注操作会自动更新用户的关注数和粉丝数
+8. **搜索功能**: 搜索功能支持标题和内容的模糊匹配
+9. **通知系统**: 评论、点赞、关注等操作会自动生成通知
+10. **数据验证**: 用户注册时会验证用户ID唯一性和密码强度（6-20位）
+

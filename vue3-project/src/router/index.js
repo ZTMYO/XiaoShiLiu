@@ -12,12 +12,13 @@ import SearchResult from '@/views/search/SearchResult.vue'
 import PostManagementPage from '@/views/post-management/index.vue'
 import DraftBoxPage from '@/views/draft-box/index.vue'
 import NotFound from '@/views/NotFound.vue'
+import Download from '@/views/download/index.vue'
+import Doc from '@/views/doc/index.vue'
 import { getValidChannelPaths } from '@/config/channels'
 
 // 后台管理系统组件
 import AdminLogin from '@/views/admin/AdminLogin.vue'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
-import ApiDocs from '@/views/admin/ApiDocs.vue'
 import AdminMonitor from '@/views/admin/AdminMonitor.vue'
 import UserManagement from '@/views/admin/UserManagement.vue'
 import PostManagement from '@/views/admin/PostManagement.vue'
@@ -163,6 +164,23 @@ const router = createRouter({
         }
       ]
     },
+    // 下载页与文档页：独立布局，不使用主站 layout
+    {
+      path: '/download',
+      name: 'download',
+      component: Download
+    },
+    {
+      path: '/doc/:name?',
+      name: 'doc',
+      component: Doc
+    },
+    // 文档页带语言层：/zh/doc/api、/en/doc/api、/zh-Hant/doc/api
+    {
+      path: '/:lang(zh|en|zh-Hant)/doc/:name?',
+      name: 'doc_lang',
+      component: Doc
+    },
     // Admin登录页面
     {
       path: '/admin/login',
@@ -174,19 +192,14 @@ const router = createRouter({
       path: '/admin',
       component: AdminLayout,
       beforeEnter: (to, from, next) => {
-        // 如果访问的是/admin根路径，重定向到api-docs
+        // 如果访问的是/admin根路径，重定向到动态监控
         if (to.path === '/admin') {
-          next('/admin/api-docs')
+          next('/admin/monitor')
         } else {
           next()
         }
       },
       children: [
-        {
-          path: 'api-docs',
-          name: 'admin_api_docs',
-          component: ApiDocs
-        },
         {
           path: 'monitor',
           name: 'admin_monitor',

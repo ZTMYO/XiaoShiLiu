@@ -1,8 +1,8 @@
-# Xiaoshiliu Image and Text Community API Documentation
+# XiaoShiLiu UGC Community API Documentation
 
 ## Project Information
-- **Project Name**: Xiaoshiliu Image and Text Community
-- **Version**: v1.3.2
+- **Project Name**: XiaoShiLiu UGC Community
+- **Version**: v1.3.3
 - **Base URL**: `http://localhost:3001`
 - **Database**: xiaoshiliu (MySQL)
 - **Update Time**: 2026-09-13
@@ -109,7 +109,7 @@ General parameters for interfaces that support pagination:
     "user": {
       "id": 1,
       "user_id": "user_001",
-      "nickname": "Xiaoshiliu",
+      "nickname": "XiaoShiLiu",
       "avatar": "https://example.com/avatar.jpg",
       "bio": "This is a personal introduction",
       "location": "Beijing",
@@ -130,7 +130,7 @@ General parameters for interfaces that support pagination:
 **Request Parameters**:
 | Parameter | Type | Required | Description |
 |------|------|------|------|
-| user_id | string | Yes | Xiaoshiliu ID |
+| user_id | string | Yes | XiaoShiLiu ID |
 | password | string | Yes | Password |
 
 **Response Example**:
@@ -142,7 +142,7 @@ General parameters for interfaces that support pagination:
     "user": {
       "id": 1,
       "user_id": "xiaoshiliu123",
-      "nickname": "Xiaoshiliu User",
+      "nickname": "XiaoShiLiu User",
       "avatar": "http://example.com/avatar.jpg",
       "bio": "This is my personal introduction",
       "location": "Beijing",
@@ -700,7 +700,7 @@ General parameters for interfaces that support pagination:
 **Path Parameters**:
 | Parameter | Type | Required | Description |
 |------|------|------|------|
-| id | string | Yes | User's Xiaoshiliu ID |
+| id | string | Yes | User's XiaoShiLiu ID |
 
 **Request Parameters**:
 | Parameter | Type | Required | Description |
@@ -2516,90 +2516,6 @@ The notification system supports the following types:
 
 ---
 
-## Error Code Explanation
-
-| Error Code | Description |
-|------|------|
-| 400 | Request parameters are incorrect |
-| 404 | Resource does not exist |
-| 500 | Internal server error |
-
----
-
-## Usage Examples
-
-### Testing APIs with curl
-
-```bash
-# User registration
-curl -X POST "http://localhost:3001/api/auth/register" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "nickname": "Test User", "password": "123456"}'
-
-# User login
-curl -X POST "http://localhost:3001/api/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "password": "123456"}'
-
-# Authenticated interfaces carry the JWT
-curl -X GET "http://localhost:3001/api/auth/me" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# Form requests (file upload) use multipart/form-data
-curl -X POST "http://localhost:3001/api/upload/single" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -F "file=@/path/to/your/image.jpg"
-```
-
-### Testing Interfaces with JavaScript
-
-```javascript
-const API_BASE = 'http://localhost:3001';
-
-async function apiRequest(url, options = {}) {
-  const response = await fetch(`${API_BASE}${url}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options
-  });
-  return response.json();
-}
-
-async function example() {
-  // Login and save the access token
-  const login = await apiRequest('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ user_id: 'test_user', password: '123456' })
-  });
-  const token = login.data.tokens.access_token;
-
-  // Call a protected interface with the token
-  const profile = await apiRequest('/api/auth/me', {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  console.log(profile);
-}
-
-example();
-```
-
----
-
-## Important Notes
-
-1. **Authentication Requirement**: Interfaces requiring authentication must include a valid JWT token in the request header
-
-2. **Token Management**: The access token is valid for 7 days, the refresh token for 30 days, and the server-side session lasts 7 days and is extended on every token refresh. See "General Instructions - Authentication Instructions" for details.
-3. **Request Format**: All POST/PUT requests need to set `Content-Type: application/json` (except for file upload).
-4. **Image Upload**: The image upload interface uses the `multipart/form-data` format, supporting jpg, jpeg, png, gif, and webp formats, with a maximum file size of 10MB for a single image.
-5. **Status Switching**: Operations such as liking, favoriting, and following support status switching (canceling a like if already liked).
-6. **Automatic Update**: Visiting note details will automatically increase the number of views, and creating comments will automatically update the number of comments on the note.
-7. **Relationship Update**: The follow operation will automatically update the user's number of followers and fans.
-8. **Search Function**: The search function supports fuzzy matching of titles and content.
-9. **Notification System**: Operations such as comments, likes, and follows will automatically generate notifications.
-10. **Data Validation**: When registering, the uniqueness of the user ID and the strength of the password (6-20 characters) will be verified.
-
----
-
 ## Administrator-related Interfaces
 
 ### Authentication Instructions
@@ -2838,7 +2754,7 @@ Administrator interfaces use JWT authentication:
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
 | keyword | string | No | Search keyword (title or content) |
-| user_display_id | string | No | Filter by author Xiaoshiliu number |
+| user_display_id | string | No | Filter by author XiaoShiLiu number |
 | category_id | int/string | No | Category ID filter, pass "null" to filter uncategorized records |
 
 **Response Data**:
@@ -2850,7 +2766,7 @@ Administrator interfaces use JWT authentication:
 | type | int | Record type: 1-Image/Text, 2-Video |
 | category | string | Category name |
 | status | int | Record status: 2-Pending Review |
-| user_display_id | string | Author Xiaoshiliu number |
+| user_display_id | string | Author XiaoShiLiu number |
 | nickname | string | Author nickname |
 | tags | array | Tag list |
 | images | array | Image URL list |
@@ -3452,3 +3368,88 @@ curl -X DELETE "http://localhost:3001/api/admin/comments" \
   -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN" \
   -d '{"ids": [1, 2, 3]}'
 ```
+
+---
+
+## Error Code Explanation
+
+| Error Code | Description |
+|------|------|
+| 400 | Request parameters are incorrect |
+| 404 | Resource does not exist |
+| 500 | Internal server error |
+
+---
+
+## Usage Examples
+
+### Testing APIs with curl
+
+```bash
+# User registration
+curl -X POST "http://localhost:3001/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "test_user", "nickname": "Test User", "password": "123456"}'
+
+# User login
+curl -X POST "http://localhost:3001/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "test_user", "password": "123456"}'
+
+# Authenticated interfaces carry the JWT
+curl -X GET "http://localhost:3001/api/auth/me" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Form requests (file upload) use multipart/form-data
+curl -X POST "http://localhost:3001/api/upload/single" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "file=@/path/to/your/image.jpg"
+```
+
+### Testing Interfaces with JavaScript
+
+```javascript
+const API_BASE = 'http://localhost:3001';
+
+async function apiRequest(url, options = {}) {
+  const response = await fetch(`${API_BASE}${url}`, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options
+  });
+  return response.json();
+}
+
+async function example() {
+  // Login and save the access token
+  const login = await apiRequest('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: 'test_user', password: '123456' })
+  });
+  const token = login.data.tokens.access_token;
+
+  // Call a protected interface with the token
+  const profile = await apiRequest('/api/auth/me', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  console.log(profile);
+}
+
+example();
+```
+
+---
+
+## Important Notes
+
+1. **Authentication Requirement**: Interfaces requiring authentication must include a valid JWT token in the request header
+
+2. **Token Management**: The access token is valid for 7 days, the refresh token for 30 days, and the server-side session lasts 7 days and is extended on every token refresh. See "General Instructions - Authentication Instructions" for details.
+3. **Request Format**: All POST/PUT requests need to set `Content-Type: application/json` (except for file upload).
+4. **Image Upload**: The image upload interface uses the `multipart/form-data` format, supporting jpg, jpeg, png, gif, and webp formats, with a maximum file size of 10MB for a single image.
+5. **Status Switching**: Operations such as liking, favoriting, and following support status switching (canceling a like if already liked).
+6. **Automatic Update**: Visiting note details will automatically increase the number of views, and creating comments will automatically update the number of comments on the note.
+7. **Relationship Update**: The follow operation will automatically update the user's number of followers and fans.
+8. **Search Function**: The search function supports fuzzy matching of titles and content.
+9. **Notification System**: Operations such as comments, likes, and follows will automatically generate notifications.
+10. **Data Validation**: When registering, the uniqueness of the user ID and the strength of the password (6-20 characters) will be verified.
+

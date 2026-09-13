@@ -103,12 +103,14 @@ export function renderMarkdown(md) {
     if (content) out.push(`<p>${renderInline(content)}</p>`)
   }
 
+  // 单元格里的 \| 是内容中的竖线（命令管道符常见），先换成占位符，避免被当成列分隔符
   const splitRow = (row) =>
     row
+      .replace(/\\\|/g, '\u0001')
       .replace(/^\s*\|/, '')
       .replace(/\|\s*$/, '')
       .split('|')
-      .map((cell) => cell.trim())
+      .map((cell) => cell.trim().replace(/\u0001/g, '|'))
 
   const renderTable = (start) => {
     const tableLines = []
@@ -118,7 +120,8 @@ export function renderMarkdown(md) {
     }
     if (tableLines.length < 2) return
     const header = splitRow(tableLines[0])
-    const body = tableLines.slice(1).map(splitRow)
+    // 分隔行（|---|---|）只用来界定表头，不能当作数据行渲染
+    const body = tableLines.slice(1).map(splitRow).filter((cells) => !isSeparatorRow(cells))
     out.push('<div class="table-wrap"><table>')
     out.push(`<thead><tr>${header.map((h) => `<th>${renderInline(h)}</th>`).join('')}</tr></thead>`)
     out.push(`<tbody>${body.map((row) => `<tr>${row.map((cell) => `<td>${renderInline(cell)}</td>`).join('')}</tr>`).join('')}</tbody>`)
@@ -222,151 +225,9 @@ export function renderMarkdown(md) {
   return { html: out.join('\n'), toc }
 }
 
-// ===== 接口文档结构化解析：把 md 转为旧版 apiGroups 同构数据 =====
-
-const NON_API_SECTIONS = new Set(['项目信息', '通用说明', '错误码说明', '使用示例', '注意事项'])
-
-function cleanTitle(raw) {
-  const title = raw.replace(/^\d+(?:\.\d+)*\s*[.、]?\s*/, '').trim()
-  return title || raw.trim()
-}
-
+// 分隔行（|---|---|）只用来界定表头，不能当作数据行渲染
 function isSeparatorRow(cells) {
   return cells.length > 0 && cells.every((c) => /^:?-{2,}:?$/.test(c))
-}
-
-// 提取块内首张含「参数/类型」表头的表格作为请求参数
-function extractParams(blockText) {
-  const tables = []
-  let current = null
-  for (const raw of blockText.split('\n')) {
-    if (/^\s*\|.*\|\s*$/.test(raw)) {
-      if (!current) current = []
-      current.push(raw.trim())
-    } else if (current) {
-      tables.push(current)
-      current = null
-    }
-  }
-  if (current) tables.push(current)
-
-  for (const rows of tables) {
-    const parsed = rows
-      .map((r) => r.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map((c) => c.trim()))
-      .filter((cells) => !isSeparatorRow(cells))
-    if (!parsed.length) continue
-    const head = parsed[0]
-    const idxOf = (kw) => head.findIndex((h) => h.includes(kw))
-    const nameIdx = head.findIndex((h) => h.includes('参数'))
-    const typeIdx = idxOf('类型')
-    if (nameIdx < 0 && !head.some((h) => h.includes('字段'))) continue
-    if (typeIdx < 0) continue
-    const reqIdx = idxOf('必填')
-    const descIdx = idxOf('说明')
-    const result = parsed.slice(1).map((row) => ({
-      name: row[nameIdx] || row[0] || '',
-      type: row[typeIdx] || '',
-      required: !(row[reqIdx] || '').trim().startsWith('否') && !/^(可选|空|false|无)$/.test((row[reqIdx] || '').trim()),
-      description: row[descIdx] || row.slice(Math.max(nameIdx, typeIdx, reqIdx) + 1).join(' ') || ''
-    }))
-    return result
-  }
-  return []
-}
-
-// 提取接口描述：收集块内非指令行的普通文本
-function extractDescription(blockText) {
-  const body = blockText
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/\*\*接口地址\*\*\s*[:：]?[^\n]*/g, '')
-    .replace(/\*\*需要认证\*\*\s*[:：]?[^\n]*/g, '')
-    .replace(/\*\*(?:请求|响应|路径|查询)参数\*\*\s*[:：]?/g, '')
-    .replace(/\*\*功能说明\*\*\s*[:：]?/g, '')
-  const parts = []
-  for (const raw of body.split('\n')) {
-    const line = raw.trim()
-    if (!line || line.startsWith('|') || line.startsWith('#') || /^\*\*[^*]+\*\*\s*[:：]/.test(line)) continue
-    parts.push(line.replace(/^[-*+]\s+/, '').replace(/\s{2,}/g, ' '))
-  }
-  const text = parts.join(' ').trim()
-  return text.length > 300 ? `${text.slice(0, 300)}…` : text
-}
-
-// 提取「响应示例」段的围栏代码作为响应示例原文；无该标记时回退到块内第一段围栏
-function extractExample(blockText) {
-  const parts = blockText.split(/\*\*响应示例\*\*/)
-  const source = parts.length > 1 ? parts[1] : blockText
-  const m = source.match(/```[^\n]*\n([\s\S]*?)```/)
-  return m ? m[1].replace(/\n+$/, '') : ''
-}
-
-function parseApiBlock(blockText, title) {
-  const addr = blockText.match(/\*\*接口地址\*\*\s*[:：]\s*`([^`]+)`/)
-  if (!addr) return null
-  const [method, ...rest] = addr[1].trim().split(/\s+/)
-  const authMatch = blockText.match(/\*\*需要认证\*\*\s*[:：]\s*(.+?)\n|$/)
-  const authText = authMatch && authMatch[1] ? authMatch[1].trim() : ''
-  return {
-    method: (method || '').toUpperCase(),
-    path: rest.join(' '),
-    title: cleanTitle(title),
-    description: extractDescription(blockText),
-    auth: authText !== '' && !authText.startsWith('否'),
-    expanded: false,
-    params: extractParams(blockText),
-    example: extractExample(blockText)
-  }
-}
-
-// 解析整份接口文档，返回 [{ name, apis: [...] }]，api 结构与旧版硬编码一致
-export function parseApiGroups(md) {
-  const lines = String(md).replace(/\r\n?/g, '\n').split('\n')
-  const groups = []
-  const groupMap = new Map()
-  let group = null
-  let pending = null
-  let buffer = []
-
-  const addGroup = (name) => {
-    const clean = name.trim()
-    if (NON_API_SECTIONS.has(clean)) return null
-    if (groupMap.has(clean)) return groupMap.get(clean)
-    const g = { name: clean, apis: [] }
-    groups.push(g)
-    groupMap.set(clean, g)
-    return g
-  }
-
-  const flush = () => {
-    if (pending && group) {
-      const api = parseApiBlock(buffer.join('\n'), pending.title)
-      if (api) {
-        const seen = new Set(group.apis.map((a) => `${a.method} ${a.path}`))
-        const key = `${api.method} ${api.path}`
-        if (!seen.has(key)) group.apis.push(api)
-      }
-    }
-    pending = null
-    buffer = []
-  }
-
-  for (const line of lines) {
-    const h2 = line.match(/^##\s+(.+)$/)
-    if (h2) {
-      flush()
-      group = addGroup(h2[1])
-      continue
-    }
-    const heading = line.match(/^(#{3,4})\s+(.+)$/)
-    if (heading) {
-      flush()
-      if (group) pending = { title: heading[2].trim() }
-      continue
-    }
-    if (pending && group) buffer.push(line)
-  }
-  flush()
-  return groups.filter((g) => g.apis.length > 0)
 }
 
 export default renderMarkdown
