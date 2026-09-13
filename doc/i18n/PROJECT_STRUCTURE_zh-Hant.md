@@ -62,7 +62,7 @@ express-project/
 ├── middleware/              # 中間件（認證、CRUD 工廠）
 ├── routes/                  # 路由定義
 ├── scripts/                 # 初始化、測試資料、違規詞檢測等腳本
-├── utils/                   # 工具函數（JWT、上傳、通知、定時任務等）
+├── utils/                   # 工具函數（JWT、上傳、通知、搜尋聯想索引、定時任務等）
 ├── app.js                   # 應用程式入口
 ├── .env.example             # 環境變數範本
 ├── Dockerfile               # 鏡像建置
@@ -162,7 +162,7 @@ Vite 開發伺服器 / Nginx（線上：靜態託管 + /api 反向代理到後�
 Express（app.js）
   ├── cors
   ├── express.json / urlencoded（請求體上限 50MB）
-  ├── 限流：/api 每 15 分鐘 500 次，/api/auth 每 5 分鐘 20 次，/api/upload 每 15 分鐘 60 次
+  ├── 限流：/api 每 15 分鐘 500 次，/api/auth 每 5 分鐘 20 次，/api/upload 每 15 分鐘 60 次，/api/search/suggest 每分鐘 120 次
   ├── 路由分發（routes/*.js，掛載路徑見上表）
   ├── 認證中間件（middleware/auth.js 的 authenticateToken、optionalAuth）
   └── utils/dbHelper.js → MySQL 連線池（config/config.js 導出的 pool）

@@ -415,6 +415,14 @@ export const searchApi = {
         ...params
       }
     })
+  },
+
+  // 搜索联想
+  getSuggest(keyword = '', limit = 5, config = {}) {
+    return request.get('/search/suggest', {
+      params: { q: keyword, limit },
+      ...config
+    })
   }
 }
 

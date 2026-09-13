@@ -2515,6 +2515,59 @@ The notification system supports the following types:
 
 ---
 
+### 2. Search Suggestions
+
+Candidate completion while typing in the search box. Candidates come from an in-process memory index on the server and do not query the database.
+
+**Endpoint**: `GET /api/search/suggest`
+**Authentication**: No
+**Rate Limit**: 120 requests / 60 seconds / IP
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|------|------|------|------|
+| q | string | No | Input text, length 1~100 (truncated if exceeded) |
+| limit | int | No | Items per group, default 5, max 10 |
+
+**Matching Rules**: The whole input is matched first; once it reaches 5 characters, keyword fragments extracted by Chinese word segmentation are used for extra recall (e.g. "啊啊美食啊啊" recalls "美食荒漠"). Candidates are ordered by matched fragment length descending, then by match type (word start first) and popularity descending. Chinese text is matched by substring; pure alphanumeric input is additionally matched by full pinyin prefix and initials prefix (e.g. `shipin` or `sp` both match "视频"). Each item carries a `matched` field holding the exact fragment of the candidate text that hit, used by the frontend for highlighting; pinyin or user-id matches cannot be located in the text, so the field is an empty string.
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "tags": [
+      {
+        "text": "视频剪辑",
+        "count": 128,
+        "matched": "视频"
+      }
+    ],
+    "posts": [
+      {
+        "text": "我的第一条视频",
+        "id": 1024,
+        "count": 45,
+        "matched": "视频"
+      }
+    ],
+    "users": [
+      {
+        "text": "小石榴",
+        "userId": "shiliu001",
+        "count": 320,
+        "matched": ""
+      }
+    ]
+  }
+}
+```
+
+**Edge Behavior**: When `q` is empty, the index is not yet built, or an internal error occurs, all three groups return empty arrays instead of a 5xx.
+
+---
+
 ## Administrator-related Interfaces
 
 ### Authentication Instructions

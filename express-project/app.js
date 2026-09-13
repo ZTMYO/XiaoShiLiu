@@ -18,6 +18,8 @@ const { HTTP_STATUS, RESPONSE_CODES } = require('./constants');
 const { startAutoUnbanService } = require('./utils/autoUnban');
 // 导入违规词检测服务
 const { startSensitiveWordCheckService } = require('./utils/sensitiveWordScheduler');
+// 导入搜索联想索引服务
+const { startSuggestService } = require('./utils/searchSuggest');
 
 // 导入路由模块
 const authRoutes = require('./routes/auth');
@@ -58,6 +60,14 @@ const uploadLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// 搜索联想随输入实时触发，单独放宽一档限制
+const suggestLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // 中间件配置
 // CORS配置
 const corsOptions = {
@@ -86,6 +96,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api', apiLimiter);
 app.use('/api/auth', authLimiter);
 app.use('/api/upload', uploadLimiter);
+app.use('/api/search/suggest', suggestLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/posts', postsRoutes);
@@ -124,5 +135,8 @@ app.listen(PORT, () => {
   console.log(`● 服务器运行在端口 ${PORT}`);
   console.log(`● 环境: ${config.server.env}`);
 });
+
+// 启动搜索联想索引（异步构建，不阻塞服务启动）
+startSuggestService();
 
 module.exports = app;

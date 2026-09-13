@@ -62,7 +62,7 @@ express-project/
 ├── middleware/              # Middleware (auth, CRUD factory)
 ├── routes/                  # Route definitions
 ├── scripts/                 # Init, test data, sensitive word check scripts
-├── utils/                   # Utility functions (JWT, upload, notifications, jobs)
+├── utils/                   # Utility functions (JWT, upload, notifications, search suggestion index, jobs)
 ├── app.js                   # Application entry
 ├── .env.example             # Environment template
 ├── Dockerfile               # Image build
@@ -162,7 +162,7 @@ Vite dev server / Nginx (production: static hosting + /api reverse proxy to back
 Express (app.js)
   ├── cors
   ├── express.json / urlencoded (50MB body limit)
-  ├── Rate limiting: /api 500 per 15 min, /api/auth 20 per 5 min, /api/upload 60 per 15 min
+  ├── Rate limiting: /api 500 per 15 min, /api/auth 20 per 5 min, /api/upload 60 per 15 min, /api/search/suggest 120 per min
   ├── Route dispatch (routes/*.js, mount paths above)
   ├── Auth middleware (authenticateToken, optionalAuth in middleware/auth.js)
   └── utils/dbHelper.js → MySQL connection pool (pool exported by config/config.js)

@@ -21,6 +21,7 @@ const showSearch = ref(false)
 const searchText = ref('')
 const showSearchDropdown = ref(false)
 const isSearchEditMode = ref(false)
+const searchDropdownRef = ref(null)
 
 watch(() => route.path, (newPath, oldPath) => {
     const isInSearchPage = newPath.startsWith('/search_result')
@@ -138,10 +139,26 @@ function handleFocusSearch() {
     })
 }
 
-// 处理回车键搜索
-function handleKeyPress(event) {
+// 处理搜索框键盘操作
+function handleKeyDown(event) {
     if (event.key === 'Enter') {
+        // 中文输入法选词的回车不触发搜索
+        if (event.isComposing) return
+        // 有高亮候选时回车选中候选，否则按当前输入搜索
+        if (searchDropdownRef.value && searchDropdownRef.value.selectActive()) return
         handleSearch()
+        return
+    }
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        if (searchDropdownRef.value && searchDropdownRef.value.moveActive(event.key === 'ArrowDown' ? 1 : -1)) {
+            event.preventDefault()
+        }
+        return
+    }
+
+    if (event.key === 'Escape') {
+        showSearchDropdown.value = false
     }
 }
 
@@ -180,7 +197,7 @@ onUnmounted(() => {
                 <div class="search-row" :class="{ 'large-screen': isLargeScreen, 'small-screen': !isLargeScreen }">
                     <div class="search-bar-container">
                         <div class="search-bar">
-                            <input v-model="searchText" type="text" placeholder="搜索小石榴" @keypress="handleKeyPress"
+                            <input v-model="searchText" type="text" placeholder="搜索小石榴" @keydown="handleKeyDown"
                                 @focus="handleSearchFocus" @blur="handleSearchBlur" />
                             <div class="input-controls">
                                 <div class="clear-btn" @click="clearInput"
@@ -192,7 +209,7 @@ onUnmounted(() => {
                                 </div>
                             </div>
                         </div>
-                        <SearchDropdown :visible="showSearchDropdown" :searchText="searchText"
+                        <SearchDropdown ref="searchDropdownRef" :visible="showSearchDropdown" :searchText="searchText"
                             @search="handleDropdownSearch" @edit-mode-change="handleEditModeChange"
                             @focus-search="handleFocusSearch" @close="showSearchDropdown = false" />
                     </div>

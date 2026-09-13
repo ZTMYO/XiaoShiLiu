@@ -138,7 +138,7 @@ const THUMBNAIL_HOSTS = (import.meta.env.VITE_OSS_IMAGE_HOSTS || 'aliyuncs.com')
   .map(host => host.trim().toLowerCase())
   .filter(Boolean)
 
-function supportsThumbnail(url) {
+export function supportsThumbnail(url) {
   try {
     const hostname = new URL(url).hostname.toLowerCase()
     return THUMBNAIL_HOSTS.some(host => hostname === host || hostname.endsWith('.' + host))

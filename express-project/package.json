@@ -23,6 +23,8 @@
         "multer": "^2.0.2",
         "mysql2": "^3.6.0",
         "nodemailer": "^7.0.11",
+        "pinyin-pro": "^3.29.4",
+        "segmentit": "^2.0.3",
         "svg-captcha": "^1.4.0"
     },
     "devDependencies": {

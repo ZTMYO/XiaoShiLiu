@@ -62,7 +62,7 @@ express-project/
 ├── middleware/              # 中间件（认证、CRUD 工厂）
 ├── routes/                  # 路由定义
 ├── scripts/                 # 初始化、测试数据、违规词检测等脚本
-├── utils/                   # 工具函数（JWT、上传、通知、定时任务等）
+├── utils/                   # 工具函数（JWT、上传、通知、搜索联想索引、定时任务等）
 ├── app.js                   # 应用入口
 ├── .env.example             # 环境变量模板
 ├── Dockerfile               # 镜像构建
@@ -162,7 +162,7 @@ Vite 开发服务器 / Nginx（线上：静态托管 + /api 反向代理到后�
 Express（app.js）
   ├── cors
   ├── express.json / urlencoded（请求体上限 50MB）
-  ├── 限流：/api 每 15 分钟 500 次，/api/auth 每 5 分钟 20 次，/api/upload 每 15 分钟 60 次
+  ├── 限流：/api 每 15 分钟 500 次，/api/auth 每 5 分钟 20 次，/api/upload 每 15 分钟 60 次，/api/search/suggest 每分钟 120 次
   ├── 路由分发（routes/*.js，挂载路径见上表）
   ├── 认证中间件（middleware/auth.js 的 authenticateToken、optionalAuth）
   └── utils/dbHelper.js → MySQL 连接池（config/config.js 导出的 pool）

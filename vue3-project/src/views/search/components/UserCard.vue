@@ -1,9 +1,8 @@
 <template>
     <div class="user-card" @click="handleUserClick">
-        <BaseSkeleton v-if="!avatarLoaded" type="user-card" avatar-size="48px" :show-stats="true" :show-button="true" />
-        <div class="user-content" :class="{ 'content-hidden': !avatarLoaded }">
+        <div class="user-content">
             <div class="user-avatar" v-user-hover="userHoverConfig">
-                <img v-img-lazy="user.avatar" :alt="user.nickname" class="avatar-img lazy-avatar" @load="onAvatarLoaded"
+                <img v-img-lazy="avatarSrc" :alt="user.nickname" class="avatar-img lazy-avatar"
                     @error="handleAvatarError">
             </div>
             <div class="user-info">
@@ -27,13 +26,13 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { watch, computed } from 'vue'
 import { useFollowStore } from '@/stores/follow'
 import { useUserStore } from '@/stores/user'
 import FollowButton from '@/components/FollowButton.vue'
-import BaseSkeleton from '@/components/skeleton/BaseSkeleton.vue'
 import VerifiedBadge from '@/components/VerifiedBadge.vue'
 import { userApi } from '@/api/index.js'
+import { supportsThumbnail } from '@/utils/imageUtils.js'
 import defaultAvatar from '@/assets/imgs/avatar.png'
 
 const props = defineProps({
@@ -57,7 +56,19 @@ const emit = defineEmits(['follow', 'unfollow', 'userClick'])
 
 const followStore = useFollowStore()
 const userStore = useUserStore()
-const avatarLoaded = ref(false)
+
+// 头像为空或指向非本站图床时直接用默认头像，避免外部图片加载失败让头像区域长期空白
+const avatarSrc = computed(() => {
+    const url = (props.user.avatar || '').trim()
+    if (!url) return defaultAvatar
+    try {
+        const hostname = new URL(url, window.location.origin).hostname.toLowerCase()
+        if (supportsThumbnail(url) || hostname === window.location.hostname) return url
+    } catch (e) {
+        // 非法 URL 走默认头像
+    }
+    return defaultAvatar
+})
 
 // 监听用户数据变化，同步到store（仅在用户ID变化时初始化）
 watch(() => props.user.userId, (newUserId, oldUserId) => {
@@ -99,10 +110,6 @@ function formatNumber(num) {
         return (numValue / 1000).toFixed(1) + 'k'
     }
     return numValue.toString()
-}
-
-function onAvatarLoaded() {
-    avatarLoaded.value = true
 }
 
 function handleFollow(userId) {
@@ -249,19 +256,6 @@ const userHoverConfig = computed(() => ({
     transform: translateY(-1px);
 }
 
-/* 隐藏未加载完成的真实内容 */
-.content-hidden {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    opacity: 0;
-    pointer-events: none;
-    z-index: -1;
-}
-
-
-
 /* 真实内容样式 */
 .user-content {
     display: flex;
@@ -269,9 +263,14 @@ const userHoverConfig = computed(() => ({
     width: 100%;
 }
 
+/* 头像未加载完成时留一个圆形底色，避免头像位置空白 */
 .user-avatar {
     margin-right: 12px;
     flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg-color-secondary);
 }
 
 .avatar-img {
@@ -336,8 +335,8 @@ const userHoverConfig = computed(() => ({
         padding: 12px;
     }
 
-    .avatar-img,
-    .skeleton-avatar {
+    .user-avatar,
+    .avatar-img {
         width: 40px;
         height: 40px;
     }
@@ -347,22 +346,8 @@ const userHoverConfig = computed(() => ({
         max-width: 140px;
     }
 
-    .skeleton-nickname {
-        height: 14px;
-        width: 70px;
-    }
-
-    .skeleton-id {
-        width: 100px;
-    }
-
-    .user-stats,
-    .skeleton-stats {
+    .user-stats {
         gap: 12px;
-    }
-
-    .skeleton-stat {
-        width: 50px;
     }
 }
 </style>

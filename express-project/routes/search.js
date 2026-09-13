@@ -3,6 +3,7 @@ const router = express.Router();
 const { HTTP_STATUS, RESPONSE_CODES, ERROR_MESSAGES } = require('../constants');
 const { pool } = require('../config/config');
 const { optionalAuth } = require('../middleware/auth');
+const { getSuggestions } = require('../utils/searchSuggest');
 
 // 搜索（通用搜索接口）
 router.get('/', optionalAuth, async (req, res) => {
@@ -353,6 +354,25 @@ router.get('/', optionalAuth, async (req, res) => {
   } catch (error) {
     console.error('搜索失败:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: RESPONSE_CODES.ERROR, message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
+
+// 搜索联想（候选来自进程内存索引，不查库）
+router.get('/suggest', (req, res) => {
+  try {
+    const data = getSuggestions(req.query.q, req.query.limit);
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data
+    });
+  } catch (error) {
+    console.error('搜索联想失败:', error);
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: { tags: [], posts: [], users: [] }
+    });
   }
 });
 

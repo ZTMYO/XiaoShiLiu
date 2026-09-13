@@ -55,6 +55,11 @@ request.interceptors.response.use(
     return response.data
   },
   async error => {
+    // 主动取消的请求（如搜索联想被后一次输入覆盖）静默返回，不当作错误处理
+    if (error.code === 'ERR_CANCELED') {
+      return { success: false, message: 'canceled', data: null, canceled: true }
+    }
+
     // 对响应错误做点什么
     if (error.response) {
       // 处理特定的HTTP状态码
