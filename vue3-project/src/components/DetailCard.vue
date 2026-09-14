@@ -2159,7 +2159,8 @@ const handleImageLoad = (event, index) => {
         const minHeight = 200 // 最小高度限制
         
         // 始终按宽度适配，高度按比例变化
-        const containerWidth = window.innerWidth // 直接使用视口宽度
+        // 取容器实际宽度而非视口宽度，这样高度比例与容器宽度始终一致（视口单位在缩放容器内会被缩放）
+        const containerWidth = container.clientWidth || window.innerWidth
         const calculatedHeight = containerWidth * (img.naturalHeight / img.naturalWidth)
         
         let finalWidth = containerWidth
@@ -2181,7 +2182,7 @@ const handleImageLoad = (event, index) => {
         }
         
         // 强制设置容器尺寸，覆盖CSS默认值
-        container.style.width = '100vw' // 使用视口宽度确保占满屏幕
+        container.style.width = '100%' // 跟随父级宽度，避免视口单位造成容器偏窄而靠左
         container.style.height = finalHeight + 'px'
         container.style.minHeight = 'unset'
         container.style.margin = '0 0 16px 0' 
@@ -4382,21 +4383,16 @@ function handleAvatarError(event) {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: auto;
-    /* 适配移动端浏览器UI */
     top: 0;
     top: constant(safe-area-inset-top);
     top: env(safe-area-inset-top);
-    height: 100vh;
-    height: calc(100vh - constant(safe-area-inset-top));
-    height: calc(100vh - env(safe-area-inset-top));
-    height: 100dvh;
+    bottom: 0;
   }
 
   .detail-card:not(.page-mode) {
-    width: 100vw;
+    width: 100%;
     height: 100%;
-    max-width: 100vw;
+    max-width: 100%;
     max-height: 100%;
     border-radius: 0;
     flex-direction: column;
@@ -4446,7 +4442,7 @@ function handleAvatarError(event) {
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--bg-color-primary);
-    max-width: 100vw;
+    max-width: 100%;
     box-sizing: border-box;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
@@ -4490,7 +4486,7 @@ function handleAvatarError(event) {
     padding-bottom: 110px;
     padding-bottom: calc(110px + constant(safe-area-inset-bottom));
     padding-bottom: calc(110px + env(safe-area-inset-bottom));
-    max-width: 100vw;
+    max-width: 100%;
     box-sizing: border-box;
   }
 

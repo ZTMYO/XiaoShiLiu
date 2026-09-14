@@ -335,8 +335,8 @@ onUnmounted(() => {
 
 .image-viewer-container {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -403,7 +403,7 @@ onUnmounted(() => {
 
 .viewer-image {
   width: 100%;
-  height: 100vh;
+  height: 100%;
   object-fit: contain;
   cursor: zoom-out;
   transition: none;
@@ -463,11 +463,6 @@ onUnmounted(() => {
 
 /* 移动端适配 */
 @media (max-width: 768px) {
-  .image-viewer-container {
-    width: 100vw;
-    height: 100vh;
-  }
-
   .close-btn {
     top: 8px;
     left: 8px;

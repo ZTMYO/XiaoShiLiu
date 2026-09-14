@@ -438,7 +438,7 @@ const postsCrudConfig = {
         SELECT p.id, p.user_id, p.title, p.content, p.type, p.category_id, c.name as category,
                p.view_count, p.like_count, p.collect_count, p.comment_count,
                p.status, p.created_at,
-               u.nickname, COALESCE(u.user_id, CONCAT('user', LPAD(u.id, 3, '0'))) as user_display_id
+               u.nickname, u.avatar as user_avatar, COALESCE(u.user_id, CONCAT('user', LPAD(u.id, 3, '0'))) as user_display_id
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
         LEFT JOIN categories c ON p.category_id = c.id

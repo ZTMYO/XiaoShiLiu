@@ -373,17 +373,26 @@ const goBack = () => {
 <style scoped>
 .admin-layout {
   display: flex;
-  /* 后台整体按 80% 呈现：容器放大到 125% 再缩放 0.8，视觉上正好铺满视口 */
   position: fixed;
   top: 0;
   left: 0;
-  width: 125vw;
-  height: 125vh;
-  transform: scale(0.8);
-  transform-origin: top left;
+  width: 100%;
+  height: 100%;
   background-color: var(--bg-color-secondary);
   overflow: hidden;
   transition: background-color 0.3s ease;
+}
+
+/* 大屏（≥961px，与 isMobile 的 960px 断点对齐）整体按 80% 呈现：容器放大到 125% 再缩放 0.8，视觉上正好铺满视口。
+   这里必须用 zoom 而不是 transform：transform 会让容器成为 fixed 浮层的包含块，
+   导致图片查看器、笔记预览等全屏弹层定位与尺寸异常，缩放后的矢量图标也会发虚。
+   移动端不做任何缩放，避免 vw/vh 与 fixed 浮层在缩放容器内计算异常 */
+@media (min-width: 961px) {
+  .admin-layout {
+    width: 125vw;
+    height: 125vh;
+    zoom: 0.8;
+  }
 }
 
 .sidebar {

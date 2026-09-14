@@ -1,6 +1,7 @@
 <template>
   <CrudTable title="笔记审核" entity-name="笔记" api-endpoint="/admin/posts-audit" :columns="columns" :form-fields="formFields"
-    :search-fields="searchFields" :custom-actions="customActions" :show-create-button="false" @custom-action="handleCustomAction">
+    :search-fields="searchFields" :custom-actions="customActions" :show-create-button="false"
+    @custom-action="handleCustomAction" @close-filter="emit('closeFilter')">
     <template #cell-preview="{ item }">
       <div>
         <span class="content-link" @click="openPreview(item, $event)" title="查看笔记预览">预览</span>
@@ -29,6 +30,9 @@ import DetailCard from '@/components/DetailCard.vue'
 import MessageToast from '@/components/MessageToast.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { apiConfig } from '@/config/api'
+
+// CrudTable 在移动端应用筛选后会抛出 close-filter，这里转发给 AdminLayout 收起筛选面板
+const emit = defineEmits(['closeFilter'])
 
 // 消息提示状态
 const showToast = ref(false)
