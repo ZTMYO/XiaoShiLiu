@@ -129,14 +129,10 @@ async function cleanupCoverFiles(coverUrls) {
     try {
       if (!url || typeof url !== 'string') continue;
 
-      // 检查是否是本地图片文件
-      const baseUrl = config.upload.image.local.baseUrl;
-      
-      if (url.startsWith(baseUrl)) {
-        const relativePath = url.replace(`${baseUrl}/`, '');
-        const absolutePath = path.join(process.cwd(), relativePath);
-        
-        const success = await deleteLocalFile(absolutePath);
+      const filePath = extractLocalFilePath(url);
+
+      if (filePath) {
+        const success = await deleteLocalFile(filePath);
         if (success) {
           deletedCount++;
         } else {
@@ -145,6 +141,7 @@ async function cleanupCoverFiles(coverUrls) {
         }
       } else {
         // 云端文件或其他类型的URL，跳过处理
+        console.log(`⏭️ 跳过非本地文件: ${url}`);
       }
     } catch (error) {
       failedCount++;

@@ -3,13 +3,29 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SiteHeader from '@/components/site/SiteHeader.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
+import SimpleSpinner from '@/components/spinner/SimpleSpinner.vue'
+import DropdownMenu from '@/components/menu/DropdownMenu.vue'
+import DropdownItem from '@/components/menu/DropdownItem.vue'
 import { getDocs, getDocByName } from '@/api/system.js'
 import { renderMarkdown } from '@/utils/markdown.js'
 import { useSiteLang, DOC_LANGS } from '@/composables/useSiteLang'
+import { useAboutStore } from '@/stores/about'
+import { useThemeStore } from '@/stores/theme'
 
 const route = useRoute()
 const router = useRouter()
 const { lang, setLang } = useSiteLang()
+const aboutStore = useAboutStore()
+const themeStore = useThemeStore()
+
+const GITHUB_URL = 'https://github.com/ZTMYO/XiaoShiLiu'
+
+const FOOTER_OUT_LINKS = [
+  { label: 'GitHub 仓库', href: GITHUB_URL },
+  { label: '版本发布', href: `${GITHUB_URL}/releases` },
+  { label: '问题反馈', href: `${GITHUB_URL}/issues` },
+  { label: '开源协议（GPLv3）', href: `${GITHUB_URL}/blob/master/LICENSE` }
+]
 
 // 带语言层访问时（/en/doc/api、/zh-Hant/doc/api）先按 URL 对齐语言，避免先按旧语言拉一次文档
 const initialLang = route.params.lang
@@ -26,8 +42,11 @@ const error = ref('')
 const progress = ref(0)
 const activeId = ref('')
 const activeChapterId = ref('')
-const mainRef = ref(null)
+const pageRef = ref(null)
 const menuOpen = ref(false)
+
+// 章节高亮的判定线：header 高度之外再留一段空白，避免标题刚进可视区就抢高亮
+const HIGHLIGHT_LINE = 128
 
 // 左侧文档树：每篇文档展开后列出它的二级章节
 const treeSections = ref({})
@@ -66,6 +85,8 @@ const docFileMap = computed(() => {
   return map
 })
 const langLabel = computed(() => (DOC_LANGS.find((item) => item.value === lang.value) || {}).label || '')
+const LANG_SHORT = { zh: '中', en: 'EN', 'zh-Hant': '繁' }
+const langShort = computed(() => LANG_SHORT[lang.value] || '中')
 
 const visibleToc = computed(() => toc.value.filter((item) => item.level > 1))
 
@@ -253,7 +274,7 @@ async function loadDoc() {
   loading.value = false
   await nextTick()
   if (!anchor || !scrollToSection(anchor, { syncHash: false })) {
-    if (mainRef.value) mainRef.value.scrollTop = 0
+    if (pageRef.value) pageRef.value.scrollTop = 0
   }
   updateScrollState()
 }
@@ -288,19 +309,18 @@ function goSection(name, id) {
   router.push({ path: docPath(name), hash: `#${id}` })
 }
 
-// 滚动进度条 + 章节内子标题高亮：以正文滚动容器为基准
+// 滚动进度条 + 章节内子标题高亮：以整个文档页为滚动容器
 function updateScrollState() {
-  const el = mainRef.value
+  const el = pageRef.value
   if (!el) return
   const max = el.scrollHeight - el.clientHeight
   progress.value = max > 0 ? Math.min(100, Math.max(0, (el.scrollTop / max) * 100)) : 0
 
-  const containerTop = el.getBoundingClientRect().top
   let current = ''
   for (const item of visibleToc.value) {
     const target = document.getElementById(item.id)
     if (!target) continue
-    if (target.getBoundingClientRect().top - containerTop > 64) break
+    if (target.getBoundingClientRect().top > HIGHLIGHT_LINE) break
     current = item.id
   }
   activeId.value = current
@@ -322,7 +342,7 @@ function goChapter(id) {
   if (!id || id === activeChapterId.value) return
   activeChapterId.value = id
   nextTick(() => {
-    if (mainRef.value) mainRef.value.scrollTop = 0
+    if (pageRef.value) pageRef.value.scrollTop = 0
     updateScrollState()
   })
   if (readHash() !== id) {
@@ -347,7 +367,7 @@ function onCrumbHome(event) {
   event.preventDefault()
   pendingAnchor = ''
   goChapter(chapters.value[0]?.id || '')
-  if (mainRef.value) mainRef.value.scrollTop = 0
+  if (pageRef.value) pageRef.value.scrollTop = 0
   updateScrollState()
   const target = docPath()
   if (route.fullPath !== target) router.replace(target)
@@ -433,21 +453,21 @@ watch(lang, () => {
 onMounted(() => {
   loadDocs()
   window.addEventListener('hashchange', handleHashChange)
-  if (mainRef.value) {
-    mainRef.value.addEventListener('scroll', updateScrollState, { passive: true })
+  if (pageRef.value) {
+    pageRef.value.addEventListener('scroll', updateScrollState, { passive: true })
   }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('hashchange', handleHashChange)
-  if (mainRef.value) {
-    mainRef.value.removeEventListener('scroll', updateScrollState)
+  if (pageRef.value) {
+    pageRef.value.removeEventListener('scroll', updateScrollState)
   }
 })
 </script>
 
 <template>
-  <div class="doc-page">
+  <div class="doc-page" ref="pageRef">
     <SiteHeader :progress="progress">
       <template #actions>
         <button type="button" class="doc-menu-btn" aria-label="章节菜单" @click="menuOpen = !menuOpen">
@@ -458,24 +478,53 @@ onBeforeUnmount(() => {
 
     <div class="doc-body">
       <aside class="doc-side" :class="{ open: menuOpen }">
-        <p class="doc-side-title">文档</p>
-        <div v-for="item in docs" :key="item.name" class="doc-group" :class="{ open: isExpanded(item.name) }">
-          <div class="doc-group-head" :class="{ active: item.name === currentName, 'no-toggle': !isSplittable(item.name) }">
-            <button v-if="isSplittable(item.name)" type="button" class="doc-group-toggle"
-              :aria-expanded="isExpanded(item.name)" @click="toggleDoc(item.name)">
-              <SvgIcon name="right" class="doc-group-arrow" width="12" height="12" />
+        <div class="doc-side-head">
+          <p class="doc-side-head-title">小石榴图文社区</p>
+          <div class="doc-side-head-actions">
+            <DropdownMenu direction="down" menuClass="doc-side-lang-menu">
+              <template #trigger>
+                <button type="button" class="doc-side-pref-btn" aria-label="切换语言">{{ langShort }}</button>
+              </template>
+              <template #menu>
+                <DropdownItem v-for="item in DOC_LANGS" :key="item.value" @click="setLang(item.value)">
+                  {{ item.label }}
+                </DropdownItem>
+              </template>
+            </DropdownMenu>
+
+            <button type="button" class="doc-side-pref-btn" aria-label="切换主题"
+              @click="themeStore.toggleTwoTheme($event)">
+              <SvgIcon :name="themeStore.isDark ? 'sun' : 'moon'" width="18" height="18" />
             </button>
-            <RouterLink class="doc-group-title" :to="docPath(item.name)" @click="menuOpen = false">{{ item.title }}</RouterLink>
-          </div>
-          <div v-show="isExpanded(item.name)" class="doc-group-sections">
-            <p v-if="isLoadingSections(item.name) && !sectionsOf(item.name).length" class="doc-group-status">加载中…</p>
-            <a v-for="sec in sectionsOf(item.name)" :key="sec.id" class="doc-sub-item"
-              :class="{ active: item.name === currentName && sec.id === activeChapterId }" :href="`#${sec.id}`"
-              @click.prevent="goSection(item.name, sec.id)">
-              {{ sec.text }}
-            </a>
+
+            <button type="button" class="doc-side-close" aria-label="收起目录" @click="menuOpen = false">
+              <SvgIcon name="close" width="18" height="18" />
+            </button>
           </div>
         </div>
+
+        <nav class="doc-side-tree">
+          <div v-for="item in docs" :key="item.name" class="doc-group" :class="{ open: isExpanded(item.name) }">
+            <div class="doc-group-head" :class="{ active: item.name === currentName, 'no-toggle': !isSplittable(item.name) }">
+              <button v-if="isSplittable(item.name)" type="button" class="doc-group-toggle"
+                :aria-expanded="isExpanded(item.name)" @click="toggleDoc(item.name)">
+                <SvgIcon name="right" class="doc-group-arrow" width="12" height="12" />
+              </button>
+              <RouterLink class="doc-group-title" :to="docPath(item.name)" @click="menuOpen = false">{{ item.title }}</RouterLink>
+            </div>
+            <div v-show="isExpanded(item.name)" class="doc-group-sections">
+              <p v-if="isLoadingSections(item.name) && !sectionsOf(item.name).length" class="doc-group-status">
+                <SimpleSpinner size="12" color="var(--text-color-quaternary)" />
+                <span>加载中…</span>
+              </p>
+              <a v-for="sec in sectionsOf(item.name)" :key="sec.id" class="doc-sub-item"
+                :class="{ active: item.name === currentName && sec.id === activeChapterId }" :href="`#${sec.id}`"
+                @click.prevent="goSection(item.name, sec.id)">
+                {{ sec.text }}
+              </a>
+            </div>
+          </div>
+        </nav>
       </aside>
 
       <div v-if="menuOpen" class="doc-backdrop" @click="menuOpen = false"></div>
@@ -490,8 +539,11 @@ onBeforeUnmount(() => {
         </div>
       </aside>
 
-      <main class="doc-main" ref="mainRef">
-        <p v-if="loading" class="doc-status">加载中…</p>
+      <main class="doc-main">
+        <div v-if="loading" class="doc-loading" role="status" aria-live="polite">
+          <SimpleSpinner size="28" color="var(--primary-color)" />
+          <p class="doc-loading-text">正在加载文档…</p>
+        </div>
         <p v-else-if="error" class="doc-status">{{ error }}</p>
         <template v-else>
           <article class="doc-article">
@@ -541,36 +593,171 @@ onBeforeUnmount(() => {
         </template>
       </main>
     </div>
+
+    <footer class="doc-footer">
+      <div class="doc-footer-inner">
+        <div class="doc-footer-cols">
+          <div class="doc-footer-col">
+            <p class="doc-footer-title">文档指南</p>
+            <ul class="doc-footer-list">
+              <li v-for="item in docs" :key="item.name">
+                <RouterLink class="doc-footer-link" :to="docPath(item.name)">{{ item.title }}</RouterLink>
+              </li>
+            </ul>
+          </div>
+
+          <div class="doc-footer-col">
+            <p class="doc-footer-title">项目资源</p>
+            <ul class="doc-footer-list">
+              <li v-for="link in FOOTER_OUT_LINKS" :key="link.href">
+                <a class="doc-footer-link" :href="link.href" target="_blank" rel="noopener">
+                  {{ link.label }}
+                  <svg class="doc-footer-ext" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
+                    <path fill="currentColor"
+                      d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z" />
+                  </svg>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div class="doc-footer-col">
+            <p class="doc-footer-title">关于本站</p>
+            <ul class="doc-footer-list">
+              <li><RouterLink class="doc-footer-link" to="/">演示站点</RouterLink></li>
+              <li><RouterLink class="doc-footer-link" to="/download">获取源码</RouterLink></li>
+              <li>
+                <button type="button" class="doc-footer-link doc-footer-btn" @click="aboutStore.openAboutModal()">
+                  关于项目
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="doc-footer-bottom">
+          <p class="doc-footer-copy">Copyright © 2026 ZTMYO. Released under GPLv3 License.</p>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
 <style scoped>
 .doc-page {
-  padding-top: 64px;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100vh;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-y: auto;
   background: var(--bg-color-primary);
 }
 
 .doc-body {
+  flex: 1 0 auto;
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr) 264px;
+  align-items: start;
+  width: 100%;
   max-width: 1400px;
-  height: 100%;
   margin: 0 auto;
+  /* 内容再短也至少占满一屏，避免加载时页脚先闪进视口 */
+  min-height: 100vh;
+  padding-top: 64px;
+  box-sizing: border-box;
 }
 
 /* ===== 侧边栏 ===== */
 .doc-side {
-  position: fixed;
+  grid-column: 1;
+  position: sticky;
   top: 64px;
-  left: max(calc(50% - 700px), 0px);
-  width: 264px;
+  display: flex;
+  flex-direction: column;
   height: calc(100vh - 64px);
-  overflow-y: auto;
-  padding: 28px 16px 48px 24px;
+  overflow: hidden;
   box-sizing: border-box;
   border-right: 1px solid var(--border-color-primary);
+}
+
+.doc-side-head {
+  flex: none;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 0 20px;
+}
+
+.doc-side-head-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-color-primary);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.doc-side-head-actions {
+  flex: none;
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.doc-side-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 16px 48px 24px;
+}
+
+.doc-side-pref-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-color-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.doc-side-pref-btn:hover {
+  color: var(--primary-color);
+  background: var(--bg-color-secondary);
+}
+
+.doc-side-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.doc-side-close:hover {
+  color: var(--primary-color);
+}
+
+:deep(.doc-side-lang-menu) {
+  min-width: 130px;
 }
 
 .doc-side-title {
@@ -581,15 +768,14 @@ onBeforeUnmount(() => {
   color: var(--text-color-quaternary);
 }
 
-/* ===== 右侧章节目录 ===== */
+/* ===== 章节目录 ===== */
 .doc-toc {
-  position: fixed;
+  grid-column: 3;
+  position: sticky;
   top: 64px;
-  right: max(calc(50% - 700px), 0px);
-  width: 264px;
   height: calc(100vh - 64px);
   overflow-y: auto;
-  padding: 28px 24px 48px 0;
+  padding: 16px 24px 48px 0;
   box-sizing: border-box;
 }
 
@@ -673,6 +859,9 @@ onBeforeUnmount(() => {
 }
 
 .doc-group-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin: 0;
   padding: 6px 10px;
   color: var(--text-color-quaternary);
@@ -726,13 +915,43 @@ onBeforeUnmount(() => {
   color: var(--primary-color);
 }
 
-/* ===== 正文：独立滚动容器，滚动内容不会与固定 header 叠加 ===== */
+/* ===== 正文 ===== */
 .doc-main {
-  margin: 0 264px;
-  height: 100%;
-  overflow-y: auto;
-  padding: 32px 48px 120px;
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  padding: 32px 48px 64px;
   box-sizing: border-box;
+}
+
+/* ===== 加载态 ===== */
+.doc-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 360px;
+  animation: doc-loading-in 0.28s ease both;
+}
+
+.doc-loading-text {
+  margin: 0;
+  color: var(--text-color-tertiary);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+@keyframes doc-loading-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .doc-status {
@@ -804,7 +1023,7 @@ onBeforeUnmount(() => {
 .doc-article :deep(h4) {
   color: var(--text-color-primary);
   line-height: 1.4;
-  scroll-margin-top: 32px;
+  scroll-margin-top: 96px;
 }
 
 .doc-article :deep(h1) {
@@ -1049,12 +1268,96 @@ onBeforeUnmount(() => {
   color: var(--primary-color);
 }
 
+/* ===== 页脚 ===== */
+.doc-footer {
+  flex: none;
+  width: 100%;
+  padding: 44px 24px 26px;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--primary-color) 55%, #5a5a5a);
+}
+
+[data-theme='dark'] .doc-footer {
+  background: color-mix(in srgb, var(--primary-color) 40%, var(--bg-color-primary));
+}
+
+.doc-footer-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.doc-footer-cols {
+  display: flex;
+  gap: 32px;
+}
+
+.doc-footer-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.doc-footer-title {
+  margin: 0 0 14px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.doc-footer-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doc-footer-link {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 5px 0;
+  border: none;
+  background: transparent;
+  color: rgb(255 255 255 / 62%);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.doc-footer-ext {
+  flex: none;
+  margin-left: 5px;
+  opacity: 0.75;
+}
+
+.doc-footer-link:hover {
+  color: #fff;
+}
+
+.doc-footer-btn {
+  font-family: inherit;
+}
+
+.doc-footer-bottom {
+  margin-top: 32px;
+  padding-top: 20px;
+  text-align: center;
+}
+
+.doc-footer-copy {
+  margin: 0;
+  color: rgb(255 255 255 / 42%);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .doc-backdrop {
   display: none;
   position: fixed;
   inset: 0;
   z-index: 890;
-  background: rgb(0 0 0 / 45%);
+  background: transparent;
 }
 
 .doc-menu-btn {
@@ -1075,21 +1378,30 @@ onBeforeUnmount(() => {
   color: var(--primary-color);
 }
 
-/* 窄屏优先保证正文宽度，先收右栏再收左栏 */
 @media (max-width: 1200px) {
-  .doc-toc {
-    display: none;
+  .doc-body {
+    grid-template-columns: 264px minmax(0, 1fr);
   }
 
-  .doc-main {
-    margin-right: 0;
+  .doc-toc {
+    display: none;
   }
 }
 
 @media (max-width: 960px) {
-  /* 侧栏收成左侧抽屉，由 header 菜单按钮滑入 */
+  .doc-body {
+    display: block;
+  }
+
   .doc-side {
-    z-index: 900;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 264px;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 1100;
+    border-right: none;
     background: var(--bg-color-primary);
     box-shadow: 0 0 24px var(--shadow-color);
     transform: translateX(-100%);
@@ -1098,6 +1410,25 @@ onBeforeUnmount(() => {
 
   .doc-side.open {
     transform: translateX(0);
+  }
+
+  .doc-side-head {
+    display: flex;
+    height: 52px;
+    padding: 0 8px 0 20px;
+    border-bottom: 1px solid var(--border-color-primary);
+  }
+
+  .doc-side-head-actions {
+    display: flex;
+  }
+
+  .doc-side-close {
+    display: flex;
+  }
+
+  .doc-side-tree {
+    padding: 12px 16px 40px 24px;
   }
 
   .doc-backdrop {
@@ -1111,8 +1442,34 @@ onBeforeUnmount(() => {
   }
 
   .doc-main {
-    margin-left: 0;
-    padding: 24px 20px 100px;
+    padding: 24px 20px 56px;
+  }
+
+  .doc-loading {
+    min-height: 260px;
+  }
+
+  .doc-footer {
+    padding: 36px 20px 22px;
+  }
+
+  .doc-footer-cols {
+    flex-wrap: wrap;
+    gap: 28px 20px;
+  }
+
+  .doc-footer-col {
+    flex: 1 1 40%;
+  }
+}
+
+@media (max-width: 640px) {
+  .doc-footer-col {
+    flex: 1 1 100%;
+  }
+
+  .doc-footer-bottom {
+    text-align: left;
   }
 }
 </style>

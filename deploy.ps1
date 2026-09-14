@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env pwsh
+#!/usr/bin/env pwsh
 param(
     [switch]$Build,
     [switch]$Stop,
@@ -34,7 +34,7 @@ function Show-Help {
 function Test-Docker {
     try {
         docker --version | Out-Null
-        docker-compose --version | Out-Null
+        docker compose version | Out-Null
         return $true
     }
     catch {
@@ -71,7 +71,7 @@ function Seed-Data {
     }
 
     Write-ColorOutput "开始灌装数据（时间较长请耐心等待）..." "Yellow"
-    docker-compose -p xiaoshiliu exec -T backend node scripts/generate-data.js
+    docker compose -p xiaoshiliu exec -T backend node scripts/generate-data.js
     if ($LASTEXITCODE -eq 0) {
         Write-ColorOutput "灌装完成" "Green"
     }
@@ -85,11 +85,11 @@ function Start-Services {
 
     if ($Build) {
         Write-ColorOutput "重新构建镜像..." "Yellow"
-        docker-compose -p xiaoshiliu down
-        docker-compose -p xiaoshiliu build --no-cache
+        docker compose -p xiaoshiliu down
+        docker compose -p xiaoshiliu build --no-cache
     }
 
-    docker-compose -p xiaoshiliu up -d
+    docker compose -p xiaoshiliu up -d
     if ($LASTEXITCODE -eq 0) {
         Write-ColorOutput "服务启动成功!" "Green"
         Write-ColorOutput "访问地址:" "Cyan"
@@ -108,7 +108,7 @@ function Start-Services {
 
 function Stop-Services {
     Write-ColorOutput "停止服务..." "Yellow"
-    docker-compose -p xiaoshiliu down
+    docker compose -p xiaoshiliu down
     if ($LASTEXITCODE -eq 0) {
         Write-ColorOutput "服务已停止" "Green"
     }
@@ -122,7 +122,7 @@ function Clean-Resources {
     $confirmation = Read-Host "确认继续? (y/N)"
     if ($confirmation -match '^[Yy]$') {
         Write-ColorOutput "清理Docker资源..." "Yellow"
-        docker-compose -p xiaoshiliu down -v --rmi all
+        docker compose -p xiaoshiliu down -v --rmi all
         docker system prune -f | Out-Null
         Write-ColorOutput "清理完成" "Green"
     }
@@ -133,12 +133,12 @@ function Clean-Resources {
 
 function Show-Logs {
     Write-ColorOutput "查看服务日志 (按 Ctrl+C 退出):" "Cyan"
-    docker-compose -p xiaoshiliu logs -f
+    docker compose -p xiaoshiliu logs -f
 }
 
 function Show-Status {
     Write-ColorOutput "服务状态:" "Cyan"
-    docker-compose -p xiaoshiliu ps
+    docker compose -p xiaoshiliu ps
 }
 
 if ($Help) {

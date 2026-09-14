@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useMediaQuery } from '@vueuse/core'
 import SvgIcon from '@/components/SvgIcon.vue'
 import DropdownMenu from '@/components/menu/DropdownMenu.vue'
 import DropdownItem from '@/components/menu/DropdownItem.vue'
@@ -34,6 +35,13 @@ const isDownloadPage = computed(() => route.path.startsWith('/download'))
 // 文档页 URL 可能带语言层（/en/doc/api），按路径段判断
 const isDocPage = computed(() => /\/doc(\/|$)/.test(route.path))
 const docLink = computed(() => (route.params.lang ? `/${route.params.lang}/doc` : '/doc'))
+
+const isMobile = useMediaQuery('(max-width: 640px)')
+// 移动端收起源码入口；「查看文档」只在既不是文档页也不是下载页时才出现
+const showSourceLink = computed(() => !isMobile.value)
+const showDocsLink = computed(() => !isMobile.value || (!isDocPage.value && !isDownloadPage.value))
+// 文档页移动端把语言与主题收进侧边抽屉承载
+const showSitePrefs = computed(() => !isMobile.value || !isDocPage.value)
 </script>
 
 <template>
@@ -44,30 +52,33 @@ const docLink = computed(() => (route.params.lang ? `/${route.params.lang}/doc` 
       </div>
 
       <nav class="site-nav">
-        <button class="site-nav-link" :class="{ active: isDownloadPage }" @click="router.push('/download')">
+        <button v-if="showSourceLink" class="site-nav-link" :class="{ active: isDownloadPage }"
+          @click="router.push('/download')">
           <span>获取源码</span>
         </button>
 
-        <button class="site-nav-link" :class="{ active: isDocPage }" @click="router.push(docLink)">
+        <button v-if="showDocsLink" class="site-nav-link" :class="{ active: isDocPage }" @click="router.push(docLink)">
           <span>查看文档</span>
         </button>
 
-        <div class="site-divider"></div>
+        <div v-if="!isMobile" class="site-divider"></div>
 
-        <DropdownMenu direction="down" menuClass="site-lang-menu">
-          <template #trigger>
-            <button class="site-icon-btn site-lang-btn">{{ currentLangLabel }}</button>
-          </template>
-          <template #menu>
-            <DropdownItem v-for="item in DOC_LANGS" :key="item.value" @click="setLang(item.value)">
-              {{ item.label }}
-            </DropdownItem>
-          </template>
-        </DropdownMenu>
+        <template v-if="showSitePrefs">
+          <DropdownMenu direction="down" menuClass="site-lang-menu">
+            <template #trigger>
+              <button class="site-icon-btn site-lang-btn">{{ currentLangLabel }}</button>
+            </template>
+            <template #menu>
+              <DropdownItem v-for="item in DOC_LANGS" :key="item.value" @click="setLang(item.value)">
+                {{ item.label }}
+              </DropdownItem>
+            </template>
+          </DropdownMenu>
 
-        <button class="site-icon-btn" @click="themeStore.toggleTwoTheme($event)">
-          <SvgIcon :name="themeStore.isDark ? 'sun' : 'moon'" width="20" height="20" />
-        </button>
+          <button class="site-icon-btn" @click="themeStore.toggleTwoTheme($event)">
+            <SvgIcon :name="themeStore.isDark ? 'sun' : 'moon'" width="20" height="20" />
+          </button>
+        </template>
 
         <slot name="actions"></slot>
       </nav>
@@ -195,14 +206,8 @@ const docLink = computed(() => (route.params.lang ? `/${route.params.lang}/doc` 
   min-width: 140px;
 }
 
-/* 移动端收起分隔线与当前页自己的入口，语言、主题与页面自定义入口保留 */
+/* 移动端只保留图标按钮与页面自定义入口，尺寸对齐主站移动端 header */
 @media (max-width: 640px) {
-  .site-nav-link.active,
-  .site-divider {
-    display: none;
-  }
-
-  /* 点击区域与图标尺寸对齐主站移动端 header */
   .site-nav-link {
     height: 40px;
     padding: 0 12px;

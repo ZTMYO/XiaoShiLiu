@@ -1,4 +1,4 @@
-# XiaoShiLiu UGC Community Database Design
+# Database Design
 
 ## Overview
 

@@ -1,4 +1,4 @@
-# XiaoShiLiu UGC Community API Documentation
+# API Documentation
 
 ## Project Information
 - **Project Name**: XiaoShiLiu UGC Community

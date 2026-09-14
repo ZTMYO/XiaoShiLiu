@@ -1,4 +1,4 @@
-# XiaoShiLiu UGC Community Deployment Guide
+# Deployment Guide
 
 ## System Requirements
 
@@ -60,8 +60,8 @@ On Windows, using the PowerShell script is recommended:
 On other platforms, use Docker Compose:
 
 ```bash
-docker-compose up -d
-docker-compose up -d --build   # Rebuild and start
+docker compose up -d
+docker compose up -d --build   # Rebuild and start
 ```
 
 > Before starting on a server for the first time, you can first run `docker compose config` to verify that the orchestration configuration is valid.
@@ -158,14 +158,14 @@ The image upload strategy is selected by `IMAGE_UPLOAD_STRATEGY`, and there are 
 
 | Strategy | Value | Description | Variables to Configure |
 |---|---|---|---|
-| Local storage | `local` | Stored on the server disk | `LOCAL_UPLOAD_DIR`, `LOCAL_BASE_URL` |
+| Local storage | `local` | Stored on the server disk | `IMAGE_LOCAL_UPLOAD_DIR`, `VIDEO_LOCAL_UPLOAD_DIR` |
 | Third-party image hosting | `imagehost` | Uploaded to third-party image hosting (default) | `IMAGEHOST_API_URL`, `IMAGEHOST_TIMEOUT` |
 | Cloudflare R2 | `r2` | Stored in an R2 bucket | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET_NAME`, `R2_ACCOUNT_ID`, `R2_REGION` |
 | Alibaba Cloud OSS | `aliyun` | Stored in an OSS bucket | `OSS_REGION`, `OSS_BUCKET_NAME`, `OSS_ACCESS_KEY_ID`, `OSS_ACCESS_KEY_SECRET`, `OSS_IMAGE_PREFIX` |
 
 The video upload strategy is selected by `VIDEO_UPLOAD_STRATEGY`, which supports `local`, `r2` and `aliyun` (`aliyun` reuses the image OSS variables, and `OSS_VIDEO_PREFIX` sets the video directory prefix, defaulting to `videos/`). The file size limits are controlled by `IMAGE_MAX_SIZE` (default 10mb) and `VIDEO_MAX_SIZE` (default 100mb).
 
-> When using the `local` strategy, `LOCAL_BASE_URL` must be an address that the browser can reach, otherwise images will break.
+> When using the `local` strategy, images are returned as relative `/api/files/images/*` paths and served from the frontend's own origin, so no external address is required.
 
 ### Cloudflare R2 Configuration
 
@@ -306,8 +306,8 @@ server {
 | Issue | Troubleshooting |
 |---|---|
 | Port conflict | Use `netstat -ano \| findstr :8080` to check the usage; modify the port mapping in the `ports` section of docker-compose.yml, then run `docker compose up -d` again |
-| Container fails to start | Use `docker-compose logs` to view the logs, and `docker-compose up -d --build` to rebuild |
-| Database connection failure | Use `docker-compose ps` to check the container status, and `docker-compose restart mysql` to restart the database |
+| Container fails to start | Use `docker compose logs` to view the logs, and `docker compose up -d --build` to rebuild |
+| Database connection failure | Use `docker compose ps` to check the container status, and `docker compose restart mysql` to restart the database |
 
 ### Traditional Deployment Issues
 

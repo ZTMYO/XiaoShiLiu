@@ -41,7 +41,7 @@ check_docker() {
         exit 1
     fi
     
-    if ! command -v docker-compose &> /dev/null; then
+    if ! docker compose version &> /dev/null; then
         echo -e "${RED}错误: 未找到 Docker Compose${NC}"
         echo -e "${YELLOW}请先安装 Docker Compose: https://docs.docker.com/compose/install/${NC}"
         exit 1
@@ -66,11 +66,11 @@ start_services() {
     
     if [ "$1" = "--build" ]; then
         echo -e "${YELLOW}重新构建镜像...${NC}"
-        docker-compose down
-        docker-compose build --no-cache
+        docker compose down
+        docker compose build --no-cache
     fi
     
-    docker-compose up -d
+    docker compose up -d
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ 所有服务已成功启动！${NC}"
@@ -84,7 +84,7 @@ start_services() {
         echo -e "${YELLOW}使用 './deploy.sh --status' 查看服务状态${NC}"
     else
         echo -e "${RED}服务启动失败!${NC}"
-        echo -e "${YELLOW}请检查日志: docker-compose logs${NC}"
+        echo -e "${YELLOW}请检查日志: docker compose logs${NC}"
         exit 1
     fi
 }
@@ -92,7 +92,7 @@ start_services() {
 # 停止服务
 stop_services() {
     echo -e "${YELLOW}停止小石榴图文社区服务...${NC}"
-    docker-compose down
+    docker compose down
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}服务已停止${NC}"
@@ -110,7 +110,7 @@ clean_resources() {
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${YELLOW}清理Docker资源...${NC}"
-        docker-compose down -v --rmi all
+        docker compose down -v --rmi all
         docker system prune -f
         echo -e "${GREEN}清理完成${NC}"
     else
@@ -121,13 +121,13 @@ clean_resources() {
 # 查看日志
 show_logs() {
     echo -e "${CYAN}查看服务日志 (按 Ctrl+C 退出):${NC}"
-    docker-compose logs -f
+    docker compose logs -f
 }
 
 # 查看状态
 show_status() {
     echo -e "${CYAN}服务状态:${NC}"
-    docker-compose ps
+    docker compose ps
     echo ""
     echo -e "${CYAN}资源使用情况:${NC}"
     docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}"
@@ -138,19 +138,19 @@ seed_database() {
     echo -e "${YELLOW}初始化数据库并生成测试数据...${NC}"
     
     # 检查后端容器是否运行
-    if ! docker-compose ps | grep -q "xiaoshiliu-backend.*Up"; then
+    if ! docker compose ps | grep -q "xiaoshiliu-backend.*Up"; then
         echo -e "${RED}错误: 后端服务未运行，请先启动服务${NC}"
         echo -e "${YELLOW}使用 './deploy.sh' 启动服务${NC}"
         exit 1
     fi
     
     echo -e "${CYAN}步骤1: 初始化数据库结构...${NC}"
-    docker-compose exec backend node scripts/init-database.js
+    docker compose exec backend node scripts/init-database.js
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}数据库初始化成功!${NC}"
         echo -e "${CYAN}步骤2: 生成测试数据...${NC}"
-        docker-compose exec backend node scripts/generate-data.js
+        docker compose exec backend node scripts/generate-data.js
         
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}测试数据生成成功!${NC}"

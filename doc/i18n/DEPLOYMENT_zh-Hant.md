@@ -1,4 +1,4 @@
-# 小石榴圖文社區部署指南
+# 部署指南
 
 ## 系統需求
 
@@ -60,8 +60,8 @@ Windows 推薦使用 PowerShell 腳本：
 其他平台使用 Docker Compose：
 
 ```bash
-docker-compose up -d
-docker-compose up -d --build   # 重新建構並啟動
+docker compose up -d
+docker compose up -d --build   # 重新建構並啟動
 ```
 
 > 首次在伺服器啟動前，可先執行 `docker compose config` 驗證編排配置是否合法。
@@ -158,14 +158,14 @@ npm run preview        # 本機預覽，預設 http://localhost:4173
 
 | 策略 | 取值 | 說明 | 需要配置的變數 |
 |---|---|---|---|
-| 本地儲存 | `local` | 存到伺服器磁碟 | `LOCAL_UPLOAD_DIR`、`LOCAL_BASE_URL` |
+| 本地儲存 | `local` | 存到伺服器磁碟 | `IMAGE_LOCAL_UPLOAD_DIR`、`VIDEO_LOCAL_UPLOAD_DIR` |
 | 第三方圖床 | `imagehost` | 上傳到第三方圖床（預設） | `IMAGEHOST_API_URL`、`IMAGEHOST_TIMEOUT` |
 | Cloudflare R2 | `r2` | 存到 R2 儲存桶 | `R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_ENDPOINT`、`R2_BUCKET_NAME`、`R2_ACCOUNT_ID`、`R2_REGION` |
 | 阿里雲 OSS | `aliyun` | 存到 OSS 儲存桶 | `OSS_REGION`、`OSS_BUCKET_NAME`、`OSS_ACCESS_KEY_ID`、`OSS_ACCESS_KEY_SECRET`、`OSS_IMAGE_PREFIX` |
 
 視頻上傳策略由 `VIDEO_UPLOAD_STRATEGY` 選擇，支援 `local`、`r2` 和 `aliyun`（`aliyun` 沿用圖片的 OSS 變數，可用 `OSS_VIDEO_PREFIX` 指定視頻目錄前綴，預設 `videos/`）。檔案大小上限由 `IMAGE_MAX_SIZE`（預設 10mb）和 `VIDEO_MAX_SIZE`（預設 100mb）控制。
 
-> 使用 `local` 策略時，`LOCAL_BASE_URL` 必須是瀏覽器能存取到的地址，否則圖片會裂圖。
+> 使用 `local` 策略時，圖片以 `/api/files/images/*` 相對路徑返回，由前端同域存取，無需額外設定對外地址。
 
 ### Cloudflare R2 配置
 
@@ -306,8 +306,8 @@ server {
 | 問題 | 排查方式 |
 |---|---|
 | 端口衝突 | `netstat -ano \| findstr :8080` 檢視佔用；端口映射在 docker-compose.yml 的 `ports` 段修改，改完重新 `docker compose up -d` |
-| 容器啟動失敗 | `docker-compose logs` 檢視日誌，`docker-compose up -d --build` 重新建構 |
-| 資料庫連接失敗 | `docker-compose ps` 檢視容器狀態，`docker-compose restart mysql` 重啟資料庫 |
+| 容器啟動失敗 | `docker compose logs` 檢視日誌，`docker compose up -d --build` 重新建構 |
+| 資料庫連接失敗 | `docker compose ps` 檢視容器狀態，`docker compose restart mysql` 重啟資料庫 |
 
 ### 傳統部署問題
 

@@ -105,7 +105,7 @@
           </div>
 
           <div class="about-footer">
-            <p>&copy; 2025 小石榴校园图文社区. Made with ❤️ by @ZTMYO</p>
+            <p>&copy; 2026 小石榴校园图文社区. Made with ❤️ by @ZTMYO</p>
           </div>
         </div>
       </div>
