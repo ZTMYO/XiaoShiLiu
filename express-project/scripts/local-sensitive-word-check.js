@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise')
 const fs = require('fs').promises
+const fsSync = require('fs')
 const path = require('path')
 
 // 加载环境变量
@@ -43,6 +44,37 @@ async function loadSensitiveWords() {
     console.error('违规词库加载失败:', error.message)
     return false
   }
+}
+
+/**
+ * 从违规词库移除一批词，同步更新文件与内存词库。
+ * 生成脚本会自动调用它来清掉"误报词"（刺激、推广、政治、
+ * 浑圆 之类），保证后续的敏感词检测不因为旧词库强度过高而反复失败。
+ *
+ * @param {string[]} wordsToRemove
+ * @returns {number} 实际移除的数量
+ */
+async function removeSensitiveWords(wordsToRemove) {
+  if (!Array.isArray(wordsToRemove) || wordsToRemove.length === 0) return 0
+  const set = new Set(wordsToRemove.map(w => String(w).trim()).filter(Boolean))
+  const before = [...sensitiveWords]
+  const kept = before.filter(w => !set.has(w))
+  const removed = before.length - kept.length
+  if (removed === 0) return 0
+
+  sensitiveWords = kept
+  const content = fsSync.readFileSync(SENSITIVE_WORDS_FILE, 'utf8')
+  const lines = content.split(/\r?\n/)
+  const nextLines = lines.filter(line => {
+    const w = line.trim()
+    return !w || !set.has(w)
+  })
+  fsSync.writeFileSync(SENSITIVE_WORDS_FILE, nextLines.join('\n'))
+  return removed
+}
+
+function getSensitiveWordsSnapshot() {
+  return [...sensitiveWords]
 }
 
 // 检测文本是否包含违规词
@@ -417,6 +449,8 @@ if (require.main === module) {
 
 module.exports = {
   loadSensitiveWords,
+  removeSensitiveWords,
+  getSensitiveWordsSnapshot,
   checkSensitiveWord,
   generateRandomCode,
   checkUserIds,

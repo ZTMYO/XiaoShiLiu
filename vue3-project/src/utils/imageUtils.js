@@ -161,6 +161,9 @@ export function getThumbnailUrl(url, width = 480, options = {}) {
   if (!url || typeof url !== 'string' || !supportsThumbnail(url)) {
     return url
   }
+  if (/\.svg(\?|$)/i.test(url)) {
+    return url
+  }
 
   if (url.includes('x-oss-process=')) {
     return url
