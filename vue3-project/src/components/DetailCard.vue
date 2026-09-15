@@ -49,7 +49,9 @@
             </video>
           </div>
           <!-- 图片轮播（图文笔记） -->
-          <div v-else class="image-container">
+          <div v-else class="image-container" :class="{ draggable: hasMultipleImages && !isMobile }"
+            @mousedown="onImageDragStart" @mousemove="onImageDragMove" @mouseup="onImageDragEnd"
+            @mouseleave="onImageDragEnd" @wheel="onImageWheel" @dragstart.prevent>
             <div class="image-slider" :style="{ transform: `translateX(-${currentImageIndex * 100}%)` }">
               <img v-for="(image, index) in imageList" :key="index" 
                 :src="showContent ? image : (index === 0 ? props.item.image : '')" 
@@ -2229,8 +2231,62 @@ const nextImage = () => {
   }
 }
 
+// 电脑端用鼠标左右拖拽或触控板横向滑动代替翻页按钮
+const DRAG_THRESHOLD = 60
+const WHEEL_THRESHOLD = 80
+let dragStartX = 0
+let dragOffset = 0
+let isDraggingImage = false
+// 拖拽换图后紧跟的 click 不该再触发大图查看
+let suppressImageClick = false
+let wheelAccum = 0
+
+const onImageDragStart = (e) => {
+  if (isMobile.value || !hasMultipleImages.value || e.button !== 0) return
+  isDraggingImage = true
+  dragStartX = e.clientX
+  dragOffset = 0
+}
+
+const onImageDragMove = (e) => {
+  if (!isDraggingImage) return
+  dragOffset = e.clientX - dragStartX
+}
+
+const onImageDragEnd = () => {
+  if (!isDraggingImage) return
+  isDraggingImage = false
+  if (dragOffset <= -DRAG_THRESHOLD) {
+    nextImage()
+    suppressImageClick = true
+  } else if (dragOffset >= DRAG_THRESHOLD) {
+    prevImage()
+    suppressImageClick = true
+  }
+  dragOffset = 0
+}
+
+const onImageWheel = (e) => {
+  if (isMobile.value || !hasMultipleImages.value) return
+  // 只接管横向分量，纵向滚动仍交给页面
+  if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
+  e.preventDefault()
+  wheelAccum += e.deltaX
+  if (wheelAccum >= WHEEL_THRESHOLD) {
+    nextImage()
+    wheelAccum = 0
+  } else if (wheelAccum <= -WHEEL_THRESHOLD) {
+    prevImage()
+    wheelAccum = 0
+  }
+}
+
 // 图片查看器相关方法
 const openImageViewer = () => {
+  if (suppressImageClick) {
+    suppressImageClick = false
+    return
+  }
   showImageViewer.value = true
   isViewingCommentImages.value = false
 }
@@ -3155,6 +3211,17 @@ function handleAvatarError(event) {
   width: 100%;
   height: 100%;
   overflow: hidden;
+}
+
+/* 可拖拽切换图片时的鼠标提示，同时禁用浏览器原生的图片拖拽与文本选中 */
+.image-container.draggable {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.image-container.draggable:active {
+  cursor: grabbing;
 }
 
 .image-slider {

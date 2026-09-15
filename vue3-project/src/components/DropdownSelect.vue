@@ -19,9 +19,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useScrollLock } from '@/composables/useScrollLock'
 
 const props = defineProps({
   // 选项数组
@@ -75,7 +74,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'change'])
 
 const isOpen = ref(false)
-const { lock, unlock } = useScrollLock()
 
 // 计算当前选中的选项
 const selectedOption = computed(() => {
@@ -139,15 +137,6 @@ const handleClickOutside = (event) => {
     isOpen.value = false
   }
 }
-
-// 监听下拉菜单状态变化，控制滚动锁定
-watch(isOpen, (newValue) => {
-  if (newValue) {
-    lock()
-  } else {
-    unlock()
-  }
-})
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)

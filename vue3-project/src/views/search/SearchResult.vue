@@ -8,6 +8,7 @@ import TagContainer from './components/TagContainer.vue'
 import UserList from './components/UserList.vue'
 import WaterfallFlow from '@/components/WaterfallFlow.vue'
 import LoadingSpinner from '@/components/spinner/LoadingSpinner.vue'
+import SkeletonList from '@/components/skeleton/SkeletonList.vue'
 import SearchFloatingBtn from './components/SearchFloatingBtn.vue'
 import apiConfig from '@/config/api.js'
 
@@ -46,19 +47,6 @@ const cachedTag = ref('') // 缓存标签参数
 const isTagLoading = ref(false)
 let eventListenerKey = null
 
-// 计算属性：是否显示标签容器
-const shouldShowTagContainer = computed(() => {
-    // 用户tab不显示标签容器
-    if (activeTab.value === 'users') {
-        return false
-    }
-    // 没有内容时不显示标签容器
-    if (postResults.value.length === 0) {
-        return false
-    }
-    return true
-})
-
 // 计算属性：当前tab对应的标签统计数据
 const currentTagStats = computed(() => {
     if (activeTab.value === 'all' && cachedAllTagStats.value.length > 0) {
@@ -71,7 +59,21 @@ const currentTagStats = computed(() => {
     return tagStats.value
 })
 
+// 计算属性：是否显示标签容器
+const shouldShowTagContainer = computed(() => {
+    // 用户tab不显示标签容器
+    if (activeTab.value === 'users') {
+        return false
+    }
+    // 用标签统计判断而不是笔记列表：换关键词时笔记列表会先清空，
+    // 依赖它会让标签容器消失一下再重新出现
+    return currentTagStats.value.length > 0
+})
+
 let currentSearchId = 0
+// 上一次的搜索维度（tab + 关键词），用来判断这次是不是换了搜索条件。
+// 点标签是在当前这批结果里筛选，不算换条件，不应该清空列表
+let lastSearchKey = ''
 
 async function searchContent(type = 'all', page = 1, limit = 20) {
     if (!keyword.value.trim() && !selectedTag.value.trim()) {
@@ -99,6 +101,16 @@ async function searchContent(type = 'all', page = 1, limit = 20) {
     // 竞态处理：为每次请求分配唯一ID
     const searchId = ++currentSearchId
     loading.value = true
+
+    // 换了关键词或 tab 才清空笔记列表：清空后由骨架屏占位，
+    // 避免旧内容先渲染一帧；点标签是在当前这批结果里筛选，清空反而会造成闪烁
+    const searchKey = `${type}-${keyword.value}`
+    if (page === 1 && searchKey !== lastSearchKey) {
+        searchResults.value = {}
+        userResults.value = []
+        postResults.value = []
+        lastSearchKey = searchKey
+    }
 
     try {
         const params = new URLSearchParams({
@@ -460,13 +472,14 @@ onUnmounted(() => {
 
 
             <div v-else>
-                <WaterfallFlow
-                    :key="`${activeTab}-${keyword}-${selectedTag}-${postResults.length}`"
-                    :searchKeyword="keyword"
-                    :searchTag="selectedTag"
-                    :preloadedPosts="postResults"
-                    :type="activeTab"
-                />
+                <!-- 搜索中且还没有结果时用骨架屏占位：此时渲染 WaterfallFlow 会让它自己再请求一次，
+                     拿到空数据就会闪一下「没有找到相关内容」 -->
+                <SkeletonList v-if="loading && postResults.length === 0" :count="8" type="image-card"
+                    layout="waterfall" image-height="random" :show-stats="false" :show-button="false"
+                    list-class="waterfall-layout" />
+
+                <WaterfallFlow v-else :key="`${activeTab}-${keyword}`" :searchKeyword="keyword"
+                    :searchTag="selectedTag" :preloadedPosts="postResults" :type="activeTab" />
             </div>
         </div>
         <SearchFloatingBtn @reload="handleFloatingBtnReloadRequest" />

@@ -33,7 +33,7 @@
         <div v-for="tag in filteredSuggestions" :key="tag.id" @click="selectSuggestion(tag)" class="tag-item suggestion"
           :class="{ disabled: isTagSelected(tag) }">
           <span class="tag-name">{{ tag.name }}</span>
-          <span class="tag-usage">{{ tag.use_count || 0 }}次使用</span>
+          <span v-if="tag.view_sum > 0" class="tag-usage">{{ formatViews(tag.view_sum) }}次浏览</span>
         </div>
       </div>
     </div>
@@ -45,7 +45,6 @@
         <div v-for="tag in hotTags" :key="tag.id" @click="selectSuggestion(tag)" class="tag-item hot"
           :class="{ disabled: isTagSelected(tag) }">
           <span class="tag-name">{{ tag.name }}</span>
-          <span class="tag-usage">{{ tag.use_count || 0 }}次</span>
         </div>
       </div>
     </div>
@@ -91,8 +90,17 @@ const filteredSuggestions = computed(() => {
       tag.name.toLowerCase().includes(input) &&
       !isTagSelected(tag)
     )
+    .sort((a, b) => (Number(b.view_sum) || 0) - (Number(a.view_sum) || 0))
     .slice(0, 10)
 })
+
+// 浏览量按 k / w 缩写，避免标签被数字撑得过长
+const formatViews = (n) => {
+  const v = Number(n) || 0
+  if (v >= 10000) return (v / 10000).toFixed(1).replace(/\.0$/, '') + 'w'
+  if (v >= 1000) return (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
+  return String(v)
+}
 
 // 计算输入框是否应该被禁用
 const isInputDisabled = computed(() => {
