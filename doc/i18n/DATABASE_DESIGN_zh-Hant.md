@@ -7,6 +7,7 @@
 - 字元集：`utf8mb4`
 - 排序規則：`utf8mb4_unicode_ci`
 - 儲存引擎：`InnoDB`
+- 更新時間：2026-09-16
 
 ## 1. 使用者表 (users)
 
@@ -89,6 +90,7 @@
 | id | BIGINT | 主鍵，自增 |
 | post_id | BIGINT | 筆記 ID，外鍵關聯 posts |
 | image_url | VARCHAR(500) | 圖片 URL |
+| description | VARCHAR(500) | 圖片描述，可為空 |
 
 **索引：** `PRIMARY KEY(id)`、`KEY idx_post_id(post_id)`
 

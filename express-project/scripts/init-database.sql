@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS `post_images` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '图片ID',
   `post_id` bigint(20) NOT NULL COMMENT '笔记ID',
   `image_url` varchar(500) NOT NULL COMMENT '图片URL',
+  `description` varchar(500) DEFAULT NULL COMMENT '图片描述，可为空',
   PRIMARY KEY (`id`),
   KEY `idx_post_id` (`post_id`),
   CONSTRAINT `post_images_ibfk_1` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE

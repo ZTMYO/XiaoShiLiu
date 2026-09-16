@@ -5,7 +5,7 @@
 - **Version**: v1.3.3
 - **Base URL**: `http://localhost:3001`
 - **Database**: xiaoshiliu (MySQL)
-- **Update Time**: 2026-09-13
+- **Update Time**: 2026-09-16
 
 ## General Instructions
 
@@ -1354,6 +1354,7 @@ General parameters for interfaces that support pagination:
 | category_id | int | No | Category ID |
 | type | int | No | Note type: 1 - image-text note (default), 2 - video note |
 | images | array | No | Array of Image URLs (for image-text notes) |
+| imageDescriptions | object | No | Map of image URL to description, written into post_images.description |
 | video | object | No | Video info object (for video notes) |
 | tags | array | No | Array of Tag Names (string array) |
 | status | int | No | Post status, 0=published (approved), 1=draft, 2=pending review, 3=review rejected (default 2) |
@@ -1495,6 +1496,7 @@ General parameters for interfaces that support pagination:
 | content | string | No | Note Content (required when publishing, optional when drafting) |
 | category_id | int | No | Category ID (required when publishing, optional when drafting) |
 | images | array | No | Array of Image URLs (for image-text notes) |
+| imageDescriptions | object | No | Map of image URL to description, written into post_images.description. If omitted, the existing description is kept |
 | video | object | No | Video info object (for video notes) |
 | tags | array | No | Array of Tag Names (string array) |
 | status | int | No | Post status, 0=published (approved), 1=draft, 2=pending review, 3=review rejected (default 2) |

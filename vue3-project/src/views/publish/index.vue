@@ -348,7 +348,8 @@ const handleTextImageGenerate = async (data) => {
   if (imageComponent && data.imageFile) {
     try {
       // 使用addFiles方法添加图片文件
-      await imageComponent.addFiles([data.imageFile])
+      // 生成这张图时用的文字一并带过去，作为图片描述存库
+      await imageComponent.addFiles([data.imageFile], [data.text])
       showMessage('文字配图生成成功！', 'success')
     } catch (error) {
       console.error('添加图片失败:', error)
@@ -603,6 +604,10 @@ const handlePublish = async () => {
       content: form.content,
       images: uploadType.value === 'image' ? mediaData : [],
       video: uploadType.value === 'video' ? mediaData : null,
+      // 「图片URL → 描述」，目前只有文字配图会带，后端写进 post_images.description
+      imageDescriptions: uploadType.value === 'image' && multiImageUploadRef.value
+        ? multiImageUploadRef.value.getImageDescriptions()
+        : {},
       tags: form.tags,
       category_id: form.category_id,
       type: uploadType.value === 'image' ? 1 : 2, // 1: 图文, 2: 视频
@@ -848,6 +853,9 @@ const handleSaveDraft = async () => {
       content: form.content || '',
       images: uploadType.value === 'image' ? mediaData : [],
       video: uploadType.value === 'video' ? mediaData : null,
+      imageDescriptions: uploadType.value === 'image' && multiImageUploadRef.value
+        ? multiImageUploadRef.value.getImageDescriptions()
+        : {},
       tags: form.tags || [],
       category_id: form.category_id || null,
       type: uploadType.value === 'image' ? 1 : 2, // 1: 图文, 2: 视频

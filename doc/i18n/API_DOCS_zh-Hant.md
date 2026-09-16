@@ -5,7 +5,7 @@
 - **版本**: v1.3.3
 - **基礎URL**: `http://localhost:3001`
 - **數據庫**: xiaoshiliu (MySQL)
-- **更新時間**: 2026-09-13
+- **更新時間**: 2026-09-16
 
 ## 通用說明
 
@@ -1353,6 +1353,7 @@ Authorization: Bearer <access_token>
 | category_id | int | 否 | 分類ID |
 | type | int | 否 | 筆記類型：1-圖文筆記（預設），2-視頻筆記 |
 | images | array | 否 | 圖片URL陣列（圖文筆記使用） |
+| imageDescriptions | object | 否 | 圖片描述映射，形如 `{"圖片URL": "描述"}`，寫入 post_images.description |
 | video | object | 否 | 視頻資訊物件（視頻筆記使用） |
 | tags | array | 否 | 標籤名稱陣列（字串陣列） |
 | status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核（預設2），3=未過審 |
@@ -1493,6 +1494,7 @@ Authorization: Bearer <access_token>
 | content | string | 否 | 筆記內容（發佈時必填，草稿時可選） |
 | category_id | int | 否 | 分類ID（發佈時必填，草稿時可選） |
 | images | array | 否 | 圖片URL陣列（圖文筆記使用） |
+| imageDescriptions | object | 否 | 圖片描述映射，形如 `{"圖片URL": "描述"}`，寫入 post_images.description。不傳時沿用資料庫中既有的描述 |
 | video | object | 否 | 視頻資訊物件（視頻筆記使用） |
 | tags | array | 否 | 標籤名稱陣列（字串陣列） |
 | status | int | 否 | 筆記狀態，0=發布（審核通過），1=草稿，2=待審核（預設2），3=未過審 |

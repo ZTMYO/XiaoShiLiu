@@ -551,7 +551,7 @@ router.get('/:id', optionalAuth, async (req, res) => {
 // 创建笔记
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { title, content, category_id, images, video, tags, status, type } = req.body;
+    const { title, content, category_id, images, video, tags, status, type, imageDescriptions } = req.body;
     const userId = req.user.id;
     const postType = type || 1; // 默认为图文类型
 
@@ -602,11 +602,14 @@ router.post('/', authenticateToken, async (req, res) => {
         }
       }
 
+      // imageDescriptions 是「图片URL → 描述」，目前只有文字配图会带
+      const descOf = imageDescriptions || {}
+
       // 插入所有有效的图片URL
       for (const imageUrl of validUrls) {
         await pool.execute(
-          'INSERT INTO post_images (post_id, image_url) VALUES (?, ?)',
-          [postId.toString(), imageUrl]
+          'INSERT INTO post_images (post_id, image_url, description) VALUES (?, ?, ?)',
+          [postId.toString(), imageUrl, descOf[imageUrl] || null]
         );
       }
     }
@@ -1083,6 +1086,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
       }
     } else {
       // 图文笔记：删除原有图片并插入新的
+      // 前端不一定回传描述（比如只改了个标题），先留一份原有的，没给就沿用，别把描述弄丢
+      const [oldImageRows] = await pool.execute(
+        'SELECT image_url, description FROM post_images WHERE post_id = ?', [postId.toString()]);
+      const oldDesc = new Map(oldImageRows.map(row => [row.image_url, row.description]));
+
       await pool.execute('DELETE FROM post_images WHERE post_id = ?', [postId.toString()]);
 
       if (images && images.length > 0) {
@@ -1095,11 +1103,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
           }
         }
 
+        const descOf = req.body.imageDescriptions || {}
+
         // 插入所有有效的图片URL
         for (const imageUrl of validUrls) {
           await pool.execute(
-            'INSERT INTO post_images (post_id, image_url) VALUES (?, ?)',
-            [postId, imageUrl]
+            'INSERT INTO post_images (post_id, image_url, description) VALUES (?, ?, ?)',
+            [postId, imageUrl, descOf[imageUrl] || oldDesc.get(imageUrl) || null]
           );
         }
       }

@@ -7,6 +7,7 @@ Database name `xiaoshiliu`, 18 tables in total, covering users, content, social 
 - Character set: `utf8mb4`
 - Collation: `utf8mb4_unicode_ci`
 - Storage engine: `InnoDB`
+- Update time: 2026-09-16
 
 ## 1. Users Table (users)
 
@@ -89,6 +90,7 @@ Database name `xiaoshiliu`, 18 tables in total, covering users, content, social 
 | id | BIGINT | Primary key, auto-increment |
 | post_id | BIGINT | Post ID, foreign key to posts |
 | image_url | VARCHAR(500) | Image URL |
+| description | VARCHAR(500) | Image description, nullable |
 
 **Indexes:** `PRIMARY KEY(id)`, `KEY idx_post_id(post_id)`
 

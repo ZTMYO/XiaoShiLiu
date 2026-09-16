@@ -139,7 +139,8 @@ const initializeImageList = (images) => {
         file: image.file,
         preview: image.preview,
         uploaded: false,
-        url: null
+        url: null,
+        description: image.description || null
       }
     }
     return image
@@ -172,7 +173,9 @@ watch(imageList, (newValue) => {
     file: item.file,
     preview: item.preview,
     uploaded: item.uploaded,
-    url: item.url
+    url: item.url,
+    // description 也要跟着流转，否则外部值一变、列表重建，描述就没了
+    description: item.description
   }))
   emit('update:modelValue', externalValue)
 
@@ -195,7 +198,7 @@ const createImagePreview = (file) => {
   })
 }
 
-const addFiles = async (files) => {
+const addFiles = async (files, descriptions = []) => {
   const fileArray = Array.from(files)
 
   // 检查数量限制
@@ -235,7 +238,8 @@ const addFiles = async (files) => {
 
   try {
     // 为每个文件创建预览（先压缩再预览）
-    for (const file of fileArray) {
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i]
       // 先压缩图片
       const compressedFile = await compressImage(file)
       const preview = await createImagePreview(compressedFile)
@@ -244,7 +248,9 @@ const addFiles = async (files) => {
         file: compressedFile, // 使用压缩后的文件
         preview: preview,
         uploaded: false,
-        url: null
+        url: null,
+        // 文字配图这类图片会随文件带一段描述，发布时写进 post_images.description
+        description: descriptions[i] || null
       }
       imageList.value.push(imageItem)
     }
@@ -641,7 +647,9 @@ const syncWithUrls = (urls) => {
           file: null,
           preview: url,
           uploaded: true,
-          url: url
+          url: url,
+          // 已上传的历史图片没有描述，后端保存时会沿用库里原有的值
+          description: null
         })
       }
     }
@@ -697,11 +705,23 @@ const handleImageViewerChange = (newIndex) => {
   currentImageIndex.value = newIndex
 }
 
+// 收集「图片URL → 描述」，发布/编辑时随表单提交，写进 post_images.description
+const getImageDescriptions = () => {
+  const descriptions = {}
+  for (const item of imageList.value) {
+    if (item.uploaded && item.url && item.description) {
+      descriptions[item.url] = item.description
+    }
+  }
+  return descriptions
+}
+
 // 暴露方法和属性给父组件
 defineExpose({
   uploadAllImages,
   getAllImageData,
   getImageCount,
+  getImageDescriptions,
   reset,
   syncWithUrls,
   removeImageById,

@@ -5,7 +5,7 @@
 - **版本**: v1.3.3
 - **基础URL**: `http://localhost:3001`
 - **数据库**: xiaoshiliu (MySQL)
-- **更新时间**: 2026-09-13
+- **更新时间**: 2026-09-16
 
 ## 通用说明
 
@@ -1681,6 +1681,7 @@ Content-Type: application/json
 | category_id | int | 否 | 分类ID |
 | type | int | 否 | 笔记类型：1-图文笔记（默认），2-视频笔记 |
 | images | array | 否 | 图片URL数组（图文笔记使用） |
+| imageDescriptions | object | 否 | 图片描述映射，形如 `{"图片URL": "描述"}`，图文笔记使用；写入 post_images.description（目前由「文字配图」产生，值为用户输入的那段文字） |
 | video | object | 否 | 视频信息对象（视频笔记使用） |
 | tags | array | 否 | 标签名称数组（字符串数组） |
 | status | int | 否 | 笔记状态，0=发布（审核通过），1=草稿，2=待审核（默认2），3=未过审 |
@@ -1702,6 +1703,9 @@ Content-Type: application/json
     "https://example.com/image1.jpg",
     "https://example.com/image2.jpg"
   ],
+  "imageDescriptions": {
+    "https://example.com/image1.jpg": "图片上写的那段文字"
+  },
   "tags": ["生活", "摄影", "分享"],
   "status": 0
 }
@@ -1823,6 +1827,7 @@ Content-Type: application/json
 | content | string | 否 | 笔记内容（发布时必填，草稿时可选） |
 | category_id | int | 否 | 分类ID（发布时必填，草稿时可选） |
 | images | array | 否 | 图片URL数组（图文笔记使用） |
+| imageDescriptions | object | 否 | 图片描述映射，形如 `{"图片URL": "描述"}`；写入 post_images.description。不传时后端会沿用库里原有的描述，不会清空 |
 | video | object | 否 | 视频信息对象（视频笔记使用） |
 | tags | array | 否 | 标签名称数组（字符串数组） |
 | status | int | 否 | 笔记状态，0=发布（审核通过），1=草稿，2=待审核（默认2），3=未过审 |
@@ -1842,6 +1847,9 @@ Content-Type: application/json
   "images": [
     "https://example.com/new_image1.jpg"
   ],
+  "imageDescriptions": {
+    "https://example.com/new_image1.jpg": "图片上写的那段文字"
+  },
   "tags": ["生活", "日常", "分享"],
   "status": 0
 }
