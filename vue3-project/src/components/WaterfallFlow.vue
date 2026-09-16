@@ -5,7 +5,7 @@ import SimpleSpinner from './spinner/SimpleSpinner.vue'
 import DetailCard from './DetailCard.vue'
 import LikeButton from './LikeButton.vue'
 import SvgIcon from './SvgIcon.vue'
-import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useLikeStore } from '@/stores/like.js'
@@ -43,6 +43,11 @@ const props = defineProps({
     preloadedPosts: {
         type: Array,
         default: () => []
+    },
+    // 数据由父组件提供时，用它声明还有没有下一页；null 表示组件自己管分页
+    externalHasMore: {
+        type: Boolean,
+        default: null
     }
 })
 
@@ -53,13 +58,18 @@ const collectStore = useCollectStore()
 const authStore = useAuthStore()
 
 // 定义emit事件
-const emit = defineEmits(['follow', 'unfollow', 'like', 'collect'])
+const emit = defineEmits(['follow', 'unfollow', 'like', 'collect', 'load-more'])
 
 const loading = ref(true)
 const loadingMore = ref(false)
 const hasMore = ref(true)
 const currentPage = ref(1)
 const pageSize = 20
+// 请求序号：并发加载时只认最后一次，避免旧结果（尤其是空结果）覆盖新数据
+let contentRequestId = 0
+// 外部数据源模式下，还有没有下一页由父组件声明，内部 hasMore 不参与判断
+const canLoadMore = computed(() =>
+    props.externalHasMore !== null ? props.externalHasMore : hasMore.value)
 
 // 添加初次加载标识
 const isInitialLoad = ref(true)
@@ -176,6 +186,12 @@ const distributeContent = (newItems = []) => {
 
 // 实际分配项目到列的函数
 const distributeItemsToColumns = (items) => {
+    // 首屏内容为空时 distributeContent 会提前返回，列数组没建立起来；
+    // 后续追加数据就会取到 undefined 的列，这里补建一次
+    if (columns.value.length === 0) {
+        initColumns()
+    }
+
     items.forEach((item, index) => {
         const shortestColumnIndex = getShortestColumnIndex()
         columns.value[shortestColumnIndex].push(item)
@@ -240,6 +256,8 @@ const updateItemHeight = (itemId) => {
 
 // 初始化内容
 async function initContent() {
+    const requestId = ++contentRequestId
+
     // 只有初次加载时才显示骨架屏
     if (isInitialLoad.value) {
         loading.value = true
@@ -254,6 +272,10 @@ async function initContent() {
         if (props.preloadedPosts && props.preloadedPosts.length > 0) {
             content = props.preloadedPosts
             hasMore.value = false // 预加载数据不支持分页，所以设置为false
+        } else if (props.externalHasMore !== null) {
+            // 数据由父组件提供：父组件还没给数据就保持空，绝不自己去请求，
+            // 否则 /posts 的空结果会覆盖掉父组件的搜索结果
+            content = []
         } else {
             // 使用笔记API服务
             // 调用参数已准备完成
@@ -267,6 +289,8 @@ async function initContent() {
                 type: props.type
             })
             content = result.posts || []
+            // 期间如果已经用更新的数据渲染过，丢弃这次结果，避免把新内容覆盖成空
+            if (requestId !== contentRequestId) return
             hasMore.value = result.hasMore !== false // 默认为true，除非明确返回false
             if (result.needLogin) {
                 hasMore.value = false
@@ -337,14 +361,41 @@ async function initContent() {
     }
 }
 
+/**
+ * 追加一批笔记：只处理新增项，已渲染的部分保持不动，避免瀑布流整体重排
+ */
+function appendPosts(items) {
+    if (!items || items.length === 0) return
+    contentList.value = [...contentList.value, ...items]
+    likeStore.initPostsLikeStates(items)
+    collectStore.initPostsCollectStates(items)
+
+    const states = {}
+    items.forEach(item => {
+        states[item.id] = itemLoadingStates.value[item.id] || {
+            imageLoaded: false,
+            avatarLoaded: false
+        }
+    })
+    Object.assign(itemLoadingStates.value, states)
+
+    distributeContent(items)
+}
+
 // 加载更多内容
 async function loadMoreContent() {
+    // 数据由父组件提供时，翻页也交给父组件，这里只负责发触底通知
+    if (props.externalHasMore !== null) {
+        if (props.externalHasMore && !loadingMore.value) emit('load-more')
+        return
+    }
+
     // 如果使用预加载数据，不支持加载更多
     if (props.preloadedPosts && props.preloadedPosts.length > 0) {
         return
     }
 
-    if (loadingMore.value || !hasMore.value) {
+    if (loadingMore.value || !canLoadMore.value) {
         return
     }
     loadingMore.value = true
@@ -452,7 +503,7 @@ function handleScroll() {
     }
 
     // 如果正在加载更多、没有更多数据或正在处理滚动事件，直接返回
-    if (loadingMore.value || !hasMore.value || isScrollHandling.value) return
+    if (loadingMore.value || !canLoadMore.value || isScrollHandling.value) return
 
     // 清除之前的定时器
     if (scrollTimer) {
@@ -462,7 +513,7 @@ function handleScroll() {
     // 设置防抖，200ms 内只执行一次（减少延迟）
     scrollTimer = setTimeout(() => {
         // 再次检查状态，确保不会重复执行
-        if (loadingMore.value || !hasMore.value || isScrollHandling.value) return
+        if (loadingMore.value || !canLoadMore.value || isScrollHandling.value) return
 
         const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop
         const currentWindowHeight = window.innerHeight
@@ -470,7 +521,7 @@ function handleScroll() {
 
         // 当滚动到距离底部200px时开始加载
         if (currentScrollTop + currentWindowHeight >= currentDocumentHeight - 200) {
-            if (hasMore.value) {
+            if (canLoadMore.value) {
                 isScrollHandling.value = true
                 loadMoreContent().finally(() => {
                     isScrollHandling.value = false
@@ -521,14 +572,27 @@ watch(() => props.searchTag, async () => {
 
 // 监听预加载笔记数据变化
 watch(() => props.preloadedPosts, async (newPosts, oldPosts) => {
+    if (!newPosts || !oldPosts) {
+        await initContent()
+        return
+    }
+
     // 如果新数据和旧数据都存在且长度相同且内容相同，则跳过更新
-    if (newPosts && oldPosts && newPosts.length === oldPosts.length && newPosts.length > 0) {
+    if (newPosts.length === oldPosts.length) {
         const isSameData = newPosts.every((post, index) =>
             oldPosts[index] && post.id === oldPosts[index].id
         )
         if (isSameData) {
             return
         }
+    }
+
+    // 追加场景：新数据是旧数据的超集，只渲染多出来的部分
+    const isAppend = newPosts.length > oldPosts.length &&
+        oldPosts.every((post, index) => newPosts[index] && post.id === newPosts[index].id)
+    if (isAppend) {
+        appendPosts(newPosts.slice(oldPosts.length))
+        return
     }
 
     await initContent()
@@ -936,12 +1000,12 @@ function handleImageError(event) {
         </div>
 
 
-        <div class="load-more-indicator" :class="{ 'no-more-content': !hasMore && contentList.length > 0 }">
+        <div class="load-more-indicator" :class="{ 'no-more-content': !canLoadMore && contentList.length > 0 }">
             <div v-if="loadingMore" class="loading-more">
                 <SimpleSpinner size="24" />
                 <span class="loading-text">加载中...</span>
             </div>
-            <div v-else-if="!hasMore && contentList.length > 0" class="no-more">
+            <div v-else-if="!canLoadMore && contentList.length > 0" class="no-more">
                 <span class="no-more-text">没有更多内容了</span>
             </div>
         </div>

@@ -7,9 +7,13 @@ export const useNavigationStore = defineStore('navigation', () => {
   // 当前路由信息
   const currentRoute = ref(null)
 
+  // 超过这个距离就直接跳回顶部：平滑滚动的过程太长，反而像卡住了
+  const INSTANT_SCROLL_DISTANCE = 3000
+
   // 滚动到顶部的通用函数
   const scrollToTop = (behavior = 'smooth') => {
-    window.scrollTo({ top: 0, behavior })
+    const tooFarFromTop = window.pageYOffset > INSTANT_SCROLL_DISTANCE
+    window.scrollTo({ top: 0, behavior: tooFarFromTop ? 'instant' : behavior })
   }
 
   // 发现页面刷新事件

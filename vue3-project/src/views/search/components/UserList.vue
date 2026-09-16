@@ -12,7 +12,7 @@
 
 
         <div v-else class="empty-state">
-            <p>暂无用户数据</p>
+            <p>没有找到相关用户</p>
         </div>
     </div>
 </template>
