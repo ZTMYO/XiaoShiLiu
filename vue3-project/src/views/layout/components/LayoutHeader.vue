@@ -29,18 +29,16 @@ watch(() => route.path, (newPath, oldPath) => {
 
     if (isInSearchPage && !wasInSearchPage) {
         const keyword = route.query.keyword
-        if (keyword && isLargeScreen.value) {
+        if (keyword) {
             searchText.value = keyword
         }
     } else if (!isInSearchPage && wasInSearchPage) {
-        if (isLargeScreen.value) {
-            searchText.value = ''
-        }
+        searchText.value = ''
     }
 }, { immediate: true })
 
 watch(() => route.query.keyword, (newKeyword) => {
-    if (route.path.startsWith('/search_result') && isLargeScreen.value) {
+    if (route.path.startsWith('/search_result')) {
         searchText.value = newKeyword || ''
     }
 })
@@ -66,8 +64,11 @@ function handleResize() {
     showSidebar.value = window.innerWidth > 960
 }
 
+// 搜索结果页在移动端也常驻搜索框，不收起成图标
+const isSearchResultPage = computed(() => route.path.startsWith('/search_result'))
+
 const displaySearch = computed(() => {
-    return isLargeScreen.value || showSearch.value
+    return isLargeScreen.value || showSearch.value || isSearchResultPage.value
 })
 
 function openSearch() {
@@ -113,9 +114,10 @@ function handleSearch(keyword = null) {
     // 隐藏下拉菜单
     showSearchDropdown.value = false
 
-    // 小屏模式下搜索后关闭搜索框
+    // 小屏搜索完收起输入态；搜索结果页保持展开并回填刚搜的关键词
     if (!isLargeScreen.value) {
-        closeSearch()
+        showSearch.value = false
+        showSearchDropdown.value = false
     }
 }
 
@@ -213,7 +215,7 @@ onUnmounted(() => {
                             @search="handleDropdownSearch" @edit-mode-change="handleEditModeChange"
                             @focus-search="handleFocusSearch" @close="showSearchDropdown = false" />
                     </div>
-                    <div v-if="!isLargeScreen" class="cancel-btn" @click="closeSearch">取消</div>
+                    <div v-if="!isLargeScreen && !isSearchResultPage" class="cancel-btn" @click="closeSearch">取消</div>
                 </div>
                 <div v-if="isLargeScreen && !showSidebar" class="header-right">
                     <DropdownMenu direction="down" menuClass="header-dropdown">
