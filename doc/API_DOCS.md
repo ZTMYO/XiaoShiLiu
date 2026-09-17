@@ -1681,7 +1681,7 @@ Content-Type: application/json
 | category_id | int | 否 | 分类ID |
 | type | int | 否 | 笔记类型：1-图文笔记（默认），2-视频笔记 |
 | images | array | 否 | 图片URL数组（图文笔记使用） |
-| imageDescriptions | object | 否 | 图片描述映射，形如 `{"图片URL": "描述"}`，图文笔记使用；写入 post_images.description（目前由「文字配图」产生，值为用户输入的那段文字） |
+| imageDescriptions | object | 否 | 图片描述映射，形如 `{"图片URL": "描述"}`，图文笔记使用；写入 post_images.description |
 | video | object | 否 | 视频信息对象（视频笔记使用） |
 | tags | array | 否 | 标签名称数组（字符串数组） |
 | status | int | 否 | 笔记状态，0=发布（审核通过），1=草稿，2=待审核（默认2），3=未过审 |

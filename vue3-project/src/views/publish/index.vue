@@ -155,6 +155,7 @@ import EmojiPicker from '@/components/EmojiPicker.vue'
 import MentionModal from '@/components/mention/MentionModal.vue'
 import ContentEditableInput from '@/components/ContentEditableInput.vue'
 import TextImageModal from '@/views/publish/components/TextImageModal.vue'
+import { TEXT_IMAGE_DESC_PREFIX } from '@/config/constants.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -348,8 +349,8 @@ const handleTextImageGenerate = async (data) => {
   if (imageComponent && data.imageFile) {
     try {
       // 使用addFiles方法添加图片文件
-      // 生成这张图时用的文字一并带过去，作为图片描述存库
-      await imageComponent.addFiles([data.imageFile], [data.text])
+      // 生成这张图时用的文字一并带过去，加前缀标记它是文字卡片，作为图片描述存库
+      await imageComponent.addFiles([data.imageFile], [TEXT_IMAGE_DESC_PREFIX + data.text])
       showMessage('文字配图生成成功！', 'success')
     } catch (error) {
       console.error('添加图片失败:', error)
