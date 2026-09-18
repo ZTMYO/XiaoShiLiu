@@ -166,13 +166,13 @@
               </div>
             </div>
             <div class="post-content">
-              <h2 class="post-title">{{ postData.title }}</h2>
+              <h2 class="post-title" v-html="highlightText(postData.title)"></h2>
               <p class="post-text">
-                <ContentRenderer :text="postData.content" />
+                <ContentRenderer :text="postData.content" :highlight-words="props.highlightWords" />
               </p>
               <div class="post-tags">
-                <span v-for="tag in postData.tags" :key="tag" class="tag clickable-tag" @click="handleTagClick(tag)">#{{
-                  tag }}</span>
+                <span v-for="tag in postData.tags" :key="tag" class="tag clickable-tag" @click="handleTagClick(tag)"
+                  v-html="`#${highlightText(tag)}`"></span>
               </div>
               <div class="post-meta">
                 <span class="time">{{ postData.time }}</span>
@@ -248,7 +248,8 @@
                       </DropdownMenu>
                     </div>
                     <div class="comment-text">
-                      <ContentRenderer :content="comment.content" @image-click="handleCommentImageClick" />
+                      <ContentRenderer :content="comment.content" :highlight-words="props.highlightWords"
+                        @image-click="handleCommentImageClick" />
                     </div>
                     <span v-if="comment.pinned" class="comment-pinned-badge">置顶评论</span>
                     <span class="comment-time">{{ comment.time }} {{ comment.location }}</span>
@@ -301,7 +302,8 @@
                           </div>
                           <div class="reply-text">
                             回复 <span class="reply-to">{{ reply.replyTo }}</span>：
-                            <ContentRenderer :content="reply.content" @image-click="handleCommentImageClick" />
+                            <ContentRenderer :content="reply.content" :highlight-words="props.highlightWords"
+                              @image-click="handleCommentImageClick" />
                           </div>
                           <span class="reply-time">{{ reply.time }} {{ reply.location }}</span>
                           <div class="reply-actions">
@@ -509,6 +511,10 @@ const props = defineProps({
   targetCommentId: {
     type: [String, Number],
     default: null
+  },
+  highlightWords: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -870,6 +876,20 @@ const postData = computed(() => {
   }
   return data
 })
+
+const escapeRegExp = (word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g,
+  char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]))
+
+// 审核预览用：标题与标签为纯文本，转义后再给命中的违规词加高亮
+const highlightText = (value) => {
+  const escaped = escapeHtml(value)
+  if (!props.highlightWords.length) return escaped
+
+  const pattern = new RegExp(`(${props.highlightWords.map(word => escapeRegExp(escapeHtml(word))).join('|')})`, 'gi')
+  return escaped.replace(pattern, '<span class="sensitive-word">$1</span>')
+}
 
 const imageList = computed(() => {
   if (props.item.originalData?.images && Array.isArray(props.item.originalData.images) && props.item.originalData.images.length > 0) {
@@ -3477,6 +3497,12 @@ function handleAvatarError(event) {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
+}
+
+:deep(.sensitive-word) {
+  color: #ff4d4f;
+  background-color: rgba(255, 77, 79, 0.12);
+  border-radius: 2px;
 }
 
 .tag {

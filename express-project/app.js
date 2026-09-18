@@ -20,6 +20,8 @@ const { startAutoUnbanService } = require('./utils/autoUnban');
 const { startSensitiveWordCheckService } = require('./utils/sensitiveWordScheduler');
 // 导入搜索联想索引服务
 const { startSuggestService } = require('./utils/searchSuggest');
+// 导入违规词库加载（发布评论时需实时检测，词库必须在服务监听前就绪）
+const { loadSensitiveWords } = require('./scripts/local-sensitive-word-check');
 
 // 导入路由模块
 const authRoutes = require('./routes/auth');
@@ -123,20 +125,27 @@ app.use('*', (req, res) => {
   res.status(HTTP_STATUS.NOT_FOUND).json({ code: RESPONSE_CODES.NOT_FOUND, message: '接口不存在' });
 });
 
-// 启动自动解封服务
-startAutoUnbanService();
+async function startServer() {
+  // 先载入违规词库再监听：词库未就绪时发布评论会漏检
+  await loadSensitiveWords();
 
-// 启动违规词检测服务
-startSensitiveWordCheckService();
+  // 启动自动解封服务
+  startAutoUnbanService();
 
-// 启动服务器
-const PORT = config.server.port;
-app.listen(PORT, () => {
-  console.log(`● 服务器运行在端口 ${PORT}`);
-  console.log(`● 环境: ${config.server.env}`);
-});
+  // 启动违规词检测服务
+  startSensitiveWordCheckService();
 
-// 启动搜索联想索引（异步构建，不阻塞服务启动）
-startSuggestService();
+  // 启动服务器
+  const PORT = config.server.port;
+  app.listen(PORT, () => {
+    console.log(`● 服务器运行在端口 ${PORT}`);
+    console.log(`● 环境: ${config.server.env}`);
+  });
+
+  // 启动搜索联想索引（异步构建，不阻塞服务启动）
+  startSuggestService();
+}
+
+startServer();
 
 module.exports = app;

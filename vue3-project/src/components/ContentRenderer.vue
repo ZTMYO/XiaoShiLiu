@@ -33,6 +33,10 @@ const props = defineProps({
   compact: {
     type: Boolean,
     default: false
+  },
+  highlightWords: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -94,11 +98,20 @@ const parsedContent = computed(() => {
 const text = computed(() => parsedContent.value.text)
 const images = computed(() => parsedContent.value.images)
 
+const escapeRegExp = (word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 // 解析文本中的mention标记
 const parsedText = computed(() => {
   // 由于text现在已经包含HTML格式的mention链接，直接返回
   // 服务端已经进行了安全过滤，这里信任数据库的数据
+  if (!props.highlightWords.length) return text.value
+
+  // 逐段处理：标签片段（如mention链接）原样保留，仅对文本片段做高亮包裹
+  const pattern = new RegExp(`(${props.highlightWords.map(escapeRegExp).join('|')})`, 'gi')
   return text.value
+    .split(/(<[^>]*>)/)
+    .map(part => part.startsWith('<') ? part : part.replace(pattern, '<span class="sensitive-word">$1</span>'))
+    .join('')
 })
 
 // 处理mention链接点击事件
@@ -175,6 +188,12 @@ const handleImageError = (event) => {
   outline: none;
   box-shadow: none;
   border: none;
+}
+
+:deep(.sensitive-word) {
+  color: #ff4d4f;
+  background-color: rgba(255, 77, 79, 0.12);
+  border-radius: 2px;
 }
 
 .content-images {

@@ -4,7 +4,7 @@ const fsSync = require('fs')
 const path = require('path')
 
 // 加载环境变量
-require('dotenv').config({ path: path.join(__dirname, '../.env') })
+require('dotenv').config({ path: path.join(__dirname, '../.env'), quiet: true })
 
 const config = require('../config/config')
 
@@ -77,17 +77,13 @@ function getSensitiveWordsSnapshot() {
   return [...sensitiveWords]
 }
 
-// 检测文本是否包含违规词
-function checkSensitiveWord(text) {
-  if (!text || text.trim() === '') {
-    return { hasSensitive: false, originalText: text }
-  }
+// 提取文本命中的所有违规词（用于审核预览高亮，可多处命中）
+function findSensitiveWords(text) {
+  if (!text || text.trim() === '') return []
 
   // 跳过已标记为违规的内容
   const violationMarks = ['违规昵称', '违规内容', '违规标题', '违规评论', '违规标签']
-  if (violationMarks.includes(text.trim())) {
-    return { hasSensitive: false, originalText: text }
-  }
+  if (violationMarks.includes(text.trim())) return []
 
   // @提及是站内允许的写法，整体剔除后再剥离其余标签，
   // 避免把标签属性（如 mention 链接的 data-user-id）当成内容匹配
@@ -96,20 +92,21 @@ function checkSensitiveWord(text) {
     .replace(/<[^>]*>/g, '')
   const textLower = textForKeywords.toLowerCase().replace(/\s+/g, '')
 
-  for (const word of sensitiveWords) {
-    if (word) {
-      const wordLower = word.toLowerCase().replace(/\s+/g, '')
-      if (textLower.includes(wordLower)) {
-        return {
-          hasSensitive: true,
-          originalText: text,
-          sensitiveWord: word
-        }
-      }
-    }
+  return sensitiveWords.filter(word => word && textLower.includes(word.toLowerCase().replace(/\s+/g, '')))
+}
+
+// 检测文本是否包含违规词
+function checkSensitiveWord(text) {
+  const hits = findSensitiveWords(text)
+  if (hits.length === 0) {
+    return { hasSensitive: false, originalText: text }
   }
 
-  return { hasSensitive: false, originalText: text }
+  return {
+    hasSensitive: true,
+    originalText: text,
+    sensitiveWord: hits[0]
+  }
 }
 
 // 生成10位随机字母数字混合码
@@ -120,6 +117,34 @@ function generateRandomCode() {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return result
+}
+
+// audit.type：3-笔记审核，4-评论审核；audit.source：1-发布自检，2-用户举报，3-定时巡检
+const AUDIT_TYPE_POST = 3
+const AUDIT_TYPE_COMMENT = 4
+const AUDIT_SOURCE_SCHEDULED_CHECK = 3
+
+// 命中违规词的内容不直接替换，先进入人工审核队列，由管理员判定后再替换为违规标记
+async function enqueueAudit(connection, type, targetId) {
+  const [existing] = await connection.execute(
+    'SELECT id FROM audit WHERE type = ? AND target_id = ? AND status = 0',
+    [type, String(targetId)]
+  )
+  if (existing.length > 0) return
+
+  await connection.execute(
+    'INSERT INTO audit (type, target_id, source, status) VALUES (?, ?, ?, 0)',
+    [type, String(targetId), AUDIT_SOURCE_SCHEDULED_CHECK]
+  )
+}
+
+// 管理员已判定通过的内容不再重复标记，否则误判内容会每轮巡检被打回
+async function isApprovedByAdmin(connection, type, targetId) {
+  const [rows] = await connection.execute(
+    'SELECT id FROM audit WHERE type = ? AND target_id = ? AND status = 1 LIMIT 1',
+    [type, String(targetId)]
+  )
+  return rows.length > 0
 }
 
 // 检查小石榴号
@@ -243,7 +268,7 @@ async function checkUserBios(connection) {
   return updatedCount
 }
 
-// 检查标签名
+// 检查标签名：命中违规词的标签，其关联笔记进入审核队列
 async function checkTagNames(connection) {
   console.log('开始检查标签名...')
 
@@ -251,37 +276,45 @@ async function checkTagNames(connection) {
     'SELECT id, name FROM tags WHERE name IS NOT NULL AND name != ""'
   )
 
-  let updatedCount = 0
+  let flaggedCount = 0
 
   for (const tag of tags) {
     const checkResult = checkSensitiveWord(tag.name)
 
     if (checkResult.hasSensitive) {
-      const newTagName = `违规标签_${generateRandomCode()}`
-      await connection.execute(
-        'UPDATE tags SET name = ? WHERE id = ?',
-        [newTagName, tag.id]
+      const [posts] = await connection.execute(
+        `SELECT p.id FROM posts p
+         INNER JOIN post_tags pt ON p.id = pt.post_id
+         WHERE pt.tag_id = ? AND p.status = 0`,
+        [tag.id]
       )
 
-      console.log(`标签ID ${tag.id} 的标签名 "${tag.name}" 包含违规词 "${checkResult.sensitiveWord}"，已替换为 "${newTagName}"`)
-      updatedCount++
+      for (const post of posts) {
+        if (await isApprovedByAdmin(connection, AUDIT_TYPE_POST, post.id)) continue
+
+        await connection.execute('UPDATE posts SET status = 2 WHERE id = ?', [String(post.id)])
+        await enqueueAudit(connection, AUDIT_TYPE_POST, post.id)
+      }
+
+      console.log(`标签ID ${tag.id} 的标签名 "${tag.name}" 包含违规词 "${checkResult.sensitiveWord}"，关联 ${posts.length} 篇笔记进入审核`)
+      flaggedCount++
     }
   }
 
-  console.log(`标签名检查完成，共更新 ${updatedCount} 条记录`)
-  return updatedCount
+  console.log(`标签名检查完成，命中 ${flaggedCount} 条记录`)
+  return flaggedCount
 }
 
-// 检查帖子标题和内容
+// 检查帖子标题和内容：命中违规词的帖子进入审核队列
 async function checkPostContent(connection) {
   console.log('开始检查帖子标题和内容...')
 
   const [posts] = await connection.execute(
-    'SELECT id, user_id, title, content FROM posts WHERE (title IS NOT NULL AND title != "") OR (content IS NOT NULL AND content != "")'
+    `SELECT id, user_id, title, content FROM posts
+     WHERE status = 0 AND ((title IS NOT NULL AND title != "") OR (content IS NOT NULL AND content != ""))`
   )
 
-  let titleUpdatedCount = 0
-  let contentUpdatedCount = 0
+  let flaggedCount = 0
   let skippedCount = 0
 
   for (const post of posts) {
@@ -291,50 +324,41 @@ async function checkPostContent(connection) {
       continue
     }
 
-    // 检查标题
-    if (post.title && post.title.trim() !== '') {
-      const titleCheckResult = checkSensitiveWord(post.title)
+    const titleCheckResult = checkSensitiveWord(post.title || '')
+    const contentCheckResult = checkSensitiveWord(post.content || '')
 
-      if (titleCheckResult.hasSensitive) {
-        await connection.execute(
-          'UPDATE posts SET title = ? WHERE id = ?',
-          ['违规标题', post.id]
-        )
-
-        console.log(`帖子ID ${post.id} 的标题 "${post.title}" 包含违规词 "${titleCheckResult.sensitiveWord}"，已替换为 "违规标题"`)
-        titleUpdatedCount++
-      }
+    if (!titleCheckResult.hasSensitive && !contentCheckResult.hasSensitive) {
+      continue
     }
 
-    // 检查内容
-    if (post.content && post.content.trim() !== '') {
-      const contentCheckResult = checkSensitiveWord(post.content)
-
-      if (contentCheckResult.hasSensitive) {
-        await connection.execute(
-          'UPDATE posts SET content = ? WHERE id = ?',
-          ['违规内容', post.id]
-        )
-
-        console.log(`帖子ID ${post.id} 的内容包含违规词 "${contentCheckResult.sensitiveWord}"，已替换为 "违规内容"`)
-        contentUpdatedCount++
-      }
+    if (await isApprovedByAdmin(connection, AUDIT_TYPE_POST, post.id)) {
+      skippedCount++
+      continue
     }
+
+    await connection.execute('UPDATE posts SET status = 2 WHERE id = ?', [String(post.id)])
+    await enqueueAudit(connection, AUDIT_TYPE_POST, post.id)
+
+    const hitParts = []
+    if (titleCheckResult.hasSensitive) hitParts.push(`标题命中 "${titleCheckResult.sensitiveWord}"`)
+    if (contentCheckResult.hasSensitive) hitParts.push(`内容命中 "${contentCheckResult.sensitiveWord}"`)
+    console.log(`帖子ID ${post.id} ${hitParts.join('，')}，已进入审核`)
+    flaggedCount++
   }
 
-  console.log(`帖子检查完成，跳过白名单 ${skippedCount} 条，标题更新 ${titleUpdatedCount} 条，内容更新 ${contentUpdatedCount} 条记录`)
-  return { titleUpdatedCount, contentUpdatedCount, skippedCount }
+  console.log(`帖子检查完成，进入审核 ${flaggedCount} 条，跳过白名单 ${skippedCount} 条`)
+  return { flaggedCount, skippedCount }
 }
 
-// 检查评论内容
+// 检查评论内容：命中违规词的评论进入审核队列
 async function checkCommentContent(connection) {
   console.log('开始检查评论内容...')
 
   const [comments] = await connection.execute(
-    'SELECT id, user_id, content FROM comments WHERE content IS NOT NULL AND content != ""'
+    'SELECT id, user_id, post_id, content FROM comments WHERE content IS NOT NULL AND content != "" AND status = 1'
   )
 
-  let updatedCount = 0
+  let flaggedCount = 0
   let skippedCount = 0
 
   for (const comment of comments) {
@@ -347,18 +371,22 @@ async function checkCommentContent(connection) {
     const checkResult = checkSensitiveWord(comment.content)
 
     if (checkResult.hasSensitive) {
-      await connection.execute(
-        'UPDATE comments SET content = ? WHERE id = ?',
-        ['违规评论', comment.id]
-      )
+      if (await isApprovedByAdmin(connection, AUDIT_TYPE_COMMENT, comment.id)) {
+        skippedCount++
+        continue
+      }
 
-      console.log(`评论ID ${comment.id} 的内容 "${comment.content}" 包含违规词 "${checkResult.sensitiveWord}"，已替换为 "违规评论"`)
-      updatedCount++
+      await connection.execute('UPDATE comments SET status = 0 WHERE id = ?', [String(comment.id)])
+      await connection.execute('UPDATE posts SET comment_count = comment_count - 1 WHERE id = ?', [String(comment.post_id)])
+      await enqueueAudit(connection, AUDIT_TYPE_COMMENT, comment.id)
+
+      console.log(`评论ID ${comment.id} 的内容命中违规词 "${checkResult.sensitiveWord}"，已进入审核`)
+      flaggedCount++
     }
   }
 
-  console.log(`评论检查完成，跳过白名单 ${skippedCount} 条，更新 ${updatedCount} 条记录`)
-  return { updatedCount, skippedCount }
+  console.log(`评论检查完成，进入审核 ${flaggedCount} 条，跳过白名单 ${skippedCount} 条`)
+  return { flaggedCount, skippedCount }
 }
 
 // 执行一次检测：命令行与后端进程内调度共用，不主动结束进程
@@ -394,7 +422,7 @@ async function runCheck() {
     const bioUpdated = await checkUserBios(connection)
 
     // 检查标签名
-    const tagUpdated = await checkTagNames(connection)
+    const tagFlagged = await checkTagNames(connection)
 
     // 检查帖子内容
     const postResult = await checkPostContent(connection)
@@ -407,22 +435,20 @@ async function runCheck() {
     console.log(`小石榴号更新: ${userIdUpdated} 条`)
     console.log(`用户昵称更新: ${nicknameUpdated} 条`)
     console.log(`用户个人简介更新: ${bioUpdated} 条`)
-    console.log(`标签名更新: ${tagUpdated} 条`)
-    console.log(`帖子标题更新: ${postResult.titleUpdatedCount} 条`)
-    console.log(`帖子内容更新: ${postResult.contentUpdatedCount} 条`)
-    console.log(`帖子跳过(白名单): ${postResult.skippedCount} 条`)
-    console.log(`评论内容更新: ${commentResult.updatedCount} 条`)
+    console.log(`标签命中: ${tagFlagged} 个`)
+    console.log(`笔记进入审核: ${postResult.flaggedCount} 条`)
+    console.log(`笔记跳过(白名单): ${postResult.skippedCount} 条`)
+    console.log(`评论进入审核: ${commentResult.flaggedCount} 条`)
     console.log(`评论跳过(白名单): ${commentResult.skippedCount} 条`)
-    console.log(`总计更新: ${userIdUpdated + nicknameUpdated + bioUpdated + tagUpdated + postResult.titleUpdatedCount + postResult.contentUpdatedCount + commentResult.updatedCount} 条记录`)
+    console.log(`总计进入审核: ${postResult.flaggedCount + commentResult.flaggedCount} 条记录`)
 
     return {
       userAccountUpdated: userIdUpdated,
       nicknameUpdated,
       bioUpdated,
-      tagUpdated,
-      postTitleUpdated: postResult.titleUpdatedCount,
-      postContentUpdated: postResult.contentUpdatedCount,
-      commentUpdated: commentResult.updatedCount
+      tagFlagged,
+      postFlagged: postResult.flaggedCount,
+      commentFlagged: commentResult.flaggedCount
     }
   } finally {
     if (connection) {
@@ -452,6 +478,7 @@ module.exports = {
   removeSensitiveWords,
   getSensitiveWordsSnapshot,
   checkSensitiveWord,
+  findSensitiveWords,
   generateRandomCode,
   checkUserIds,
   checkUserNicknames,

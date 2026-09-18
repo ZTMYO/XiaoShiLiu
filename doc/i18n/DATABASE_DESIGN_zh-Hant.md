@@ -7,7 +7,7 @@
 - 字元集：`utf8mb4`
 - 排序規則：`utf8mb4_unicode_ci`
 - 儲存引擎：`InnoDB`
-- 更新時間：2026-09-16
+- 更新時間：2026-09-19
 
 ## 1. 使用者表 (users)
 
@@ -77,7 +77,7 @@
 | collect_count | INT | 收藏數，預設 0 |
 | comment_count | INT | 評論數，預設 0 |
 | created_at | TIMESTAMP | 發佈時間 |
-| status | TINYINT(1) | 筆記狀態：0-發佈（審核通過），1-草稿，2-待審核，預設 2 |
+| status | TINYINT(1) | 筆記狀態：0-發佈（審核通過），1-草稿，2-待審核，3-未過審，預設 2 |
 
 **索引：** `PRIMARY KEY(id)`、`KEY idx_user_id(user_id)`、`KEY idx_category_id(category_id)`、`KEY idx_created_at(created_at)`、`KEY idx_like_count(like_count)`、`KEY idx_category_id_created_at(category_id, created_at)`
 
@@ -184,11 +184,14 @@
 | content | TEXT | 評論內容 |
 | like_count | INT | 按讚數，預設 0 |
 | is_pinned | TINYINT(1) | 是否置頂：0-否，1-是，預設 0 |
+| status | TINYINT(1) | 評論狀態：0-待審核，1-正常顯示，2-審核未通過，預設 1 |
 | created_at | TIMESTAMP | 評論時間 |
 
-**索引：** `PRIMARY KEY(id)`、`KEY idx_post_id(post_id)`、`KEY idx_user_id(user_id)`、`KEY idx_parent_id(parent_id)`、`KEY idx_created_at(created_at)`
+**索引：** `PRIMARY KEY(id)`、`KEY idx_post_id(post_id)`、`KEY idx_user_id(user_id)`、`KEY idx_parent_id(parent_id)`、`KEY idx_status(status)`、`KEY idx_created_at(created_at)`
 
 **外鍵：** `post_id` → `posts(id)` ON DELETE CASCADE；`user_id` → `users(id)` ON DELETE CASCADE；`parent_id` → `comments(id)` ON DELETE CASCADE
+
+**說明：** 僅 `status=1` 對所有人可見；`status=0/2` 只有評論作者本人可見（`posts.js` / `comments.js` 的列表查詢按 `user_id` 放行）。`status=2` 的評論內容會被替換為「違規評論」。`posts.comment_count` 僅統計 `status=1` 的評論。
 
 ## 13. 通知表 (notifications)
 
@@ -252,6 +255,7 @@
 | admin_id | BIGINT | 審核人 ID，外鍵關聯 admin，可為空 |
 | type | TINYINT | 審核類型：1-使用者個人審核，2-使用者官方審核，3-內容審核，4-評論審核 |
 | target_id | BIGINT | 目標 ID，按 type 對應使用者 ID、筆記 ID 或評論 ID |
+| source | TINYINT(1) | 來源：1-發布自檢，2-使用者檢舉，3-定時巡檢，可為空 |
 | remark | TEXT | 審核備註，可為空 |
 | created_at | TIMESTAMP | 提交審核時間 |
 | audit_time | TIMESTAMP | 完成審核時間，可為空 |

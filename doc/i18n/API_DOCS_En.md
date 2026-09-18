@@ -5,7 +5,7 @@
 - **Version**: v1.3.3
 - **Base URL**: `http://localhost:3001`
 - **Database**: xiaoshiliu (MySQL)
-- **Update Time**: 2026-09-16
+- **Update Time**: 2026-09-19
 
 ## General Instructions
 
@@ -2824,6 +2824,7 @@ Administrator interfaces use JWT authentication:
 | nickname | string | Author nickname |
 | tags | array | Tag list |
 | images | array | Image URL list |
+| diagnosis | object | Real-time violation diagnosis, present only when hits occur: `title`/`content` hold the matched sensitive words, `tags` holds the matched tags, `words` holds all matched sensitive words (used to highlight the preview) |
 | created_at | datetime | Creation time |
 
 #### 6.2 Approve
@@ -2846,7 +2847,7 @@ Administrator interfaces use JWT authentication:
 |------|------|------|------|
 | id | int | Yes | Record ID |
 
-**Description**: Update record status to draft (status=1), and update audit record
+**Description**: Update record status to rejected (status=3). Based on the real-time diagnosis, replace the fields that hit sensitive words: title becomes "违规标题", content becomes "违规内容", and tags that hit sensitive words are deleted together with their links to all records; the audit record is updated as well
 
 #### 6.4 Batch Delete Pending Review Records
 **API Endpoint**: `DELETE /api/admin/posts-audit`
@@ -2856,6 +2857,17 @@ Administrator interfaces use JWT authentication:
 | Parameter | Type | Required | Description |
 |------|------|------|------|
 | ids | array | Yes | Array of record IDs to delete |
+
+#### 6.5 Get Post Audit Statistics
+**API Endpoint**: `GET /api/admin/posts-audit/stats`
+**Authentication Required**: Yes
+
+**Response Data**:
+| Field | Type | Description |
+|------|------|------|
+| pending | int | Pending count (same source as the list in 6.1, i.e. notes with `posts.status=2`) |
+| approved | int | Approved count (aggregated from audit records) |
+| rejected | int | Rejected count (aggregated from audit records) |
 
 ### 7. Comment Management
 
@@ -2871,6 +2883,8 @@ Administrator interfaces use JWT authentication:
 | content | string | No | Content search |
 | user_display_id | string | No | Filter by comment author's display ID |
 | post_id | int | No | Filter by record ID |
+| id | int | No | Filter by exact comment ID |
+| status | int | No | Filter by comment status: 0-pending, 1-visible, 2-rejected |
 | sortField | string | No | Sorting field (id, like_count, created_at) |
 | sortOrder | string | No | Sorting direction (ASC, DESC) |
 
@@ -2912,6 +2926,60 @@ Administrator interfaces use JWT authentication:
 #### 7.6 Get Single Comment Details
 **API Endpoint**: `GET /api/admin/comments/:id`
 **Authentication Required**: Yes
+
+#### 7.7 Get Pending Comment List
+**API Endpoint**: `GET /api/admin/comments-audit`
+**Authentication Required**: Yes
+
+**Request Parameters**: Same as 7.1, with `status=0` fixed
+
+**Response Data**:
+| Field | Type | Description |
+|------|------|------|
+| id | int | Comment ID |
+| content | string | Comment content |
+| status | int | Comment status: 0-pending |
+| user_id | int | Commenter user ID |
+| user_display_id | string | Commenter XiaoShiLiu number |
+| nickname | string | Commenter nickname |
+| post_id | int | Post ID |
+| post_title | string | Post title |
+| parent_id | int | Parent comment ID, nullable |
+| created_at | datetime | Comment time |
+| diagnosis | object | Real-time violation diagnosis, present only when hits occur: `content` holds the matched sensitive word, `words` holds all matched sensitive words (used to highlight the preview) |
+
+#### 7.8 Get Comment Audit Statistics
+**API Endpoint**: `GET /api/admin/comments-audit/stats`
+**Authentication Required**: Yes
+
+**Response Data**:
+| Field | Type | Description |
+|------|------|------|
+| pending | int | Pending count (same source as the list in 7.7, i.e. comments with `comments.status=0`) |
+| approved | int | Approved count (aggregated from audit records) |
+| rejected | int | Rejected count (aggregated from audit records) |
+
+#### 7.9 Approve Comment
+**API Endpoint**: `PUT /api/admin/comments-audit/:id/approve`
+**Authentication Required**: Yes
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|------|------|------|------|
+| id | int | Yes | Comment ID |
+
+**Description**: Set the comment status to visible (status=1), increment `comment_count` on the post, and update the audit record
+
+#### 7.10 Reject Comment
+**API Endpoint**: `PUT /api/admin/comments-audit/:id/reject`
+**Authentication Required**: Yes
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|------|------|------|------|
+| id | int | Yes | Comment ID |
+
+**Description**: Replace the comment content with "违规评论" and set status to rejected (status=2, visible to the author only); if the comment was previously approved, decrement `comment_count`, and update the audit record
 
 ### 8. Tag Management
 

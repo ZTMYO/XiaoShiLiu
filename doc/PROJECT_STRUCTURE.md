@@ -138,6 +138,7 @@ express-project/
 | `admin/AdminMonitor.vue` | `/admin/monitor` | 动态监控 |
 | `admin/UserManagement.vue` | `/admin/users` | 用户管理 |
 | `admin/PostAudit.vue` | `/admin/post-audit` | 笔记审核 |
+| `admin/CommentAudit.vue` | `/admin/comment-audit` | 评论审核 |
 | `admin/PostManagement.vue` | `/admin/posts` | 笔记管理 |
 | `admin/CommentManagement.vue` | `/admin/comments` | 评论管理 |
 | `admin/CategoryManagement.vue` | `/admin/categories` | 分类管理 |

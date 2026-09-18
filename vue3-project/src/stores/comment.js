@@ -67,6 +67,7 @@ export const useCommentStore = defineStore('comment', () => {
                     likeCount: comment.like_count || 0,
                     isLiked: comment.liked || false,
                     pinned: comment.is_pinned == 1,
+                    status: comment.status,
                     parent_id: comment.parent_id,
                     replies: [],
                     reply_count: comment.reply_count || 0, // 子评论数量
@@ -113,6 +114,7 @@ export const useCommentStore = defineStore('comment', () => {
                                     likeCount: reply.like_count || 0,
                                     isLiked: reply.liked || false,
                                     pinned: reply.is_pinned == 1,
+                                    status: reply.status,
                                     parent_id: reply.parent_id,
                                     replyTo: replyToUsername, // 添加被回复者昵称
                                     replies: [], // 保持空数组，因为是扁平化结构

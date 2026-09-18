@@ -12,6 +12,35 @@ const {
 } = require('../utils/validationHelpers')
 const { extractMentionedUsers, hasMentions } = require('../utils/mentionParser')
 const NotificationHelper = require('../utils/notificationHelper')
+const { findSensitiveWords } = require('../scripts/local-sensitive-word-check')
+
+// 实时诊断笔记的标题/内容/标签是否命中违规词，供审核页展示与管理员的判定依据
+function diagnosePost(post) {
+  const diagnosis = {}
+  const words = new Set()
+
+  const titleHits = findSensitiveWords(post.title || '')
+  if (titleHits.length > 0) {
+    diagnosis.title = titleHits[0]
+    titleHits.forEach(word => words.add(word))
+  }
+
+  const contentHits = findSensitiveWords(post.content || '')
+  if (contentHits.length > 0) {
+    diagnosis.content = contentHits[0]
+    contentHits.forEach(word => words.add(word))
+  }
+
+  const hitTags = (post.tags || []).filter(tag => findSensitiveWords(tag.name).length > 0)
+  if (hitTags.length > 0) {
+    diagnosis.tags = hitTags.map(tag => ({ id: tag.id, name: tag.name }))
+    hitTags.forEach(tag => words.add(tag.name))
+  }
+
+  if (words.size > 0) diagnosis.words = [...words]
+
+  return diagnosis
+}
 
 // 创建笔记
 // Posts CRUD 配置
@@ -476,6 +505,7 @@ const postsCrudConfig = {
         WHERE pt.post_id = ?
       `, [String(postId)])
       post.tags = tags
+      post.diagnosis = diagnosePost(post)
 
       return post
     },
@@ -521,6 +551,50 @@ const postsCrudConfig = {
       if (req.query.status !== undefined && req.query.status !== '') {
         whereClause += whereClause ? ' AND p.status = ?' : ' WHERE p.status = ?'
         params.push(req.query.status)
+      }
+
+      // 违规诊断依赖内存词库实时计算，SQL 无法表达，先按条件取出候选集筛出命中ID再走原分页
+      if (req.query.diagnosis !== undefined && req.query.diagnosis !== '') {
+        const [candidateRows] = await pool.execute(
+          `SELECT p.id, p.title, p.content
+           FROM posts p
+           LEFT JOIN users u ON p.user_id = u.id
+           LEFT JOIN categories c ON p.category_id = c.id
+           ${whereClause}`,
+          params
+        )
+
+        const candidateIds = candidateRows.map(row => row.id)
+        const tagMap = {}
+        if (candidateIds.length > 0) {
+          const tagPlaceholders = candidateIds.map(() => '?').join(',')
+          const [tagRows] = await pool.execute(
+            `SELECT pt.post_id, t.id, t.name
+             FROM post_tags pt
+             INNER JOIN tags t ON t.id = pt.tag_id
+             WHERE pt.post_id IN (${tagPlaceholders})`,
+            candidateIds.map(id => String(id))
+          )
+          tagRows.forEach(tag => {
+            if (!tagMap[tag.post_id]) tagMap[tag.post_id] = []
+            tagMap[tag.post_id].push({ id: tag.id, name: tag.name })
+          })
+        }
+
+        const wantViolation = String(req.query.diagnosis) === '1'
+        const matchedIds = candidateRows
+          .filter(row => {
+            const diagnosis = diagnosePost({ title: row.title, content: row.content, tags: tagMap[row.id] || [] })
+            return (Object.keys(diagnosis).length > 0) === wantViolation
+          })
+          .map(row => row.id)
+
+        if (matchedIds.length === 0) {
+          return { data: [], pagination: { page, limit, total: 0, pages: 0 } }
+        }
+
+        whereClause += whereClause ? ` AND p.id IN (${matchedIds.map(() => '?').join(',')})` : ` WHERE p.id IN (${matchedIds.map(() => '?').join(',')})`
+        params.push(...matchedIds)
       }
 
       // 获取总数
@@ -599,6 +673,7 @@ const postsCrudConfig = {
         for (let post of posts) {
           post.images = imageMap[post.id] || []
           post.tags = tagMap[post.id] || []
+          post.diagnosis = diagnosePost(post)
         }
       }
 
@@ -624,6 +699,33 @@ router.get('/posts-audit', adminAuth, createAdminListRoute(postsCrudConfig, {
   errorMessage: '获取待审核笔记列表失败',
   fixedQuery: { status: 2 }
 }))
+
+// 笔记审核统计（待审数量与列表同源，均为 posts.status=2）
+router.get('/posts-audit/stats', adminAuth, async (req, res) => {
+  try {
+    const [[pendingRow]] = await pool.execute('SELECT COUNT(*) AS pending FROM posts WHERE status = 2')
+    const [rows] = await pool.execute(
+      `SELECT SUM(status = 1) AS approved, SUM(status = 2) AS rejected
+       FROM audit WHERE type = 3`
+    )
+    const stat = rows[0]
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: {
+        pending: Number(pendingRow.pending) || 0,
+        approved: Number(stat.approved) || 0,
+        rejected: Number(stat.rejected) || 0
+      }
+    })
+  } catch (error) {
+    console.error('获取笔记审核统计失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '获取笔记审核统计失败'
+    })
+  }
+})
 
 // 审核通过
 router.put('/posts-audit/:id/approve', adminAuth, async (req, res) => {
@@ -706,7 +808,10 @@ router.put('/posts-audit/:id/reject', adminAuth, async (req, res) => {
     const adminId = req.user.adminId
 
     // 检查笔记是否存在
-    const [postResult] = await pool.execute('SELECT id FROM posts WHERE id = ?', [String(postId)])
+    const [postResult] = await pool.execute(
+      'SELECT id, title, content FROM posts WHERE id = ?',
+      [String(postId)]
+    )
     if (postResult.length === 0) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         code: RESPONSE_CODES.NOT_FOUND,
@@ -714,8 +819,40 @@ router.put('/posts-audit/:id/reject', adminAuth, async (req, res) => {
       })
     }
 
+    const post = postResult[0]
+
+    // 按实时诊断结果替换命中违规词的字段
+    const [tagRows] = await pool.execute(`
+      SELECT t.id, t.name 
+      FROM tags t 
+      INNER JOIN post_tags pt ON t.id = pt.tag_id 
+      WHERE pt.post_id = ?
+    `, [String(postId)])
+    const diagnosis = diagnosePost({ ...post, tags: tagRows })
+
+    const updateFields = []
+    const updateParams = []
+    if (diagnosis.title) {
+      updateFields.push('title = ?')
+      updateParams.push('违规标题')
+    }
+    if (diagnosis.content) {
+      updateFields.push('content = ?')
+      updateParams.push('违规内容')
+    }
+    updateFields.push('status = 3')
+
     // 未过审时设置为未过审状态
-    await pool.execute('UPDATE posts SET status = 3 WHERE id = ?', [String(postId)])
+    await pool.execute(
+      `UPDATE posts SET ${updateFields.join(', ')} WHERE id = ?`,
+      [...updateParams, String(postId)]
+    )
+
+    // 标签非笔记必需项，命中违规词的标签直接删除，并清理其与所有笔记的关联
+    for (const tag of diagnosis.tags || []) {
+      await pool.execute('DELETE FROM post_tags WHERE tag_id = ?', [String(tag.id)])
+      await pool.execute('DELETE FROM tags WHERE id = ?', [String(tag.id)])
+    }
 
     // 更新audit表中的审核记录
     await pool.execute(
@@ -831,6 +968,12 @@ const commentsCrudConfig = {
         params.push(req.query.post_id)
       }
 
+      // 审核预览按评论ID精确取数（用于组装待审评论的父级上下文）
+      if (req.query.id) {
+        whereClause += whereClause ? ' AND c.id = ?' : ' WHERE c.id = ?'
+        params.push(req.query.id)
+      }
+
       if (req.query.user_display_id) {
         whereClause += whereClause ? ' AND u.user_id LIKE ?' : ' WHERE u.user_id LIKE ?'
         params.push(`%${req.query.user_display_id}%`)
@@ -839,6 +982,36 @@ const commentsCrudConfig = {
       if (req.query.content) {
         whereClause += whereClause ? ' AND c.content LIKE ?' : ' WHERE c.content LIKE ?'
         params.push(`%${req.query.content}%`)
+      }
+
+      // 审核子页通过 fixedQuery 传入 status，注意 0 是合法状态，不能用真值判断
+      if (req.query.status !== undefined && req.query.status !== '') {
+        whereClause += whereClause ? ' AND c.status = ?' : ' WHERE c.status = ?'
+        params.push(req.query.status)
+      }
+
+      // 违规诊断依赖内存词库实时计算，SQL 无法表达，先按条件取出候选集筛出命中ID再走原分页
+      if (req.query.diagnosis !== undefined && req.query.diagnosis !== '') {
+        const [candidateRows] = await pool.execute(
+          `SELECT c.id, c.content
+           FROM comments c
+           LEFT JOIN users u ON c.user_id = u.id
+           LEFT JOIN posts p ON c.post_id = p.id
+           ${whereClause}`,
+          params
+        )
+
+        const wantViolation = String(req.query.diagnosis) === '1'
+        const matchedIds = candidateRows
+          .filter(row => (findSensitiveWords(row.content || '').length > 0) === wantViolation)
+          .map(row => row.id)
+
+        if (matchedIds.length === 0) {
+          return { data: [], pagination: { page, limit, total: 0, pages: 0 } }
+        }
+
+        whereClause += whereClause ? ` AND c.id IN (${matchedIds.map(() => '?').join(',')})` : ` WHERE c.id IN (${matchedIds.map(() => '?').join(',')})`
+        params.push(...matchedIds)
       }
 
       // 获取总数
@@ -872,8 +1045,9 @@ const commentsCrudConfig = {
 
       // 获取数据
       const dataQuery = `
-        SELECT c.id, c.content, c.parent_id, c.like_count, c.created_at,
-               c.user_id, u.nickname, 
+        SELECT c.id, c.content, c.parent_id, c.like_count, c.created_at, c.status, c.is_pinned,
+               c.user_id, u.nickname, u.avatar as user_avatar, u.location as user_location,
+               u.verified, u.id as user_auto_id,
                COALESCE(u.user_id, CONCAT('user', LPAD(u.id, 3, '0'))) as user_display_id,
                p.id as post_id, p.title as post_title
         FROM comments c
@@ -884,6 +1058,12 @@ const commentsCrudConfig = {
         LIMIT ? OFFSET ?
       `
       const [comments] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
+
+      // 评论只有内容维度，命中后标记供审核页展示与预览高亮
+      comments.forEach(comment => {
+        const hits = findSensitiveWords(comment.content || '')
+        if (hits.length > 0) comment.diagnosis = { content: hits[0], words: hits }
+      })
 
       return {
         data: comments,
@@ -908,6 +1088,123 @@ router.delete('/comments', adminAuth, commentsHandlers.deleteMany)
 router.get('/comments/:id', adminAuth, commentsHandlers.getOne)
 
 router.get('/comments', adminAuth, createAdminListRoute(commentsCrudConfig, { errorMessage: '获取评论列表失败' }))
+
+// ===== 评论审核（队列来源：发布时命中违规词，对应 audit.type = 4） =====
+
+// 获取待审核评论列表（复用 comments getList，固定 status=0）
+router.get('/comments-audit', adminAuth, createAdminListRoute(commentsCrudConfig, {
+  errorMessage: '获取待审核评论列表失败',
+  fixedQuery: { status: 0 }
+}))
+
+// 评论审核统计（待审数量与列表同源，均为 comments.status=0）
+router.get('/comments-audit/stats', adminAuth, async (req, res) => {
+  try {
+    const [[pendingRow]] = await pool.execute('SELECT COUNT(*) AS pending FROM comments WHERE status = 0')
+    const [rows] = await pool.execute(
+      `SELECT SUM(status = 1) AS approved, SUM(status = 2) AS rejected
+       FROM audit WHERE type = 4`
+    )
+    const stat = rows[0]
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: {
+        pending: Number(pendingRow.pending) || 0,
+        approved: Number(stat.approved) || 0,
+        rejected: Number(stat.rejected) || 0
+      }
+    })
+  } catch (error) {
+    console.error('获取评论审核统计失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '获取评论审核统计失败'
+    })
+  }
+})
+
+// 审核通过：评论恢复展示，并补记笔记评论数
+router.put('/comments-audit/:id/approve', adminAuth, async (req, res) => {
+  try {
+    const commentId = req.params.id
+    const adminId = req.user.adminId
+
+    const [rows] = await pool.execute('SELECT id, post_id, status FROM comments WHERE id = ?', [String(commentId)])
+    if (rows.length === 0) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        code: RESPONSE_CODES.NOT_FOUND,
+        message: '评论不存在'
+      })
+    }
+
+    const comment = rows[0]
+
+    await pool.execute('UPDATE comments SET status = 1 WHERE id = ?', [String(commentId)])
+
+    // 待审评论此前未计入 comment_count，仅在首次转为已过审时补记
+    if (comment.status !== 1) {
+      await pool.execute('UPDATE posts SET comment_count = comment_count + 1 WHERE id = ?', [String(comment.post_id)])
+    }
+
+    await pool.execute(
+      'UPDATE audit SET status = 1, audit_time = NOW(), admin_id = ? WHERE type = 4 AND target_id = ?',
+      [adminId, String(commentId)]
+    )
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: '审核通过成功'
+    })
+  } catch (error) {
+    console.error('评论审核通过失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '审核通过失败'
+    })
+  }
+})
+
+// 审核拒绝：评论不予展示，内容替换为违规标记
+router.put('/comments-audit/:id/reject', adminAuth, async (req, res) => {
+  try {
+    const commentId = req.params.id
+    const adminId = req.user.adminId
+
+    const [rows] = await pool.execute('SELECT id, post_id, status FROM comments WHERE id = ?', [String(commentId)])
+    if (rows.length === 0) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        code: RESPONSE_CODES.NOT_FOUND,
+        message: '评论不存在'
+      })
+    }
+
+    const comment = rows[0]
+
+    await pool.execute('UPDATE comments SET content = ?, status = 2 WHERE id = ?', ['违规评论', String(commentId)])
+
+    // 已过审评论被驳回时需回退此前记入的评论数
+    if (comment.status === 1) {
+      await pool.execute('UPDATE posts SET comment_count = comment_count - 1 WHERE id = ?', [String(comment.post_id)])
+    }
+
+    await pool.execute(
+      'UPDATE audit SET status = 2, audit_time = NOW(), admin_id = ? WHERE type = 4 AND target_id = ?',
+      [adminId, String(commentId)]
+    )
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: '拒绝成功'
+    })
+  } catch (error) {
+    console.error('评论审核拒绝失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '拒绝失败'
+    })
+  }
+})
 
 // 创建标签
 // ==================== 标签管理（使用CRUD工厂重构） ====================

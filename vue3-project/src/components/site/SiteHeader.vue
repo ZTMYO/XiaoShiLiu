@@ -1,10 +1,11 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMediaQuery } from '@vueuse/core'
 import SvgIcon from '@/components/SvgIcon.vue'
 import DropdownMenu from '@/components/menu/DropdownMenu.vue'
 import DropdownItem from '@/components/menu/DropdownItem.vue'
+import SiteSearchModal from '@/components/modals/SiteSearchModal.vue'
 import { useThemeStore } from '@/stores/theme'
 import { useSiteLang, DOC_LANGS } from '@/composables/useSiteLang'
 
@@ -42,6 +43,22 @@ const showSourceLink = computed(() => !isMobile.value)
 const showDocsLink = computed(() => !isMobile.value || (!isDocPage.value && !isDownloadPage.value))
 // 文档页移动端把语言与主题收进侧边抽屉承载
 const showSitePrefs = computed(() => !isMobile.value || !isDocPage.value)
+
+// 搜索弹窗与快捷键：Mac 显示 ⌘K，其余平台显示 Ctrl K
+const showSearchModal = ref(false)
+const isMac = /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent)
+const shortcutLabel = computed(() => (isMac ? '⌘K' : 'Ctrl K'))
+
+function onGlobalKeydown(event) {
+  if (showSearchModal.value || isDownloadPage.value || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
+  const target = event.target
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+  event.preventDefault()
+  showSearchModal.value = true
+}
+
+onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onGlobalKeydown))
 </script>
 
 <template>
@@ -50,8 +67,18 @@ const showSitePrefs = computed(() => !isMobile.value || !isDocPage.value)
       <div class="logo" @click="router.push('/')">
         <img :src="logoUrl" alt="小石榴" />
       </div>
-
+      <button v-if="!isDownloadPage" type="button" class="site-search-btn" @click="showSearchModal = true">
+        <div class="site-search-btn-left">
+          <SvgIcon name="search" width="20" height="20" />
+          <span class="site-search-btn-label">搜索</span>
+        </div>
+        <div class="site-search-tip">{{ shortcutLabel }}</div>
+      </button>
       <nav class="site-nav">
+        <button v-if="isMobile && !isDownloadPage" type="button" class="site-icon-btn site-nav-search" aria-label="搜索"
+          @click="showSearchModal = true">
+          <SvgIcon name="search" width="20" height="20" />
+        </button>
         <button v-if="showSourceLink" class="site-nav-link" :class="{ active: isDownloadPage }"
           @click="router.push('/download')">
           <span>获取源码</span>
@@ -85,6 +112,8 @@ const showSitePrefs = computed(() => !isMobile.value || !isDocPage.value)
     </div>
 
     <div v-if="progress !== null" class="site-progress" :style="{ width: `${progress}%` }"></div>
+
+    <SiteSearchModal v-if="showSearchModal" @close="showSearchModal = false" />
   </header>
 </template>
 
@@ -138,6 +167,46 @@ const showSitePrefs = computed(() => !isMobile.value || !isDocPage.value)
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.site-search-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  border-radius: 8px;
+  background-color: var(--bg-color-secondary);
+  border: 1.5px solid transparent;
+  width: 150px;
+  height: 40px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  transition: border 0.2s ease;
+  font-size: 14px;
+}
+
+.site-search-btn:hover {
+  border-color: var(--primary-color);
+}
+.site-search-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.site-search-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 50px;
+  padding: 2px;
+  border: 1.5px solid var(--border-color-primary);
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
 }
 
 .site-nav-link {
@@ -214,10 +283,18 @@ const showSitePrefs = computed(() => !isMobile.value || !isDocPage.value)
     font-size: 15px;
   }
 
+  .site-search-btn {
+    display: none;
+  }
+
   .site-icon-btn {
     min-width: 40px;
     height: 40px;
     font-size: 15px;
+  }
+
+  .site-nav-search {
+    border-radius: 50%;
   }
 }
 </style>

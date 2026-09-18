@@ -1313,7 +1313,6 @@ const handleCustomAction = (action, item) => {
   border-bottom: 1px solid var(--border-color-primary);
   background-color: var(--bg-color-secondary);
   gap: 20px;
-  overflow: hidden;
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -1323,7 +1322,6 @@ const handleCustomAction = (action, item) => {
   gap: 0;
   flex: 1;
   min-width: 0;
-  overflow: hidden;
 }
 
 .table-actions {
@@ -1337,7 +1335,6 @@ const handleCustomAction = (action, item) => {
   align-items: flex-end;
   gap: 15px;
   flex-wrap: nowrap;
-  overflow: hidden;
 }
 
 .search-actions {
@@ -1360,7 +1357,6 @@ const handleCustomAction = (action, item) => {
   display: flex;
   gap: 15px;
   flex-wrap: nowrap;
-  overflow: hidden;
   flex-shrink: 0;
 }
 

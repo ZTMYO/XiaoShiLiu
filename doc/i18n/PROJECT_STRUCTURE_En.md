@@ -138,6 +138,7 @@ In addition, the `GET /api/health` health check is defined directly in `app.js` 
 | `admin/AdminMonitor.vue` | `/admin/monitor` | Activity monitor |
 | `admin/UserManagement.vue` | `/admin/users` | User management |
 | `admin/PostAudit.vue` | `/admin/post-audit` | Post review |
+| `admin/CommentAudit.vue` | `/admin/comment-audit` | Comment review |
 | `admin/PostManagement.vue` | `/admin/posts` | Post management |
 | `admin/CommentManagement.vue` | `/admin/comments` | Comment management |
 | `admin/CategoryManagement.vue` | `/admin/categories` | Category management |

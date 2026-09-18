@@ -6,17 +6,23 @@ const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const NotificationHelper = require('../utils/notificationHelper');
 const { extractMentionedUsers, hasMentions } = require('../utils/mentionParser');
 const { sanitizeContent } = require('../utils/contentSecurity');
+const { checkSensitiveWord, USER_WHITELIST } = require('../scripts/local-sensitive-word-check');
 
-// 递归删除评论及其子评论，返回删除的评论总数
-async function deleteCommentRecursive(commentId) {
-  let deletedCount = 0;
+// 递归删除评论及其子评论，返回删除总数、其中计入 comment_count 的数量与全部被删ID
+async function deleteCommentRecursive(commentId, status) {
+  const [children] = await pool.execute('SELECT id, status FROM comments WHERE parent_id = ?', [commentId.toString()]);
 
-  // 获取所有子评论
-  const [children] = await pool.execute('SELECT id FROM comments WHERE parent_id = ?', [commentId.toString()]);
+  const acc = {
+    deletedCount: 0,
+    visibleCount: status === 1 ? 1 : 0,
+    deletedIds: [commentId]
+  };
 
-  // 递归删除子评论
   for (const child of children) {
-    deletedCount += await deleteCommentRecursive(child.id);
+    const childAcc = await deleteCommentRecursive(child.id, child.status);
+    acc.deletedCount += childAcc.deletedCount;
+    acc.visibleCount += childAcc.visibleCount;
+    acc.deletedIds = acc.deletedIds.concat(childAcc.deletedIds);
   }
 
   // 删除当前评论的点赞记录
@@ -25,10 +31,9 @@ async function deleteCommentRecursive(commentId) {
   // 删除当前评论
   await pool.execute('DELETE FROM comments WHERE id = ?', [commentId.toString()]);
 
-  // 当前评论也算一个
-  deletedCount += 1;
+  acc.deletedCount += 1;
 
-  return deletedCount;
+  return acc;
 }
 
 // 获取评论列表
@@ -44,15 +49,16 @@ router.get('/', optionalAuth, async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '缺少笔记ID' });
     }
 
-    // 获取顶级评论（parent_id为NULL）
+    // 获取顶级评论（parent_id为NULL）：他人只看已过审，本人可看自己的待审/未过审
     const [rows] = await pool.execute(
       `SELECT c.*, u.nickname, u.avatar as user_avatar, u.id as user_auto_id, u.user_id as user_display_id, u.location as user_location, u.verified
        FROM comments c
        LEFT JOIN users u ON c.user_id = u.id
        WHERE c.post_id = ? AND c.parent_id IS NULL
+         AND (c.status = 1 OR (c.user_id = ? AND c.status IN (0, 2)))
        ORDER BY c.is_pinned DESC, c.created_at DESC
        LIMIT ? OFFSET ?`,
-      [postId.toString(), limit.toString(), offset.toString()]
+      [postId.toString(), currentUserId, limit.toString(), offset.toString()]
     );
 
     if (rows.length > 0) {
@@ -68,10 +74,10 @@ router.get('/', optionalAuth, async (req, res) => {
         likedCommentIds = new Set(likes.map(l => l.target_id.toString()));
       }
 
-      // 批量获取子评论数量
+      // 批量获取子评论数量（与列表可见性规则保持一致）
       const [replyCounts] = await pool.query(
-        'SELECT parent_id, COUNT(*) as count FROM comments WHERE parent_id IN (?) GROUP BY parent_id',
-        [commentIds]
+        'SELECT parent_id, COUNT(*) as count FROM comments WHERE parent_id IN (?) AND (status = 1 OR (user_id = ? AND status IN (0, 2))) GROUP BY parent_id',
+        [commentIds, currentUserId]
       );
       const replyCountMap = {};
       replyCounts.forEach(r => {
@@ -87,8 +93,10 @@ router.get('/', optionalAuth, async (req, res) => {
 
     // 获取总数
     const [countResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM comments WHERE post_id = ? AND parent_id IS NULL',
-      [postId.toString()]
+      `SELECT COUNT(*) as total FROM comments
+       WHERE post_id = ? AND parent_id IS NULL
+         AND (status = 1 OR (user_id = ? AND status IN (0, 2)))`,
+      [postId.toString(), currentUserId]
     );
     const total = countResult[0].total;
 
@@ -144,72 +152,85 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     }
 
+    // 违规词检测：命中不修改内容，仅转为待审核；白名单用户豁免
+    const isWhitelisted = USER_WHITELIST.includes(userId);
+    const checkResult = isWhitelisted ? { hasSensitive: false } : checkSensitiveWord(sanitizedContent);
+    const commentStatus = checkResult.hasSensitive ? 0 : 1;
+
     // 插入评论
     const [result] = await pool.execute(
-      'INSERT INTO comments (post_id, user_id, content, parent_id) VALUES (?, ?, ?, ?)',
-      [post_id.toString(), userId.toString(), sanitizedContent, parent_id ? parent_id.toString() : null]
+      'INSERT INTO comments (post_id, user_id, content, parent_id, status) VALUES (?, ?, ?, ?, ?)',
+      [post_id.toString(), userId.toString(), sanitizedContent, parent_id ? parent_id.toString() : null, commentStatus]
     );
 
     const commentId = result.insertId;
 
-    // 更新笔记评论数
-    await pool.execute('UPDATE posts SET comment_count = comment_count + 1 WHERE id = ?', [post_id.toString()]);
+    if (commentStatus === 1) {
+      // 更新笔记评论数
+      await pool.execute('UPDATE posts SET comment_count = comment_count + 1 WHERE id = ?', [post_id.toString()]);
 
-    // 创建通知
-    if (parent_id) {
-      // 回复评论，给被回复的评论作者发通知
-      const [parentCommentResult] = await pool.execute('SELECT user_id FROM comments WHERE id = ?', [parent_id.toString()]);
-      if (parentCommentResult.length > 0) {
-        const parentUserId = parentCommentResult[0].user_id;
-        // 不给自己发通知
-        if (parentUserId !== userId) {
-          const notificationData = NotificationHelper.createReplyCommentNotification(parentUserId, userId, post_id, commentId);
-          await NotificationHelper.insertNotification(pool, notificationData);
+      // 创建通知
+      if (parent_id) {
+        // 回复评论，给被回复的评论作者发通知
+        const [parentCommentResult] = await pool.execute('SELECT user_id FROM comments WHERE id = ?', [parent_id.toString()]);
+        if (parentCommentResult.length > 0) {
+          const parentUserId = parentCommentResult[0].user_id;
+          // 不给自己发通知
+          if (parentUserId !== userId) {
+            const notificationData = NotificationHelper.createReplyCommentNotification(parentUserId, userId, post_id, commentId);
+            await NotificationHelper.insertNotification(pool, notificationData);
+          }
+        }
+      } else {
+        // 评论笔记，给笔记作者发通知
+        const [postResult] = await pool.execute('SELECT user_id FROM posts WHERE id = ?', [post_id.toString()]);
+        if (postResult.length > 0) {
+          const postUserId = postResult[0].user_id;
+          // 不给自己发通知
+          if (postUserId !== userId) {
+            const notificationData = NotificationHelper.createCommentPostNotification(postUserId, userId, post_id, commentId);
+            await NotificationHelper.insertNotification(pool, notificationData);
+          }
+        }
+      }
+
+      // 处理@用户通知
+      if (hasMentions(content)) {
+        const mentionedUsers = extractMentionedUsers(content);
+
+        for (const mentionedUser of mentionedUsers) {
+          try {
+            // 根据小石榴号查找用户的自增ID
+            const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [mentionedUser.userId]);
+
+            if (userRows.length > 0) {
+              const mentionedUserId = userRows[0].id;
+
+              // 不给自己发通知
+              if (mentionedUserId !== userId) {
+                // 创建@用户通知
+                const mentionNotificationData = NotificationHelper.createNotificationData({
+                  userId: mentionedUserId,
+                  senderId: userId,
+                  type: NotificationHelper.TYPES.MENTION_COMMENT,
+                  targetId: post_id,
+                  commentId: commentId
+                });
+
+                await NotificationHelper.insertNotification(pool, mentionNotificationData);
+              }
+            }
+          } catch (error) {
+            console.error('处理@用户通知失败 - 用户: %s:', mentionedUser.userId, error);
+          }
         }
       }
     } else {
-      // 评论笔记，给笔记作者发通知
-      const [postResult] = await pool.execute('SELECT user_id FROM posts WHERE id = ?', [post_id.toString()]);
-      if (postResult.length > 0) {
-        const postUserId = postResult[0].user_id;
-        // 不给自己发通知
-        if (postUserId !== userId) {
-          const notificationData = NotificationHelper.createCommentPostNotification(postUserId, userId, post_id, commentId);
-          await NotificationHelper.insertNotification(pool, notificationData);
-        }
-      }
-    }
-
-    // 处理@用户通知
-    if (hasMentions(content)) {
-      const mentionedUsers = extractMentionedUsers(content);
-
-      for (const mentionedUser of mentionedUsers) {
-        try {
-          // 根据小石榴号查找用户的自增ID
-          const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [mentionedUser.userId]);
-
-          if (userRows.length > 0) {
-            const mentionedUserId = userRows[0].id;
-
-            // 不给自己发通知
-            if (mentionedUserId !== userId) {
-              // 创建@用户通知
-              const mentionNotificationData = NotificationHelper.createNotificationData({
-                userId: mentionedUserId,
-                senderId: userId,
-                type: NotificationHelper.TYPES.MENTION_COMMENT,
-                targetId: post_id,
-                commentId: commentId
-              });
-
-              await NotificationHelper.insertNotification(pool, mentionNotificationData);
-            }
-          }
-        } catch (error) {
-          console.error('处理@用户通知失败 - 用户: %s:', mentionedUser.userId, error);
-        }
-      }
+      // 命中违规词：进入人工审核队列，不递增评论数
+      await pool.execute(
+        'INSERT INTO audit (type, target_id, status, source, remark) VALUES (?, ?, ?, ?, ?)',
+        [4, commentId.toString(), 0, 1, checkResult.sensitiveWord ? `命中违规词：${checkResult.sensitiveWord}` : null]
+      );
     }
 
     // 获取刚创建的评论的完整信息
@@ -225,11 +246,11 @@ router.post('/', authenticateToken, async (req, res) => {
     commentData.liked = false; // 新创建的评论默认未点赞
     commentData.reply_count = 0; // 新创建的评论默认无回复
 
-    console.log('创建评论成功 - 用户ID: %s, 评论ID: %s', userId, commentId);
+    console.log('创建评论成功 - 用户ID: %s, 评论ID: %s, 状态: %s', userId, commentId, commentStatus);
 
     res.json({
       code: RESPONSE_CODES.SUCCESS,
-      message: '评论成功',
+      message: commentStatus === 1 ? '评论成功' : '评论已提交，审核通过后展示',
       data: commentData
     });
   } catch (error) {
@@ -248,15 +269,16 @@ router.get('/:id/replies', optionalAuth, async (req, res) => {
     const currentUserId = req.user ? req.user.id : null;
 
 
-    // 获取子评论
+    // 获取子评论：他人只看已过审，本人可看自己的待审/未过审
     const [rows] = await pool.execute(
       `SELECT c.*, u.nickname, u.avatar as user_avatar, u.id as user_auto_id, u.user_id as user_display_id, u.location as user_location, u.verified
        FROM comments c
        LEFT JOIN users u ON c.user_id = u.id
        WHERE c.parent_id = ?
+         AND (c.status = 1 OR (c.user_id = ? AND c.status IN (0, 2)))
        ORDER BY c.created_at ASC
        LIMIT ? OFFSET ?`,
-      [parentId.toString(), limit.toString(), offset.toString()]
+      [parentId.toString(), currentUserId, limit.toString(), offset.toString()]
     );
 
     // 为每个评论检查点赞状态
@@ -279,8 +301,10 @@ router.get('/:id/replies', optionalAuth, async (req, res) => {
 
     // 获取总数
     const [countResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM comments WHERE parent_id = ?',
-      [parentId.toString()]
+      `SELECT COUNT(*) as total FROM comments
+       WHERE parent_id = ?
+         AND (status = 1 OR (user_id = ? AND status IN (0, 2)))`,
+      [parentId.toString(), currentUserId]
     );
     const total = countResult[0].total;
 
@@ -366,7 +390,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     // 验证评论是否存在
     const [commentRows] = await pool.execute(
-      'SELECT id, post_id, user_id, parent_id FROM comments WHERE id = ?',
+      'SELECT id, post_id, user_id, parent_id, status FROM comments WHERE id = ?',
       [commentId.toString()]
     );
 
@@ -386,11 +410,11 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(HTTP_STATUS.FORBIDDEN).json({ code: RESPONSE_CODES.FORBIDDEN, message: '只能删除自己发布的评论或自己帖子下的评论' });
     }
 
-    // 使用递归删除函数删除评论及其所有子评论，获取删除的评论总数
-    const deletedCount = await deleteCommentRecursive(commentId);
+    // 使用递归删除函数删除评论及其所有子评论
+    const deleteResult = await deleteCommentRecursive(commentId, comment.status);
 
-    // 根据实际删除的评论数量更新笔记的评论计数
-    await pool.execute('UPDATE posts SET comment_count = comment_count - ? WHERE id = ?', [deletedCount.toString(), comment.post_id.toString()]);
+    // comment_count 只统计已过审评论，此处仅回退其中真正计入过的数量
+    await pool.execute('UPDATE posts SET comment_count = comment_count - ? WHERE id = ?', [deleteResult.visibleCount.toString(), comment.post_id.toString()]);
 
     console.log('删除评论成功 - 用户ID: %s, 评论ID: %s', userId, commentId);
 
@@ -399,7 +423,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       message: '删除成功',
       data: {
         id: commentId,
-        deletedCount: deletedCount
+        deletedCount: deleteResult.deletedCount
       }
     });
   } catch (error) {

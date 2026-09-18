@@ -5,7 +5,7 @@
 - **版本**: v1.3.3
 - **基礎URL**: `http://localhost:3001`
 - **數據庫**: xiaoshiliu (MySQL)
-- **更新時間**: 2026-09-16
+- **更新時間**: 2026-09-19
 
 ## 通用說明
 
@@ -2824,6 +2824,7 @@ Authorization: Bearer <access_token>
 | nickname | string | 作者昵稱 |
 | tags | array | 標籤清單 |
 | images | array | 圖片URL清單 |
+| diagnosis | object | 違規診斷結果，僅命中時存在：`title`/`content` 為命中的違規詞，`tags` 為命中標籤數組，`words` 為命中的全部違規詞數組（用於預覽高亮） |
 | created_at | datetime | 創建時間 |
 
 #### 6.2 審核通過
@@ -2846,7 +2847,7 @@ Authorization: Bearer <access_token>
 |------|------|------|------|
 | id | int | 是 | 筆記ID |
 
-**說明**: 將筆記狀態更新為草稿（status=1），同時更新審核記錄
+**說明**: 將筆記狀態更新為未過審（status=3）。按實時診斷結果替換命中違規詞的字段：標題替換為「違規標題」、內容替換為「違規內容」、命中標籤改名為「違規標籤_隨機碼」，同時更新審核記錄
 
 #### 6.4 批量刪除待審核筆記
 **接口地址**: `DELETE /api/admin/posts-audit`
@@ -2856,6 +2857,17 @@ Authorization: Bearer <access_token>
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | ids | array | 是 | 要刪除的筆記ID數組 |
+
+#### 6.5 獲取筆記審核統計
+**接口地址**: `GET /api/admin/posts-audit/stats`
+**需要認證**: 是
+
+**響應數據**:
+| 字段 | 類型 | 說明 |
+|------|------|------|
+| pending | int | 待審核數量（與 6.1 清單同源，即 `posts.status=2` 的筆記數） |
+| approved | int | 審核通過數量（audit 記錄聚合） |
+| rejected | int | 審核拒絕數量（audit 記錄聚合） |
 
 ### 7. 評論管理
 
@@ -2871,6 +2883,8 @@ Authorization: Bearer <access_token>
 | content | string | 否 | 內容搜尋 |
 | user_display_id | string | 否 | 評論者小石榴號篩選 |
 | post_id | int | 否 | 記錄ID篩選 |
+| id | int | 否 | 評論ID精確篩選 |
+| status | int | 否 | 評論狀態篩選：0-待審核，1-正常顯示，2-未通過 |
 | sortField | string | 否 | 排序字段（id, like_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
@@ -2911,6 +2925,60 @@ Authorization: Bearer <access_token>
 #### 7.6 獲取單個評論詳情
 **接口地址**: `GET /api/admin/comments/:id`
 **需要認證**: 是
+
+#### 7.7 獲取待審核評論清單
+**接口地址**: `GET /api/admin/comments-audit`
+**需要認證**: 是
+
+**請求參數**: 同 7.1，固定 `status=0`
+
+**響應數據**:
+| 字段 | 類型 | 說明 |
+|------|------|------|
+| id | int | 評論ID |
+| content | string | 評論內容 |
+| status | int | 評論狀態：0-待審核 |
+| user_id | int | 評論者用戶ID |
+| user_display_id | string | 評論者小石榴號 |
+| nickname | string | 評論者昵稱 |
+| post_id | int | 所屬筆記ID |
+| post_title | string | 所屬筆記標題 |
+| parent_id | int | 父評論ID，可為空 |
+| created_at | datetime | 評論時間 |
+| diagnosis | object | 違規診斷結果，僅命中時存在：`content` 為命中的違規詞，`words` 為命中的全部違規詞數組（用於預覽高亮） |
+
+#### 7.8 獲取評論審核統計
+**接口地址**: `GET /api/admin/comments-audit/stats`
+**需要認證**: 是
+
+**響應數據**:
+| 字段 | 類型 | 說明 |
+|------|------|------|
+| pending | int | 待審核數量（與 7.7 清單同源，即 `comments.status=0` 的評論數） |
+| approved | int | 審核通過數量（audit 記錄聚合） |
+| rejected | int | 審核拒絕數量（audit 記錄聚合） |
+
+#### 7.9 評論審核通過
+**接口地址**: `PUT /api/admin/comments-audit/:id/approve`
+**需要認證**: 是
+
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 評論ID |
+
+**說明**: 評論狀態更新為正常顯示（status=1），補記所屬筆記的 `comment_count`，同時更新審核記錄
+
+#### 7.10 評論審核拒絕
+**接口地址**: `PUT /api/admin/comments-audit/:id/reject`
+**需要認證**: 是
+
+**路徑參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| id | int | 是 | 評論ID |
+
+**說明**: 評論內容替換為「違規評論」並更新為未通過狀態（status=2，僅作者本人可見）；若該評論此前已過審，則回退 `comment_count`，同時更新審核記錄
 
 ### 8. 標籤管理
 

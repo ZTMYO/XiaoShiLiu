@@ -2,6 +2,17 @@
   <CrudTable title="笔记审核" entity-name="笔记" api-endpoint="/admin/posts-audit" :columns="columns" :form-fields="formFields"
     :search-fields="searchFields" :custom-actions="customActions" :show-create-button="false"
     @custom-action="handleCustomAction" @close-filter="emit('closeFilter')">
+    <template #cell-diagnosis="{ item }">
+      <div v-if="hasDiagnosis(item)" class="violation-tags">
+        <span v-if="item.diagnosis.title" class="violation-tag"
+          :title="`标题命中违规词：${item.diagnosis.title}`">标题违规</span>
+        <span v-if="item.diagnosis.content" class="violation-tag"
+          :title="`内容命中违规词：${item.diagnosis.content}`">内容违规</span>
+        <span v-if="item.diagnosis.tags && item.diagnosis.tags.length" class="violation-tag"
+          :title="`命中违规标签：${item.diagnosis.tags.map(tag => tag.name).join('、')}`">标签违规</span>
+      </div>
+      <span v-else class="diagnosis-ok">非违规</span>
+    </template>
     <template #cell-preview="{ item }">
       <div>
         <span class="content-link" @click="openPreview(item, $event)" title="查看笔记预览">预览</span>
@@ -11,7 +22,7 @@
 
   <div v-if="showPreview" class="audit-detailcard-readonly">
     <DetailCard :item="previewItem" :click-position="previewClickPosition" :page-mode="false"
-      :disable-auto-fetch="true" @close="closePreview" />
+      :disable-auto-fetch="true" :highlight-words="previewItem?.diagnosis?.words || []" @close="closePreview" />
   </div>
 
   <!-- 消息提示 -->
@@ -92,11 +103,17 @@ const getAuthHeaders = () => {
   return headers
 }
 
+const hasDiagnosis = (item) => {
+  const diagnosis = item?.diagnosis
+  return !!(diagnosis && (diagnosis.title || diagnosis.content || (diagnosis.tags && diagnosis.tags.length)))
+}
+
 // 表格列定义
 const columns = [
   { key: 'id', label: 'ID', type: 'post-link', sortable: true },
   { key: 'user_display_id', label: '小石榴号', type: 'user-link', sortable: false },
   { key: 'nickname', label: '用户昵称', sortable: false },
+  { key: 'diagnosis', label: '违规诊断', type: 'slot', sortable: false },
   { key: 'preview', label: '预览', type: 'slot', sortable: false },
   { key: 'created_at', label: '发起时间', type: 'date', sortable: true }
 ]
@@ -126,6 +143,17 @@ const formFields = computed(() => [
 
 // 搜索字段定义
 const searchFields = [
+  {
+    key: 'diagnosis',
+    label: '违规诊断',
+    type: 'select',
+    placeholder: '全部',
+    options: [
+      { value: '', label: '全部' },
+      { value: '1', label: '违规' },
+      { value: '0', label: '非违规' }
+    ]
+  },
   { key: 'keyword', label: '关键词', placeholder: '搜索标题或内容' },
   { key: 'user_display_id', label: '用户小石榴号', placeholder: '搜索用户小石榴号' }
 ]
@@ -211,6 +239,31 @@ const closePreview = () => {
 </script>
 
 <style scoped>
+.violation-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.violation-tag {
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #ff4d4f;
+  background-color: rgba(255, 77, 79, 0.12);
+  border-radius: 999px;
+  cursor: default;
+}
+
+.diagnosis-ok {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #52c41a;
+  background-color: rgba(82, 196, 26, 0.12);
+  border-radius: 999px;
+  cursor: default;
+}
+
 /* 审核预览：只读模式（不改DetailCard源码，直接在此处禁用交互） */
 .audit-detailcard-readonly :deep(.footer-actions) {
   display: none;

@@ -7,7 +7,7 @@ Database name `xiaoshiliu`, 18 tables in total, covering users, content, social 
 - Character set: `utf8mb4`
 - Collation: `utf8mb4_unicode_ci`
 - Storage engine: `InnoDB`
-- Update time: 2026-09-16
+- Update time: 2026-09-19
 
 ## 1. Users Table (users)
 
@@ -77,7 +77,7 @@ Database name `xiaoshiliu`, 18 tables in total, covering users, content, social 
 | collect_count | INT | Collection count, default 0 |
 | comment_count | INT | Comment count, default 0 |
 | created_at | TIMESTAMP | Publish time |
-| status | TINYINT(1) | Post status: 0-published (approved), 1-draft, 2-pending review, default 2 |
+| status | TINYINT(1) | Post status: 0-published (approved), 1-draft, 2-pending review, 3-rejected, default 2 |
 
 **Indexes:** `PRIMARY KEY(id)`, `KEY idx_user_id(user_id)`, `KEY idx_category_id(category_id)`, `KEY idx_created_at(created_at)`, `KEY idx_like_count(like_count)`, `KEY idx_category_id_created_at(category_id, created_at)`
 
@@ -184,11 +184,14 @@ Database name `xiaoshiliu`, 18 tables in total, covering users, content, social 
 | content | TEXT | Comment content |
 | like_count | INT | Like count, default 0 |
 | is_pinned | TINYINT(1) | Pinned flag: 0-no, 1-yes, default 0 |
+| status | TINYINT(1) | Comment status: 0-pending review, 1-visible, 2-rejected, default 1 |
 | created_at | TIMESTAMP | Comment time |
 
-**Indexes:** `PRIMARY KEY(id)`, `KEY idx_post_id(post_id)`, `KEY idx_user_id(user_id)`, `KEY idx_parent_id(parent_id)`, `KEY idx_created_at(created_at)`
+**Indexes:** `PRIMARY KEY(id)`, `KEY idx_post_id(post_id)`, `KEY idx_user_id(user_id)`, `KEY idx_parent_id(parent_id)`, `KEY idx_status(status)`, `KEY idx_created_at(created_at)`
 
 **Foreign keys:** `post_id` → `posts(id)` ON DELETE CASCADE; `user_id` → `users(id)` ON DELETE CASCADE; `parent_id` → `comments(id)` ON DELETE CASCADE
+
+**Notes:** Only `status=1` is visible to everyone; `status=0/2` is visible to the author only (the list queries in `posts.js` / `comments.js` allow the author by `user_id`). Comments with `status=2` have their content replaced with "违规评论". `posts.comment_count` only counts comments with `status=1`.
 
 ## 13. Notifications Table (notifications)
 
@@ -252,6 +255,7 @@ Database name `xiaoshiliu`, 18 tables in total, covering users, content, social 
 | admin_id | BIGINT | Auditor admin ID, foreign key to admin, nullable |
 | type | TINYINT | Audit type: 1-personal verification, 2-official verification, 3-content audit, 4-comment audit |
 | target_id | BIGINT | Target ID; maps to a user, post, or comment ID depending on type |
+| source | TINYINT(1) | Source: 1-publish self-check, 2-user report, 3-scheduled scan, nullable |
 | remark | TEXT | Audit remark, nullable |
 | created_at | TIMESTAMP | Submission time |
 | audit_time | TIMESTAMP | Completion time, nullable |

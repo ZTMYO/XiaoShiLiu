@@ -854,16 +854,17 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
       return res.status(HTTP_STATUS.NOT_FOUND).json({ code: RESPONSE_CODES.NOT_FOUND, message: '笔记不存在' });
     }
 
-    // 获取顶级评论（parent_id为NULL）
+    // 获取顶级评论（parent_id为NULL）：他人只看已过审，本人可看自己的待审/未过审
     const orderBy = sort === 'asc' ? 'ASC' : 'DESC';
     const [rows] = await pool.execute(
       `SELECT c.*, u.nickname, u.avatar as user_avatar, u.id as user_auto_id, u.user_id as user_display_id, u.location as user_location, u.verified
        FROM comments c
        LEFT JOIN users u ON c.user_id = u.id
        WHERE c.post_id = ? AND c.parent_id IS NULL
+         AND (c.status = 1 OR (c.user_id = ? AND c.status IN (0, 2)))
        ORDER BY c.is_pinned DESC, c.created_at ${orderBy}
        LIMIT ? OFFSET ?`,
-      [postId, limit.toString(), offset.toString()]
+      [postId, currentUserId, limit.toString(), offset.toString()]
     );
 
     // 为每个评论检查点赞状态
@@ -880,10 +881,10 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
         likedCommentIds = new Set(likes.map(l => l.target_id.toString()));
       }
 
-      // 批量获取子评论数量
+      // 批量获取子评论数量（与列表可见性规则保持一致）
       const [replyCounts] = await pool.query(
-        'SELECT parent_id, COUNT(*) as count FROM comments WHERE parent_id IN (?) GROUP BY parent_id',
-        [commentIds]
+        'SELECT parent_id, COUNT(*) as count FROM comments WHERE parent_id IN (?) AND (status = 1 OR (user_id = ? AND status IN (0, 2))) GROUP BY parent_id',
+        [commentIds, currentUserId]
       );
       const replyCountMap = {};
       replyCounts.forEach(r => {
@@ -897,7 +898,7 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
       }
     }
 
-    // 获取总数（直接从posts表读取comment_count字段）
+    // 获取总数（posts.comment_count 只统计已过审评论，与前台展示口径一致）
     const [countResult] = await pool.execute(
       'SELECT comment_count as total FROM posts WHERE id = ?',
       [postId]

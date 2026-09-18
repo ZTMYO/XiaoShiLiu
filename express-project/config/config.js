@@ -11,7 +11,7 @@
 const mysql = require('mysql2/promise');
 const path = require('path');
 const crypto = require('crypto');
-require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env'), quiet: true });
 
 
 const config = {

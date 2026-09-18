@@ -16,6 +16,7 @@
             :class="{ active: $route.path === item.path }" :title="isCollapsed && !isExpanded ? item.title : ''">
             <SvgIcon :name="item.icon" class="nav-icon" />
             <span class="nav-text">{{ item.title }}</span>
+            <span v-if="badgeCount(item.path)" class="nav-badge">{{ badgeText(item.path) }}</span>
           </router-link>
         </nav>
 
@@ -100,6 +101,7 @@
                 <DropdownItem v-for="item in menuItems" :key="item.path" @click="() => $router.push(item.path)">
                   <SvgIcon :name="item.icon" class="mobile-menu-icon" />
                   <span class="mobile-menu-text">{{ item.title }}</span>
+                  <span v-if="badgeCount(item.path)" class="nav-badge">{{ badgeText(item.path) }}</span>
                 </DropdownItem>
                 <div class="mobile-menu-divider"></div>
                 <DropdownItem @click="handleLogout">
@@ -128,12 +130,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SvgIcon from '@/components/SvgIcon.vue'
 import ConfirmDialog from '../../components/ConfirmDialog.vue'
 import DropdownItem from '@/components/menu/DropdownItem.vue'
 import DropdownMenu from '@/components/menu/DropdownMenu.vue'
+import { apiConfig } from '@/config/api'
 import { useAdminStore } from '@/stores/admin'
 import { useThemeStore } from '@/stores/theme'
 import { useConfirm } from './composables/useConfirm'
@@ -194,6 +197,8 @@ onMounted(async () => {
       router.push('/admin/login')
     } else {
       localLoginSuccess.value = true
+      loadAuditBadge()
+      auditBadgeTimer = setInterval(loadAuditBadge, 60000)
     }
     setupMobileWatcher()
   } catch (error) {
@@ -269,6 +274,7 @@ const menuItems = [
   { path: '/admin/users', title: '用户管理', icon: 'user' },
   { path: '/admin/posts', title: '笔记管理', icon: 'post' },
   { path: '/admin/post-audit', title: '笔记审核', icon: 'audit' },
+  { path: '/admin/comment-audit', title: '评论审核', icon: 'audit' },
   { path: '/admin/comments', title: '评论管理', icon: 'chat' },
   { path: '/admin/categories', title: '分类管理', icon: 'category' },
   { path: '/admin/tags', title: '标签管理', icon: 'hash' },
@@ -294,6 +300,7 @@ const currentPageDescription = computed(() => {
     '/admin/monitor': '查看系统最近动态和活动监控',
     '/admin/users': '管理用户账户和权限',
     '/admin/post-audit': '管理笔记审核',
+    '/admin/comment-audit': '审核命中违规词的用户评论',
     '/admin/posts': '管理用户发布的笔记内容',
     '/admin/comments': '管理用户评论和回复',
     '/admin/categories': '管理笔记分类和分类信息',
@@ -309,6 +316,39 @@ const currentPageDescription = computed(() => {
   }
   return descriptions[route.path]
 })
+
+// 两类审核队列的待处理数量，用于菜单红点提示
+let auditBadgeTimer = null
+const auditBadge = ref({ posts: 0, comments: 0 })
+const auditBadgePaths = { '/admin/post-audit': 'posts', '/admin/comment-audit': 'comments' }
+
+const loadAuditBadge = async () => {
+  if (!adminStore.token) return
+  try {
+    const headers = { Authorization: `Bearer ${adminStore.token}` }
+    const responses = await Promise.all([
+      fetch(`${apiConfig.baseURL}/admin/posts-audit/stats`, { headers }),
+      fetch(`${apiConfig.baseURL}/admin/comments-audit/stats`, { headers })
+    ])
+    const [postsResult, commentsResult] = await Promise.all(responses.map(res => res.json()))
+    auditBadge.value = {
+      posts: postsResult?.data?.pending || 0,
+      comments: commentsResult?.data?.pending || 0
+    }
+  } catch (error) {
+    console.error('获取待审核数量失败:', error)
+  }
+}
+
+const badgeCount = (path) => {
+  const key = auditBadgePaths[path]
+  return key ? auditBadge.value[key] : 0
+}
+
+const badgeText = (path) => {
+  const count = badgeCount(path)
+  return count > 99 ? '99+' : String(count)
+}
 
 // 获取角色文本
 const getRoleText = (role) => {
@@ -367,6 +407,9 @@ const goBack = () => {
   window.open('/', '_blank')
 }
 
+onUnmounted(() => {
+  if (auditBadgeTimer) clearInterval(auditBadgeTimer)
+})
 
 </script>
 
@@ -799,6 +842,43 @@ const goBack = () => {
 .sidebar.collapsed.expanded .nav-text {
   opacity: 1;
   width: auto;
+}
+
+.nav-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  background-color: #ff4d4f;
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 9px;
+}
+
+/* 收起时只剩图标，红点贴到图标右上角 */
+.sidebar.collapsed .nav-item .nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  margin-left: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.sidebar.collapsed.expanded .nav-item .nav-badge {
+  position: static;
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  line-height: 18px;
 }
 
 .main-content {

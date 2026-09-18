@@ -5,7 +5,7 @@
 - **版本**: v1.3.3
 - **基础URL**: `http://localhost:3001`
 - **数据库**: xiaoshiliu (MySQL)
-- **更新时间**: 2026-09-16
+- **更新时间**: 2026-09-19
 
 ## 通用说明
 
@@ -3161,6 +3161,7 @@ Content-Type: application/json
 | nickname | string | 作者昵称 |
 | tags | array | 标签列表 |
 | images | array | 图片URL列表 |
+| diagnosis | object | 违规诊断结果，仅命中时存在：`title`/`content` 为命中的违规词，`tags` 为命中标签数组，`words` 为命中的全部违规词数组（用于预览高亮） |
 | created_at | datetime | 创建时间 |
 
 #### 6.2 审核通过
@@ -3183,7 +3184,7 @@ Content-Type: application/json
 |------|------|------|------|
 | id | int | 是 | 笔记ID |
 
-**说明**: 将笔记状态更新为草稿（status=1），同时更新审核记录
+**说明**: 将笔记状态更新为未过审（status=3）。按实时诊断结果替换命中违规词的字段：标题替换为「违规标题」、内容替换为「违规内容」、命中违规词的标签连同其与所有笔记的关联一并删除，同时更新审核记录
 
 #### 6.4 批量删除待审核笔记
 **接口地址**: `DELETE /api/admin/posts-audit`
@@ -3193,6 +3194,17 @@ Content-Type: application/json
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | ids | array | 是 | 要删除的笔记ID数组 |
+
+#### 6.5 获取笔记审核统计
+**接口地址**: `GET /api/admin/posts-audit/stats`
+**需要认证**: 是
+
+**响应数据**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| pending | int | 待审核数量（与 6.1 列表同源，即 `posts.status=2` 的笔记数） |
+| approved | int | 审核通过数量（audit 记录聚合） |
+| rejected | int | 审核拒绝数量（audit 记录聚合） |
 
 ### 7. 评论管理
 
@@ -3208,6 +3220,8 @@ Content-Type: application/json
 | content | string | 否 | 内容搜索 |
 | user_display_id | string | 否 | 评论者小石榴号筛选 |
 | post_id | int | 否 | 笔记ID筛选 |
+| id | int | 否 | 评论ID精确筛选 |
+| status | int | 否 | 评论状态筛选：0-待审核，1-正常显示，2-未通过 |
 | sortField | string | 否 | 排序字段（id, like_count, created_at） |
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
@@ -3248,6 +3262,60 @@ Content-Type: application/json
 #### 7.6 获取单个评论详情
 **接口地址**: `GET /api/admin/comments/:id`
 **需要认证**: 是
+
+#### 7.7 获取待审核评论列表
+**接口地址**: `GET /api/admin/comments-audit`
+**需要认证**: 是
+
+**请求参数**: 同 7.1，固定 `status=0`
+
+**响应数据**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | int | 评论ID |
+| content | string | 评论内容 |
+| status | int | 评论状态：0-待审核 |
+| user_id | int | 评论者用户ID |
+| user_display_id | string | 评论者小石榴号 |
+| nickname | string | 评论者昵称 |
+| post_id | int | 所属笔记ID |
+| post_title | string | 所属笔记标题 |
+| parent_id | int | 父评论ID，可为空 |
+| created_at | datetime | 评论时间 |
+| diagnosis | object | 违规诊断结果，仅命中时存在：`content` 为命中的违规词，`words` 为命中的全部违规词数组（用于预览高亮） |
+
+#### 7.8 获取评论审核统计
+**接口地址**: `GET /api/admin/comments-audit/stats`
+**需要认证**: 是
+
+**响应数据**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| pending | int | 待审核数量（与 7.7 列表同源，即 `comments.status=0` 的评论数） |
+| approved | int | 审核通过数量（audit 记录聚合） |
+| rejected | int | 审核拒绝数量（audit 记录聚合） |
+
+#### 7.9 评论审核通过
+**接口地址**: `PUT /api/admin/comments-audit/:id/approve`
+**需要认证**: 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 评论ID |
+
+**说明**: 评论状态更新为正常显示（status=1），补记所属笔记的 `comment_count`，同时更新审核记录
+
+#### 7.10 评论审核拒绝
+**接口地址**: `PUT /api/admin/comments-audit/:id/reject`
+**需要认证**: 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 评论ID |
+
+**说明**: 评论内容替换为「违规评论」并更新为未通过状态（status=2，仅作者本人可见）；若该评论此前已过审，则回退 `comment_count`，同时更新审核记录
 
 ### 8. 标签管理
 

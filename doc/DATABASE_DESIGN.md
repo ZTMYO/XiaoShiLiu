@@ -7,7 +7,7 @@
 - 字符集：`utf8mb4`
 - 排序规则：`utf8mb4_unicode_ci`
 - 存储引擎：`InnoDB`
-- 更新时间：2026-09-16
+- 更新时间：2026-09-19
 
 ## 1. 用户表 (users)
 
@@ -77,7 +77,7 @@
 | collect_count | INT | 收藏数，默认 0 |
 | comment_count | INT | 评论数，默认 0 |
 | created_at | TIMESTAMP | 发布时间 |
-| status | TINYINT(1) | 笔记状态：0-发布（审核通过），1-草稿，2-待审核，默认 2 |
+| status | TINYINT(1) | 笔记状态：0-发布（审核通过），1-草稿，2-待审核，3-未过审，默认 2 |
 
 **索引：** `PRIMARY KEY(id)`、`KEY idx_user_id(user_id)`、`KEY idx_category_id(category_id)`、`KEY idx_created_at(created_at)`、`KEY idx_like_count(like_count)`、`KEY idx_category_id_created_at(category_id, created_at)`
 
@@ -184,11 +184,14 @@
 | content | TEXT | 评论内容 |
 | like_count | INT | 点赞数，默认 0 |
 | is_pinned | TINYINT(1) | 是否置顶：0-否，1-是，默认 0 |
+| status | TINYINT(1) | 评论状态：0-待审核，1-正常显示，2-审核未通过，默认 1 |
 | created_at | TIMESTAMP | 评论时间 |
 
-**索引：** `PRIMARY KEY(id)`、`KEY idx_post_id(post_id)`、`KEY idx_user_id(user_id)`、`KEY idx_parent_id(parent_id)`、`KEY idx_created_at(created_at)`
+**索引：** `PRIMARY KEY(id)`、`KEY idx_post_id(post_id)`、`KEY idx_user_id(user_id)`、`KEY idx_parent_id(parent_id)`、`KEY idx_status(status)`、`KEY idx_created_at(created_at)`
 
 **外键：** `post_id` → `posts(id)` ON DELETE CASCADE；`user_id` → `users(id)` ON DELETE CASCADE；`parent_id` → `comments(id)` ON DELETE CASCADE
+
+**说明：** 只有 `status=1` 对所有人可见；`status=0/2` 仅评论作者本人可见（`posts.js` / `comments.js` 的列表查询按 `user_id` 放行）。`status=2` 的评论内容会被替换为「违规评论」。`posts.comment_count` 只统计 `status=1` 的评论。
 
 ## 13. 通知表 (notifications)
 
@@ -252,6 +255,7 @@
 | admin_id | BIGINT | 审核人 ID，外键关联 admin，可为空 |
 | type | TINYINT | 审核类型：1-用户个人审核，2-用户官方审核，3-内容审核，4-评论审核 |
 | target_id | BIGINT | 目标 ID，按 type 对应用户 ID、笔记 ID 或评论 ID |
+| source | TINYINT(1) | 来源：1-发布自检，2-用户举报，3-定时巡检，可为空 |
 | remark | TEXT | 审核备注，可为空 |
 | created_at | TIMESTAMP | 提交审核时间 |
 | audit_time | TIMESTAMP | 完成审核时间，可为空 |

@@ -219,7 +219,7 @@ SENSITIVE_WORD_CHECK_WHITELIST=
 
 - The detection method is keyword matching; the word list is located at `express-project/scripts/违规词库.txt`, with one word per line
 - Detection scope: XiaoShiLiu ID, user nickname, personal bio, tag names, post titles and content, comments
-- On a match, the content is directly replaced with "违规昵称", "违规内容", "违规标题", "违规评论", "违规标签", and no notification is sent
+- On a match, except for the XiaoShiLiu ID which is automatically reissued with a random code, the content enters a manual audit queue for an administrator to decide: a tag whose name matches is deleted along with its links when rejected, while nicknames, personal bios, post titles and content, and comments are replaced with the corresponding "违规xx" marker when rejected, and no notification is sent
 - User IDs in `SENSITIVE_WORD_CHECK_WHITELIST` are excluded from detection
 - The detection interval is 24 hours; detection runs once when the backend starts and then repeats at that interval, and no task is registered when it is not enabled
 
