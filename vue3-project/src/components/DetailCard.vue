@@ -590,9 +590,9 @@ const commentInput = ref('')
 const videoPlayer = ref(null)
 const mobileVideoPlayer = ref(null)
 const isLiked = computed(() => likeStore.getPostLikeState(props.item.id)?.liked || false)
-const likeCount = computed(() => likeStore.getPostLikeState(props.item.id)?.likeCount || props.item.likeCount || props.item.like_count || 0)
+const likeCount = computed(() => likeStore.getPostLikeState(props.item.id)?.likeCount || props.item.like_count || 0)
 const isCollected = computed(() => collectStore.getPostCollectState(props.item.id)?.collected || false)
-const collectCount = computed(() => collectStore.getPostCollectState(props.item.id)?.collectCount || props.item.collectCount || props.item.collect_count || 0)
+const collectCount = computed(() => collectStore.getPostCollectState(props.item.id)?.collectCount || props.item.collect_count || 0)
 
 const showTooltip = ref(false)
 const imageSectionWidth = ref(400)
@@ -2613,13 +2613,13 @@ const fetchPostDetail = async () => {
       likeStore.initPostLikeState(
         postDetail.id,
         postDetail.liked || false,
-        postDetail.likeCount || postDetail.like_count || 0
+        postDetail.like_count || 0
       )
 
       collectStore.initPostCollectState(
         postDetail.id,
         postDetail.collected || false,
-        postDetail.collectCount || postDetail.collect_count || 0
+        postDetail.collect_count || 0
       )
 
       // 初始化作者的关注状态
@@ -2645,13 +2645,13 @@ const fetchPostDetail = async () => {
     likeStore.initPostLikeState(
       props.item.id,
       props.item.liked || false,
-      props.item.likeCount || props.item.like_count || 0
+      props.item.like_count || 0
     )
 
     collectStore.initPostCollectState(
       props.item.id,
       props.item.collected || false,
-      props.item.collectCount || props.item.collect_count || 0
+      props.item.collect_count || 0
     )
   }
 }
