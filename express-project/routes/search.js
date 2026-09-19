@@ -186,6 +186,8 @@ router.get('/', optionalAuth, async (req, res) => {
         const keywordParams = [`%${keyword}%`, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`];
 
         // 获取keyword搜索结果中的标签统计 - 按数量降序排序
+        // 追加 t.id 作为并列时的稳定次序：count 大量并列时 MySQL 不保证返回顺序，
+        // 否则同一关键词每次请求取出的 top10 子集会不同，导致标签行点击后重排闪跳
         const [tagStatsResult] = await pool.execute(
           `SELECT t.name, COUNT(*) as count
            FROM tags t
@@ -194,7 +196,7 @@ router.get('/', optionalAuth, async (req, res) => {
            LEFT JOIN users u ON p.user_id = u.id
            ${keywordWhereClause}
            GROUP BY t.id, t.name
-           ORDER BY count DESC
+           ORDER BY count DESC, t.id ASC
            LIMIT 10`,
           keywordParams
         );
@@ -223,8 +225,8 @@ router.get('/', optionalAuth, async (req, res) => {
               label: tag,
               count: tagCount[0].count
             });
-            // 重新排序并保持10个限制
-            tagStats.sort((a, b) => b.count - a.count);
+            // 重新排序并保持10个限制（同 count 时按 id 稳定次序，避免顺序抖动）
+            tagStats.sort((a, b) => b.count - a.count || a.id.localeCompare(b.id));
             if (tagStats.length > 10) {
               // 如果选中的标签在排序后还是最后一位且超过了10个，则保留它，去掉倒数第二个
               const tagIndex = tagStats.findIndex(t => t.id === tag);

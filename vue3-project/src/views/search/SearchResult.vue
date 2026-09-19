@@ -178,7 +178,16 @@ async function searchContent(type = 'all', page = 1, limit = 20) {
             }
             
             // 更新当前显示的标签统计
-            tagStats.value = currentTagStatsData
+            // 标签统计是关键词维度的，与 tag 筛选无关：同关键词下点击 tag 沿用缓存，
+            // 避免重新请求后标签行被覆盖成新集合造成重排闪跳
+            const cachedStatsForType = type === 'all' ? cachedAllTagStats.value
+                : type === 'posts' ? cachedPostsTagStats.value
+                : type === 'videos' ? cachedVideosTagStats.value : []
+            if (page === 1 && keyword.value.trim() && keyword.value === cachedKeyword.value && cachedStatsForType.length > 0) {
+                tagStats.value = [...cachedStatsForType]
+            } else {
+                tagStats.value = currentTagStatsData
+            }
 
             if (type === 'users' || (type === 'all' && response.data.users)) {
                 handleUserResults(response.data.users, page)
@@ -205,16 +214,18 @@ async function searchContent(type = 'all', page = 1, limit = 20) {
 
                 // 只缓存第一页：缓存是用来秒开首屏的，翻页数据不该覆盖它
                 if (page === 1 && keyword.value.trim() && postsData && postsData.data && postsData.data.length > 0) {
+                    // 关键词是否变化：标签统计按词缓存，换 tag 不覆盖，保持标签行稳定
+                    const keywordChanged = keyword.value.trim() !== cachedKeyword.value
                     // 根据类型分别缓存数据和标签统计
                     if (type === 'all') {
                         cachedAllPosts.value = postsData.data
-                        cachedAllTagStats.value = currentTagStatsData
+                        if (keywordChanged) cachedAllTagStats.value = currentTagStatsData
                     } else if (type === 'posts') {
                         cachedPostsData.value = postsData.data
-                        cachedPostsTagStats.value = currentTagStatsData
+                        if (keywordChanged) cachedPostsTagStats.value = currentTagStatsData
                     } else if (type === 'videos') {
                         cachedVideosData.value = postsData.data
-                        cachedVideosTagStats.value = currentTagStatsData
+                        if (keywordChanged) cachedVideosTagStats.value = currentTagStatsData
                     }
                     cachedPagination.value[type] = pg || null
                     cachedKeyword.value = keyword.value

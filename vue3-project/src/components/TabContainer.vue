@@ -33,9 +33,12 @@ function tabSelected(item) {
 const updateSlider = () => {
     nextTick(() => {
         const activeIndex = props.tabs.findIndex(tab => tab.id === activeId.value)
-        if (activeIndex === -1 || !tabItems.value[activeIndex]) return
+        if (activeIndex === -1) return
 
-        const tabRect = tabItems.value[activeIndex].getBoundingClientRect()
+        const activeEl = containerRef.value.querySelector('.tab-item.active')
+        if (!activeEl) return
+
+        const tabRect = activeEl.getBoundingClientRect()
         const containerRect = containerRef.value.getBoundingClientRect()
 
         if (containerRect.width === 0 || tabRect.width === 0) {

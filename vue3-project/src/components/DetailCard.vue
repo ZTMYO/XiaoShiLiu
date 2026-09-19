@@ -54,7 +54,7 @@
             @mouseleave="onImageDragEnd" @wheel="onImageWheel" @dragstart.prevent>
             <div class="image-slider" :style="{ transform: `translateX(-${currentImageIndex * 100}%)` }">
               <img v-for="(image, index) in imageList" :key="index" 
-                :src="showContent ? image : (index === 0 ? props.item.image : '')" 
+                :src="showContent ? displaySrc(image) : (index === 0 ? displaySrc(props.item.image) : '')" 
                 :alt="props.item.title || '图片'"
                 @load="handleImageLoad($event, index)" :style="{ objectFit: 'contain' }"
                 class="slider-image image-zoomable" @click="openImageViewer" />
@@ -140,7 +140,7 @@
               <div class="mobile-image-slider" :style="{ transform: `translateX(-${currentImageIndex * 100}%)` }"
                 @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
                 <img v-for="(image, index) in imageList" :key="index" 
-                  :src="showContent ? image : (index === 0 ? props.item.image : '')" 
+                  :src="showContent ? displaySrc(image) : (index === 0 ? displaySrc(props.item.image) : '')" 
                   :alt="`图片 ${index + 1}`"
                   class="mobile-slider-image" @click="openImageViewer" @load="handleImageLoad($event, index)" />
               </div>
@@ -487,6 +487,7 @@ import { commentApi, userApi, postApi, imageUploadApi } from '@/api/index.js'
 import { getPostDetail } from '@/api/posts.js'
 import { useScrollLock } from '@/composables/useScrollLock'
 import { formatTime } from '@/utils/timeFormat'
+import { getThumbnailUrl, supportsThumbnail } from '@/utils/imageUtils.js'
 import defaultAvatar from '@/assets/imgs/avatar.png'
 
 const router = useRouter()
@@ -905,6 +906,24 @@ const imageList = computed(() => {
 })
 
 const hasMultipleImages = computed(() => imageList.value.length > 1)
+
+// 轮播图渐进加载：先显示压缩图秒出，后台预加载高清档后无缝替换（原图留给全屏 ImageViewer）
+const hiResLoaded = ref({}) // 已加载完成的高清档 URL 集合
+function displaySrc(url) {
+  if (!url) return ''
+  if (!supportsThumbnail(url)) return url
+  return hiResLoaded.value[url] ? getThumbnailUrl(url, 1280) : getThumbnailUrl(url, 480)
+}
+function preloadHiRes(url) {
+  if (!url || !supportsThumbnail(url) || hiResLoaded.value[url]) return
+  const img = new Image()
+  img.onload = () => { hiResLoaded.value = { ...hiResLoaded.value, [url]: true } }
+  img.onerror = () => { /* 高清档失败则保持压缩图，不阻塞展示 */ }
+  img.src = getThumbnailUrl(url, 1280)
+}
+watch(imageList, (list) => {
+  list.forEach(preloadHiRes)
+}, { immediate: true })
 
 // 评论图片查看器是否有多张图片
 const commentHasMultipleImages = computed(() => {

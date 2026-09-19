@@ -116,7 +116,19 @@ function search(list, fragments, query, isPinyinInput, limit) {
 
 async function loadCandidates() {
   const [tagResult, postResult, userResult] = await Promise.all([
-    pool.query('SELECT name, use_count FROM tags LIMIT ?', [MAX_TAGS]),
+    // 只加载有效标签：至少被一篇已发布笔记（posts.status=0）使用，避免推荐出点了搜不到结果的空标签
+    pool.query(
+      `SELECT t.name, t.use_count
+         FROM tags t
+        WHERE EXISTS (
+          SELECT 1 FROM post_tags pt
+            JOIN posts p ON p.id = pt.post_id
+           WHERE pt.tag_id = t.id AND p.status = 0
+        )
+        ORDER BY t.use_count DESC
+        LIMIT ?`,
+      [MAX_TAGS]
+    ),
     pool.query("SELECT id, title, like_count FROM posts WHERE status = 0 AND title <> '' ORDER BY like_count DESC LIMIT ?", [MAX_POSTS]),
     pool.query('SELECT user_id, nickname, fans_count FROM users WHERE is_active = 1 ORDER BY id LIMIT ?', [MAX_USERS])
   ])
