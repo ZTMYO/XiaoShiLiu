@@ -2534,6 +2534,14 @@ const adminsCrudConfig = {
       data.password = hashResult[0].hashed_password
     }
     return { isValid: true }
+  },
+
+  // 删除前的自定义校验：不允许删除当前登录的管理员账号
+  beforeDelete: async (id, req) => {
+    if (String(id) === String(req.user?.id)) {
+      return { isValid: false, message: '不能删除当前登录的管理员账号' }
+    }
+    return { isValid: true }
   }
 }
 

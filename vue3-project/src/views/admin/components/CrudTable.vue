@@ -258,7 +258,7 @@
       :loading="formLoading" @submit="submitForm" @close="closeModals" />
 
 
-    <div v-if="loading" class="loading-overlay">
+    <div v-if="showLoadingOverlay" class="loading-overlay">
       <div class="loading-spinner">
         <SvgIcon name="loading" />
         <span>加载中...</span>
@@ -283,7 +283,7 @@ import VideoPlayerModal from './VideoPlayerModal.vue'
 import TagsModal from './TagsModal.vue'
 import PersonalityTagsModal from './PersonalityTagsModal.vue'
 import DropdownSelect from '@/components/DropdownSelect.vue'
-import apiConfig from '@/config/api.js'
+import request from '@/api/request'
 import { useConfirm } from '../composables/useConfirm'
 import messageManager from '@/utils/messageManager'
 
@@ -380,23 +380,29 @@ const { confirmState, handleConfirm, handleCancel, confirmDelete, showError } = 
 // 默认头像
 const defaultAvatar = new URL('@/assets/imgs/avatar.png', import.meta.url).href
 
-// 获取认证头
-const getAuthHeaders = () => {
-  const headers = {
-    'Content-Type': 'application/json'
-  }
-
-  // 统一使用JWT token认证
-  const adminToken = localStorage.getItem('admin_token')
-  if (adminToken) {
-    headers.Authorization = `Bearer ${adminToken}`
-  }
-
-  return headers
-}
-
 const data = ref([])
 const loading = ref(false)
+// 遮罩延迟显示：本地接口响应快，如果请求一发出就盖遮罩，会在像素级形成一闪而过的黑纱；
+// 改为请求超过 250ms 仍未返回才显示，快时完全无感，慢网仍有关怀
+const showLoadingOverlay = ref(false)
+let loadingOverlayTimer = null
+
+const showLoading = () => {
+  loading.value = true
+  if (loadingOverlayTimer) clearTimeout(loadingOverlayTimer)
+  loadingOverlayTimer = setTimeout(() => {
+    if (loading.value) showLoadingOverlay.value = true
+  }, 250)
+}
+
+const hideLoading = () => {
+  loading.value = false
+  showLoadingOverlay.value = false
+  if (loadingOverlayTimer) {
+    clearTimeout(loadingOverlayTimer)
+    loadingOverlayTimer = null
+  }
+}
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showDetailModal = ref(false)
@@ -499,6 +505,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (loadingOverlayTimer) {
+    clearTimeout(loadingOverlayTimer)
+    loadingOverlayTimer = null
+  }
   document.removeEventListener('click', handleClickOutside)
   if (teleportObserver) {
     teleportObserver.disconnect()
@@ -523,7 +533,7 @@ const loadData = async (targetPage = null, useCache = true) => {
   }
 
   if (!targetPage) {
-    loading.value = true
+    showLoading()
   }
 
   try {
@@ -539,20 +549,17 @@ const loadData = async (targetPage = null, useCache = true) => {
       params.append('sortOrder', sortOrder.value)
     }
 
-    // 使用配置的API地址
-    const response = await fetch(`${apiConfig.baseURL}${props.apiEndpoint}?${params}`, {
-      headers: getAuthHeaders()
-    })
-    const result = await response.json()
+    // 使用axios请求
+    const result = await request.get(props.apiEndpoint, { params })
 
-    if (result.code === 200) {
+    if (result.success === true) {
       const responseData = {
-        data: result.data.data || result.data,
-        pagination: result.data.pagination || {
-          page: result.data.page || pageToLoad,
-          limit: result.data.limit || pagination.limit,
-          total: result.data.total || 0,
-          pages: result.data.totalPages || Math.ceil((result.data.total || 0) / (result.data.limit || pagination.limit))
+        data: result.data?.data || result.data,
+        pagination: result.data?.pagination || {
+          page: result.data?.page || pageToLoad,
+          limit: result.data?.limit || pagination.limit,
+          total: result.data?.total || 0,
+          pages: result.data?.totalPages || Math.ceil((result.data?.total || 0) / (result.data?.limit || pagination.limit))
         }
       }
 
@@ -733,12 +740,9 @@ const editItem = async (item) => {
   // 如果是笔记编辑，需要先获取完整的笔记详情
   if (props.apiEndpoint === '/admin/posts') {
     try {
-      const response = await fetch(`${apiConfig.baseURL}${props.apiEndpoint}/${item.id}`, {
-        headers: getAuthHeaders()
-      })
-      const result = await response.json()
+      const result = await request.get(`${props.apiEndpoint}/${item.id}`)
 
-      if (result.code === 200) {
+      if (result.success === true) {
         const fullItem = result.data
         // 创建新的formData对象
         const newFormData = {}
@@ -909,13 +913,8 @@ const deleteItem = async (item) => {
     await confirmDelete(props.entityName)
     // 用户确认删除
     try {
-      const response = await fetch(`${apiConfig.baseURL}${props.apiEndpoint}/${item.id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      })
-
-      const result = await response.json()
-      if (result.code === 200) {
+      const result = await request.delete(`${props.apiEndpoint}/${item.id}`)
+      if (result.success === true) {
         // 清除缓存并刷新数据
         clearCache()
         loadData(null, false)
@@ -941,21 +940,11 @@ const submitForm = async (data) => {
   try {
     // interests字段已经是数组格式，无需额外处理
 
-    const url = showCreateModal.value
-      ? `${apiConfig.baseURL}${props.apiEndpoint}`
-      : `${apiConfig.baseURL}${props.apiEndpoint}/${editingItem.value.id}`
+    const result = showCreateModal.value
+      ? await request.post(props.apiEndpoint, data)
+      : await request.put(`${props.apiEndpoint}/${editingItem.value.id}`, data)
 
-    const method = showCreateModal.value ? 'POST' : 'PUT'
-
-    const response = await fetch(url, {
-      method,
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data)
-    })
-
-    const result = await response.json()
-
-    if (result.code === 200) {
+    if (result.success === true) {
       // 显示成功提示
       const action = showCreateModal.value ? '创建' : '更新'
       messageManager.success(`${props.entityName}${action}成功`)
@@ -1027,12 +1016,9 @@ const closeImageModal = () => {
 const showImageGallery = async (postId) => {
   loadingGallery.value = postId
   try {
-    const response = await fetch(`${apiConfig.baseURL}/admin/posts/${postId}`, {
-      headers: getAuthHeaders()
-    })
-    const result = await response.json()
+    const result = await request.get(`/admin/posts/${postId}`)
 
-    if (result.code === 200) {
+    if (result.success === true) {
       // 从笔记详情中提取图片信息，转换为原来的格式
       const images = result.data.images.map((imageUrl, index) => ({
         id: index + 1,
@@ -1066,12 +1052,9 @@ const showMediaGallery = async (item) => {
     // 视频笔记，显示视频播放器
     loadingGallery.value = item.id
     try {
-      const response = await fetch(`${apiConfig.baseURL}/admin/posts/${item.id}`, {
-        headers: getAuthHeaders()
-      })
-      const result = await response.json()
+      const result = await request.get(`/admin/posts/${item.id}`)
 
-      if (result.code === 200) {
+      if (result.success === true) {
         currentVideoUrl.value = result.data.video_url || ''
         currentPosterUrl.value = result.data.images && result.data.images[0] ? result.data.images[0] : ''
         showVideoModalVisible.value = true
@@ -1116,26 +1099,15 @@ const closeTagsModal = () => {
 const showPersonalityTags = async (item) => {
   try {
     // 调用API获取个性标签数据
-    const response = await fetch(`${apiConfig.baseURL}/users/${item.user_id}/personality-tags`, {
-      headers: getAuthHeaders()
-    })
+    const result = await request.get(`/users/${item.user_id}/personality-tags`)
 
-    if (response.ok) {
-      const result = await response.json()
-      if (result.code === 200) {
-        currentUserData.value = {
-          ...item,
-          personalityTags: result.data
-        }
-      } else {
-        console.error('获取个性标签失败:', result.message)
-        currentUserData.value = {
-          ...item,
-          personalityTags: null
-        }
+    if (result.success === true) {
+      currentUserData.value = {
+        ...item,
+        personalityTags: result.data
       }
     } else {
-      console.error('API请求失败:', response.status)
+      console.error('获取个性标签失败:', result.message)
       currentUserData.value = {
         ...item,
         personalityTags: null
@@ -1248,28 +1220,21 @@ const batchDelete = async () => {
     await confirmDelete(props.entityName, selectedItems.value.length)
     // 用户确认删除
     try {
-      const response = await fetch(`${apiConfig.baseURL}${props.apiEndpoint}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
+      const result = await request.delete(props.apiEndpoint, {
+        data: {
           ids: selectedItems.value
-        })
+        }
       })
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
-      if (result.code === 200) {
-        selectedItems.value = []
-        batchMode.value = false
-        // 清除缓存并刷新数据
-        clearCache()
-        loadData(null, false)
-      } else {
+      if (!result.success) {
         throw new Error(result.message || '删除失败')
       }
+
+      selectedItems.value = []
+      batchMode.value = false
+      // 清除缓存并刷新数据
+      clearCache()
+      loadData(null, false)
     } catch (error) {
       console.error('批量删除失败:', error)
       if (error !== false) {

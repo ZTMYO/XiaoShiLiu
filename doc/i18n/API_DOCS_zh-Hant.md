@@ -3378,7 +3378,7 @@ Authorization: Bearer <access_token>
 ```
 
 #### 15.2 獲取管理員清單
-**接口地址**: `GET /api/admin/admins` 或 `GET /api/auth/admin/admins`
+**接口地址**: `GET /api/admin/admins`
 **需要認證**: 是
 
 **請求參數**:
@@ -3391,30 +3391,34 @@ Authorization: Bearer <access_token>
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
 #### 15.3 創建管理員
-**接口地址**: `POST /api/admin/admins` 或 `POST /api/auth/admin/admins`
+**接口地址**: `POST /api/admin/admins`
 **需要認證**: 是
 
 **請求參數**:
 | 參數 | 類型 | 必填 | 說明 |
 |------|------|------|------|
 | username | string | 是 | 管理員用戶名 |
-| password | string | 是 | 管理員密碼 |
+| password | string | 是 | 管理員密碼（SHA2 加密存儲） |
 
 #### 15.4 更新管理員
-**接口地址**: `PUT /api/admin/admins/:id` 或 `PUT /api/auth/admin/admins/:id`
+**接口地址**: `PUT /api/admin/admins/:id`
 **需要認證**: 是
 
+**說明**: 傳 `password` 字段可重置管理員密碼（SHA2 加密存儲）
+
 #### 15.5 刪除管理員
-**接口地址**: `DELETE /api/admin/admins/:id` 或 `DELETE /api/auth/admin/admins/:id`
+**接口地址**: `DELETE /api/admin/admins/:id`
 **需要認證**: 是
 
 #### 15.6 批量刪除管理員
-**接口地址**: `DELETE /api/admin/admins` 或 `DELETE /api/auth/admin/admins`
+**接口地址**: `DELETE /api/admin/admins`
 **需要認證**: 是
 
-#### 15.7 修改管理員密碼
-**接口地址**: `PUT /api/auth/admin/admins/:id/password`
-**需要認證**: 是（JWT）
+**說明**: 請求體為 `{ "ids": [...] }`
+
+#### 15.7 獲取單個管理員
+**接口地址**: `GET /api/admin/admins/:id`
+**需要認證**: 是
 
 ### 16. 監控管理
 

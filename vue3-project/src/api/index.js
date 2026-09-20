@@ -764,62 +764,26 @@ export const adminApi = {
     return request.get('/admin/admins', { params })
   },
 
-  // 获取管理员列表（认证路由）
-  getAdminsAuth(params = {}) {
-    return request.get('/auth/admin/admins', { params })
-  },
-
-  // 创建管理员
   createAdmin(data) {
     return request.post('/admin/admins', data)
   },
 
-  // 创建管理员（认证路由）
-  createAdminAuth(data) {
-    return request.post('/auth/admin/admins', data)
-  },
-
-  // 更新管理员信息
   updateAdmin(adminId, data) {
     return request.put(`/admin/admins/${adminId}`, data)
   },
 
-  // 更新管理员信息（认证路由）
-  updateAdminAuth(adminId, data) {
-    return request.put(`/auth/admin/admins/${adminId}`, data)
-  },
-
-  // 删除管理员
   deleteAdmin(adminId) {
     return request.delete(`/admin/admins/${adminId}`)
   },
 
-  // 删除管理员（认证路由）
-  deleteAdminAuth(adminId) {
-    return request.delete(`/auth/admin/admins/${adminId}`)
-  },
-
-  // 批量删除管理员
   batchDeleteAdmins(ids) {
     return request.delete('/admin/admins', { data: { ids } })
   },
 
-  // 批量删除管理员（认证路由）
-  batchDeleteAdminsAuth(ids) {
-    return request.delete('/auth/admin/admins', { data: { ids } })
-  },
-
-  // 获取单个管理员详情
   getAdminDetail(adminId) {
     return request.get(`/admin/admins/${adminId}`)
   },
 
-  // 获取单个管理员详情（认证路由）
-  getAdminDetailAuth(adminId) {
-    return request.get(`/auth/admin/admins/${adminId}`)
-  },
-
-  // 获取动态
   getMonitorActivities() {
     return request.get('/admin/monitor/activities')
   }

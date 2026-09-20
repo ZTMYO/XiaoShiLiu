@@ -3380,7 +3380,7 @@ Administrator interfaces use JWT authentication:
 ```
 
 #### 15.2 Get Admin List
-**API Endpoint**: `GET /api/admin/admins` or `GET /api/auth/admin/admins`
+**API Endpoint**: `GET /api/admin/admins`
 **Authentication Required**: Yes
 
 **Request Parameters**:
@@ -3393,30 +3393,34 @@ Administrator interfaces use JWT authentication:
 | sortOrder | string | No | Sorting direction (ASC, DESC) |
 
 #### 15.3 Create Admin
-**API Endpoint**: `POST /api/admin/admins` or `POST /api/auth/admin/admins`
+**API Endpoint**: `POST /api/admin/admins`
 **Authentication Required**: Yes
 
 **Request Parameters**:
 | Parameter | Type | Required | Description |
 |------|------|------|------|
 | username | string | Yes | Admin username |
-| password | string | Yes | Admin password |
+| password | string | Yes | Admin password (stored with SHA2 hash) |
 
 #### 15.4 Update Admin
-**API Endpoint**: `PUT /api/admin/admins/:id` or `PUT /api/auth/admin/admins/:id`
+**API Endpoint**: `PUT /api/admin/admins/:id`
 **Authentication Required**: Yes
 
+**Description**: Pass the `password` field to reset the admin password (stored with SHA2 hash)
+
 #### 15.5 Delete Admin
-**API Endpoint**: `DELETE /api/admin/admins/:id` or `DELETE /api/auth/admin/admins/:id`
+**API Endpoint**: `DELETE /api/admin/admins/:id`
 **Authentication Required**: Yes
 
 #### 15.6 Bulk Delete Admins
 **API Endpoint**: `DELETE /api/admin/admins`
 **Authentication Required**: Yes
 
-#### 15.7 Modify Admin Password
-**API Endpoint**: `PUT /api/auth/admin/admins/:id/password`
-**Authentication Required**: Yes (JWT)
+**Description**: Request body is `{ "ids": [...] }`
+
+#### 15.7 Get Single Admin
+**API Endpoint**: `GET /api/admin/admins/:id`
+**Authentication Required**: Yes
 
 ### 16. Monitoring Management
 

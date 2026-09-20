@@ -3715,7 +3715,7 @@ Content-Type: application/json
 ```
 
 #### 15.2 获取管理员列表
-**接口地址**: `GET /api/admin/admins` 或 `GET /api/auth/admin/admins`
+**接口地址**: `GET /api/admin/admins`
 **需要认证**: 是
 
 **请求参数**:
@@ -3728,30 +3728,34 @@ Content-Type: application/json
 | sortOrder | string | 否 | 排序方向（ASC, DESC） |
 
 #### 15.3 创建管理员
-**接口地址**: `POST /api/admin/admins` 或 `POST /api/auth/admin/admins`
+**接口地址**: `POST /api/admin/admins`
 **需要认证**: 是
 
 **请求参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | username | string | 是 | 管理员用户名 |
-| password | string | 是 | 管理员密码 |
+| password | string | 是 | 管理员密码（SHA2 加密存储） |
 
 #### 15.4 更新管理员
-**接口地址**: `PUT /api/admin/admins/:id` 或 `PUT /api/auth/admin/admins/:id`
+**接口地址**: `PUT /api/admin/admins/:id`
 **需要认证**: 是
 
+**说明**: 传 `password` 字段可重置管理员密码（SHA2 加密存储）
+
 #### 15.5 删除管理员
-**接口地址**: `DELETE /api/admin/admins/:id` 或 `DELETE /api/auth/admin/admins/:id`
+**接口地址**: `DELETE /api/admin/admins/:id`
 **需要认证**: 是
 
 #### 15.6 批量删除管理员
-**接口地址**: `DELETE /api/admin/admins` 或 `DELETE /api/auth/admin/admins`
+**接口地址**: `DELETE /api/admin/admins`
 **需要认证**: 是
 
-#### 15.7 修改管理员密码
-**接口地址**: `PUT /api/auth/admin/admins/:id/password`
-**需要认证**: 是（JWT）
+**说明**: 请求体为 `{ "ids": [...] }`
+
+#### 15.7 获取单个管理员
+**接口地址**: `GET /api/admin/admins/:id`
+**需要认证**: 是
 
 ### 16. 监控管理
 
