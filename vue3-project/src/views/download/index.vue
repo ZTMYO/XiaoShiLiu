@@ -25,7 +25,7 @@ const openGithub = () => window.open(GITHUB_URL, '_blank', 'noopener')
     <main class="download-main">
       <h1 class="download-title">小石榴图文社区</h1>
       <p class="download-desc">
-        让你的创作、分享与交流简单、清晰、高效。
+        让你的创作、分享与交流简单、清晰、高效
       </p>
 
       <div class="download-actions">

@@ -23,7 +23,6 @@ export const RESPONSE_CODES = {
 
 // 图片描述前缀：标记这张图是用「文字配图」工具生成的纯文字卡片。
 // 描述内容就是用户填的那段字，没有画面信息，检索时需要区别对待。
-// 改动这个字符串必须同步 backup/sim-scripts/image-tool.js 与 RAG 检索侧。
 export const TEXT_IMAGE_DESC_PREFIX = '[文字配图] '
 
 // 错误消息常量

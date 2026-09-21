@@ -78,7 +78,8 @@
             {{ unifiedMessage }}
           </div>
 
-          <button type="submit" class="submit-btn" :disabled="isSubmitting" :class="{ 'loading': isSubmitting }">
+          <button type="submit" class="submit-btn" :disabled="isSubmitting || !isFormValid"
+            :class="{ 'loading': isSubmitting }">
             <span v-if="isSubmitting" class="loading-spinner"></span>
             {{ isSubmitting ? '加载中...' : (isLoginMode ? '登录' : '注册') }}
           </button>
@@ -747,7 +748,7 @@ onMounted(() => {
   min-height: 48px;
 }
 
-.submit-btn:hover {
+.submit-btn:hover:not(:disabled) {
   background-color: var(--primary-color-dark);
 }
 

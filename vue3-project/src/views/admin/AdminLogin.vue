@@ -1,24 +1,32 @@
 <template>
   <div class="admin-login-page">
+    <div class="blur-balls" aria-hidden="true">
+      <span class="ball ball-1"></span>
+      <span class="ball ball-2"></span>
+      <span class="ball ball-3"></span>
+      <span class="ball ball-4"></span>
+      <span class="ball ball-5"></span>
+      <span class="ball ball-6"></span>
+      <span class="ball ball-7"></span>
+    </div>
+
     <aside class="login-brand">
-      <div class="logo" @click="router.push('/')" title="返回主站">
+      <div class="logo" @click="goHome" title="返回主站">
         <img :src="logoUrl" alt="小石榴" />
       </div>
       <div class="brand-inner">
-        <h1 class="brand-title">小石榴图文社区</h1>
-        <p class="brand-slogan">让你的创作、分享与交流简单、清晰、高效。</p>
-        <p class="brand-meta">Vue3 + Express + MySQL · GPLv3 开源</p>
+        <h1 class="brand-title">小石榴 · 后台管理系统</h1>
+        <p class="brand-slogan">让你的创作、分享与交流简单、清晰、高效</p>
       </div>
     </aside>
 
     <div class="login-container">
       <div class="login-card">
         <div class="login-header">
-          <h2 class="login-title">小石榴管理后台</h2>
-          <p class="login-subtitle">请使用管理员账号登录</p>
+          <h2 class="login-title">请使用管理员账号登录</h2>
         </div>
 
-        <div v-if="unifiedMessage" class="message" :class="messageType">
+        <div v-if="unifiedMessage" class="message error">
           {{ unifiedMessage }}
         </div>
 
@@ -41,18 +49,20 @@
             <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
           </div>
 
-          <button type="submit" class="login-button" :disabled="isSubmitting">
+          <button type="submit" class="login-button" :disabled="isSubmitting || !isFormValid">
             <span v-if="isSubmitting">登录中...</span>
             <span v-else>登录</span>
           </button>
         </form>
       </div>
     </div>
+
+    <footer class="page-footer">XIAOSHILIU · UGC COMMUNITY ADMIN CONSOLE</footer>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from '@/stores/admin'
 
@@ -63,6 +73,9 @@ const router = useRouter()
 const adminStore = useAdminStore()
 
 const logoUrl = new URL('@/assets/imgs/小石榴.png', import.meta.url).href
+
+// 后台在独立窗口打开，主站以新标签页返回，避免丢失登录页上下文
+const goHome = () => window.open('/', '_blank', 'noopener')
 
 // 响应式数据
 const isSubmitting = ref(false)
@@ -79,6 +92,11 @@ const formData = reactive({
 const errors = reactive({
   username: '',
   password: ''
+})
+
+// 必填项满足最低长度才允许提交，避免在空表单上反复试错
+const isFormValid = computed(() => {
+  return formData.username.trim().length >= 2 && formData.password.length >= 6
 })
 
 // 清除错误信息
@@ -127,21 +145,13 @@ const handleSubmit = async () => {
     })
 
     if (result.success) {
-      unifiedMessage.value = '登录成功，正在跳转...'
-      messageType.value = 'success'
-
-      // 延迟跳转，让用户看到成功提示
-      setTimeout(() => {
-        router.push('/admin/monitor')
-      }, 1000)
+      router.push('/admin/monitor')
     } else {
       unifiedMessage.value = result.message || '登录失败，请检查用户名和密码'
-      messageType.value = 'error'
     }
   } catch (error) {
     console.error('登录错误:', error)
     unifiedMessage.value = error.message || '登录失败，请稍后重试'
-    messageType.value = 'error'
   } finally {
     isSubmitting.value = false
   }
@@ -150,83 +160,165 @@ const handleSubmit = async () => {
 
 <style scoped>
 .admin-login-page {
+  /* 后台登录页固定亮色，不跟随全局暗色主题 */
+  --bg-color-primary: #fff;
+  --bg-color-secondary: #f7f7f7;
+  --text-color-primary: #333;
+  --text-color-secondary: #5c5c5c;
+  --text-color-tertiary: #858585;
+  --text-color-quaternary: #bbbbbb;
+  --border-color-primary: #ebebeb;
+  --shadow-color: rgba(0, 0, 0, 0.08);
+  --button-text-color: #fff;
+  position: relative;
   display: flex;
   width: 100%;
   min-height: 100vh;
+  overflow: hidden;
   background: var(--bg-color-primary);
+}
+
+/* ===== 背景虚化小球 ===== */
+.blur-balls {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ball {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.ball-1 {
+  width: 520px;
+  height: 520px;
+  top: -180px;
+  left: -140px;
+  background: var(--primary-color);
+  opacity: 0.5;
+  animation: ball-drift-a 22s ease-in-out infinite alternate;
+}
+
+.ball-2 {
+  width: 400px;
+  height: 400px;
+  top: 6%;
+  left: 26%;
+  background: #ff5f7e;
+  opacity: 0.42;
+  animation: ball-drift-b 26s ease-in-out infinite alternate;
+}
+
+.ball-3 {
+  width: 420px;
+  height: 420px;
+  top: -60px;
+  right: -120px;
+  background: #7aa2ff;
+  opacity: 0.45;
+  animation: ball-drift-c 24s ease-in-out infinite alternate;
+}
+
+.ball-4 {
+  width: 380px;
+  height: 380px;
+  bottom: -140px;
+  left: 14%;
+  background: var(--primary-color-dark);
+  opacity: 0.4;
+  animation: ball-drift-b 30s ease-in-out infinite alternate-reverse;
+}
+
+.ball-5 {
+  width: 260px;
+  height: 260px;
+  top: 40%;
+  left: 46%;
+  background: #7ee0c0;
+  opacity: 0.4;
+  animation: ball-drift-a 21s ease-in-out infinite alternate-reverse;
+}
+
+.ball-6 {
+  width: 300px;
+  height: 300px;
+  bottom: 4%;
+  right: 6%;
+  background: #ffc46b;
+  opacity: 0.42;
+  animation: ball-drift-c 19s ease-in-out infinite alternate;
+}
+
+.ball-7 {
+  width: 240px;
+  height: 240px;
+  top: 34%;
+  right: 28%;
+  background: #b18cff;
+  opacity: 0.38;
+  animation: ball-drift-a 28s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes ball-drift-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(90px, 60px, 0) scale(1.12);
+  }
+
+  100% {
+    transform: translate3d(-40px, 120px, 0) scale(0.95);
+  }
+}
+
+@keyframes ball-drift-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-120px, 80px, 0) scale(0.9);
+  }
+
+  100% {
+    transform: translate3d(60px, -60px, 0) scale(1.15);
+  }
+}
+
+@keyframes ball-drift-c {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(70px, -90px, 0) scale(1.18);
+  }
+
+  100% {
+    transform: translate3d(-80px, 40px, 0) scale(0.92);
+  }
 }
 
 /* ===== 左侧品牌区 ===== */
 .login-brand {
   position: relative;
-  flex: 0 0 58%;
-  max-width: 760px;
-  min-height: 100vh;
+  z-index: 1;
+  flex: 0 0 54%;
+  max-width: 720px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   padding: 48px 64px 72px;
   box-sizing: border-box;
-  overflow: hidden;
-  background: var(--bg-color-secondary);
-}
-
-/* 主题色柔光，避免大面积浅色底显得空 */
-.login-brand::before,
-.login-brand::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  will-change: transform;
-}
-
-.login-brand::before {
-  width: 520px;
-  height: 520px;
-  top: -180px;
-  right: -140px;
-  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
-  filter: blur(90px);
-  animation: brand-drift-a 24s ease-in-out infinite alternate;
-}
-
-.login-brand::after {
-  width: 420px;
-  height: 420px;
-  bottom: -180px;
-  left: -120px;
-  background: color-mix(in srgb, var(--primary-color) 7%, transparent);
-  filter: blur(90px);
-  animation: brand-drift-b 28s ease-in-out infinite alternate-reverse;
-}
-
-@keyframes brand-drift-a {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(-60px, 50px, 0) scale(1.12);
-  }
-  100% {
-    transform: translate3d(40px, 90px, 0) scale(0.95);
-  }
-}
-
-@keyframes brand-drift-b {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(70px, -50px, 0) scale(1.1);
-  }
-  100% {
-    transform: translate3d(-50px, -90px, 0) scale(0.92);
-  }
 }
 
 .brand-inner {
-  position: relative;
   max-width: 420px;
   margin: auto 0;
 }
@@ -247,29 +339,34 @@ const handleSubmit = async () => {
   color: var(--text-color-secondary);
 }
 
-.brand-meta {
-  margin: 32px 0 0;
-  font-size: 13px;
-  color: var(--text-color-tertiary);
-}
-
 /* ===== 右侧表单区 ===== */
 .login-container {
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 48px 64px 48px 0;
   box-sizing: border-box;
 }
 
 .login-card {
   width: 100%;
   max-width: 380px;
+  padding: 32px 28px 34px;
+  box-sizing: border-box;
+  border-radius: 20px;
+  background:
+    radial-gradient(18% 46% at 16% -6%,
+      color-mix(in srgb, #7ee0c0 18%, transparent) 0%,
+      transparent 100%),
+    var(--bg-color-primary);
+  box-shadow: 0 20px 48px var(--shadow-color);
 }
 
 .login-header {
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .logo {
@@ -306,12 +403,6 @@ const handleSubmit = async () => {
   border-radius: 10px;
   font-size: 13px;
   margin-bottom: 20px;
-}
-
-.message.success {
-  background: var(--bg-color-secondary);
-  color: #38a169;
-  border: 1px solid #9ae6b4;
 }
 
 .message.error {
@@ -399,6 +490,22 @@ const handleSubmit = async () => {
   cursor: not-allowed;
 }
 
+.page-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 28px;
+  z-index: 1;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-color-secondary);
+  pointer-events: none;
+  user-select: none;
+}
+
 @media (max-width: 900px) {
   .login-brand {
     display: none;
@@ -406,6 +513,12 @@ const handleSubmit = async () => {
 
   .login-container {
     padding: 40px 20px;
+  }
+
+  .page-footer {
+    bottom: 20px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
   }
 }
 </style>
