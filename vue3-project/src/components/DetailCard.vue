@@ -433,11 +433,7 @@
 
 
 
-    <div v-if="showEmojiPanel" class="emoji-panel-overlay" v-click-outside="closeEmojiPanel">
-      <div class="emoji-panel" @click.stop>
-        <EmojiPicker @select="handleEmojiSelect" />
-      </div>
-    </div>
+    <EmojiPanel v-if="showEmojiPanel" @select="handleEmojiSelect" @close="closeEmojiPanel" />
     <MentionModal :visible="showMentionPanel" @close="closeMentionPanel" @select="handleMentionSelect" />
 
     <!-- 图片上传模态框 -->
@@ -465,7 +461,7 @@ import SvgIcon from './SvgIcon.vue'
 import FollowButton from './FollowButton.vue'
 import LikeButton from './LikeButton.vue'
 import MessageToast from './MessageToast.vue'
-import EmojiPicker from '@/components/EmojiPicker.vue'
+import EmojiPanel from '@/components/EmojiPanel.vue'
 import MentionModal from '@/components/mention/MentionModal.vue'
 import ContentRenderer from './ContentRenderer.vue'
 import ContentEditableInput from './ContentEditableInput.vue'
@@ -2419,8 +2415,6 @@ const handleEmojiSelect = (emoji) => {
       commentInput.value += emojiChar
     }
   })
-
-  closeEmojiPanel()
 }
 
 const handleMentionSelect = (friend) => {
@@ -4389,27 +4383,7 @@ function handleAvatarError(event) {
 
 /* 表情面板样式 */
 .emoji-panel-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  animation: fadeIn 0.2s ease;
-}
-
-.emoji-panel {
-  background: var(--bg-color-primary);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  animation: scaleIn 0.2s ease;
-  max-width: 90vw;
-  max-height: 80vh;
+  --ep-overlay-z: 2000;
 }
 
 @keyframes fadeIn {
@@ -4897,8 +4871,7 @@ function handleAvatarError(event) {
 
   /* 表情面板在移动端的调整 */
   .emoji-panel-overlay {
-    padding: 0;
-    z-index: 2500;
+    --ep-overlay-z: 2500;
   }
 
   .action-buttons {

@@ -76,7 +76,7 @@
 
         <div class="input-section">
           <input v-model="form.title" type="text" class="title-input" placeholder="请输入标题" maxlength="100"
-            @input="validateForm" />
+            @input="validateForm" @paste="handleTitlePaste" />
           <div class="char-count">{{ form.title.length }}/100</div>
         </div>
 
@@ -96,11 +96,7 @@
           </div>
           <div class="char-count">{{ form.content.length }}/2000</div>
 
-          <div v-if="showEmojiPanel" class="emoji-panel-overlay" v-click-outside="closeEmojiPanel">
-            <div class="emoji-panel" @click.stop>
-              <EmojiPicker @select="handleEmojiSelect" />
-            </div>
-          </div>
+          <EmojiPanel v-if="showEmojiPanel" @select="handleEmojiSelect" @close="closeEmojiPanel" />
 
           <MentionModal :visible="showMentionPanel" @close="closeMentionPanel" @select="handleMentionSelect" />
         </div>
@@ -144,6 +140,7 @@ import { createPost, getPostDetail, updatePost, deletePost } from '@/api/posts'
 import { getCategories } from '@/api/categories'
 import { useScrollLock } from '@/composables/useScrollLock'
 import { hasMentions, cleanMentions } from '@/utils/mentionParser'
+import { hasStickerMarker, stripStickerMarkers, stickerMarkersToText } from '@/utils/inlineSticker'
 
 import MultiImageUpload from '@/components/MultiImageUpload.vue'
 import VideoUpload from '@/components/VideoUpload.vue'
@@ -151,7 +148,7 @@ import SvgIcon from '@/components/SvgIcon.vue'
 import TagSelector from '@/components/TagSelector.vue'
 import DropdownSelect from '@/components/DropdownSelect.vue'
 import MessageToast from '@/components/MessageToast.vue'
-import EmojiPicker from '@/components/EmojiPicker.vue'
+import EmojiPanel from '@/components/EmojiPanel.vue'
 import MentionModal from '@/components/mention/MentionModal.vue'
 import ContentEditableInput from '@/components/ContentEditableInput.vue'
 import TextImageModal from '@/views/publish/components/TextImageModal.vue'
@@ -283,6 +280,25 @@ const validateForm = () => {
   return true
 }
 
+// 标题是纯文本，粘进来的表情包标记直接过滤掉（整段只有表情时等于什么都没粘）
+const handleTitlePaste = (event) => {
+  const text = event.clipboardData?.getData('text/plain') || ''
+  if (!hasStickerMarker(text)) return
+
+  event.preventDefault()
+  const input = event.target
+  const cleaned = stripStickerMarkers(text)
+  const start = input.selectionStart ?? form.title.length
+  const end = input.selectionEnd ?? start
+  const next = (input.value.slice(0, start) + cleaned + input.value.slice(end)).slice(0, 100)
+
+  form.title = next
+  nextTick(() => {
+    input.selectionStart = input.selectionEnd = Math.min(start + cleaned.length, next.length)
+  })
+  validateForm()
+}
+
 const showMessage = (message, type = 'success') => {
   toastMessage.value = message
   toastType.value = type
@@ -349,8 +365,9 @@ const handleTextImageGenerate = async (data) => {
   if (imageComponent && data.imageFile) {
     try {
       // 使用addFiles方法添加图片文件
-      // 生成这张图时用的文字一并带过去，加前缀标记它是文字卡片，作为图片描述存库
-      await imageComponent.addFiles([data.imageFile], [TEXT_IMAGE_DESC_PREFIX + data.text])
+      // 生成这张图时用的文字一并带过去，加前缀标记它是文字卡片，作为图片描述存库；
+      // 行内表情在描述里换成中文名（如「今天好开心[大笑]」），便于 RAG 检索
+      await imageComponent.addFiles([data.imageFile], [TEXT_IMAGE_DESC_PREFIX + stickerMarkersToText(data.text)])
       showMessage('文字配图生成成功！', 'success')
     } catch (error) {
       console.error('添加图片失败:', error)
@@ -429,8 +446,6 @@ const handleEmojiSelect = (emoji) => {
       }
     })
   }
-
-  closeEmojiPanel()
 }
 
 // 处理好友选择
@@ -1210,27 +1225,7 @@ const handleSaveDraft = async () => {
 }
 
 .emoji-panel-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease;
-}
-
-.emoji-panel {
-  background: var(--bg-color-primary);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  animation: scaleIn 0.2s ease;
-  max-width: 90vw;
-  max-height: 80vh;
+  --ep-overlay-z: 1000;
 }
 
 @keyframes fadeIn {

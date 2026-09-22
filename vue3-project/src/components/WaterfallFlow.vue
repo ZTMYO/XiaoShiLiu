@@ -781,7 +781,12 @@ const cleanup = () => {
 
 onUnmounted(cleanup)
 
+// 卡片链接地址：与 onCardClick 里推入的 URL 一致
+const postUrl = (item) => `/post?id=${item.id}`
+
 function onCardClick(item, event) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+    event.preventDefault()
     // 记录点击位置
     clickPosition.value = {
         x: event.clientX,
@@ -970,15 +975,17 @@ function handleImageError(event) {
 
 
                     <div class="item-content" :class="{ 'content-hidden': !isItemFullyLoaded(item.id) }">
-                        <div class="content-img" @click="onCardClick(item, $event)">
-                            <img v-img-lazy="getThumbnailUrl(item.image, 480)" alt="" class="lazy-image" @error="handleImageError"
+                        <a class="content-img" :href="postUrl(item)" @click="onCardClick(item, $event)">
+                            <img v-img-lazy="getThumbnailUrl(item.image, 480)" alt="" class="lazy-image"
+                                draggable="false" @error="handleImageError"
                                 @load="onImageLoaded(item.id, 'imageLoaded')">
                             <!-- 视频笔记标志 -->
                             <div v-if="item.type === 2" class="video-indicator">
                                 <SvgIcon name="play" width="12" height="12" />
                             </div>
-                        </div>
-                        <div class="content-title">{{ item.title }}</div>
+                        </a>
+                        <a class="content-title" :href="postUrl(item)"
+                            @click="onCardClick(item, $event)">{{ item.title }}</a>
                         <div class="contentlist">
                             <img v-img-lazy="getThumbnailUrl(item.avatar, 120)" alt="" class="lazy-avatar clickable-avatar"
                                 @error="handleAvatarError" @load="onImageLoaded(item.id, 'avatarLoaded')"
@@ -1125,6 +1132,9 @@ function handleImageError(event) {
 
 .content-img {
     cursor: pointer;
+    display: block;
+    text-decoration: none;
+    color: inherit;
     /* 优化图片容器的渲染 */
     position: relative;
     overflow: hidden;
@@ -1210,6 +1220,8 @@ function handleImageError(event) {
 .content-title {
     margin: 5px 10px;
     font-size: 14px;
+    text-decoration: none;
+    color: inherit;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;

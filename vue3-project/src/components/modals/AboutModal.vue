@@ -46,7 +46,7 @@
               <li><strong>体验优化：</strong>骨架屏、懒加载、预加载、无障碍与响应式适配</li>
               <li><strong>组件与分层：</strong>可复用组件拆分、按领域分组与别名引入</li>
               <li><strong>后台管理：</strong>基础CRUD、数据管理与配置面板，支持后续扩展权限与统计</li>
-              <li><strong>第三方库：</strong>VueUse、Cropper.js、vue3-emoji-picker、svg-captcha等的集成与实践</li>
+              <li><strong>第三方库：</strong>VueUse、Cropper.js、svg-captcha等的集成与实践</li>
             </ul>
           </div>
 

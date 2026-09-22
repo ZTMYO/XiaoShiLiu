@@ -19,8 +19,7 @@
 
       <div class="post-text-content" @click="goToPostDetail">
         <h3 class="post-title">{{ post.title }}</h3>
-        <p class="post-content">
-          {{ truncateContent(post.content) }}
+        <p class="post-content" v-html="contentHtml">
         </p>
       </div>
 
@@ -69,8 +68,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import SvgIcon from './SvgIcon.vue'
 import defaultPlaceholder from '@/assets/imgs/未加载.png'
+import { hydrateStickers } from '@/utils/inlineSticker'
 
 // Props定义
 const props = defineProps({
@@ -109,6 +110,16 @@ const truncateContent = (content) => {
   const plainText = sanitizeContent(content)
   return plainText.length > 100 ? plainText.substring(0, 100) + '...' : plainText
 }
+
+// 截断后的正文是纯文本，里面的 [st:包/序号] 标记要还原成小图才看得出贴纸内容
+const contentHtml = computed(() => {
+  const escaped = truncateContent(props.post.content)
+    .replace(/[&<>]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char]))
+  const tempDiv = document.createElement('div')
+  tempDiv.innerHTML = escaped
+  hydrateStickers(tempDiv)
+  return tempDiv.innerHTML
+})
 
 // 格式化日期
 const formatDate = (dateString) => {

@@ -20,6 +20,7 @@
 <script setup>
 import { computed } from 'vue'
 import defaultPlaceholder from '@/assets/imgs/未加载.png'
+import { hydrateStickers } from '@/utils/inlineSticker'
 
 const props = defineProps({
   content: {
@@ -55,12 +56,17 @@ const parsedContent = computed(() => {
   const tempDiv = document.createElement('div')
   tempDiv.innerHTML = actualContent.value
 
-  // 提取图片
-  const imgElements = tempDiv.querySelectorAll('img')
-  const images = Array.from(imgElements).map(img => img.src)
+  // 行内表情：把 [st:包/序号] 标记换成雪碧图裁切的小图
+  hydrateStickers(tempDiv)
+
+  // 提取图片：行内表情是正文的一部分，不进图片网格
+  const imgElements = Array.from(tempDiv.querySelectorAll('img')).filter(
+    (img) => !img.classList.contains('inline-sticker')
+  )
+  const images = imgElements.map((img) => img.src)
 
   // 移除图片元素，获取文本（保留mention链接的HTML格式）
-  imgElements.forEach(img => img.remove())
+  imgElements.forEach((img) => img.remove())
 
   // 保留mention链接的HTML格式，只处理其他标签
   let htmlContent = tempDiv.innerHTML

@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import SimpleSpinner from '@/components/spinner/SimpleSpinner.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import MessageToast from '@/components/MessageToast.vue'
-import EmojiPicker from '@/components/EmojiPicker.vue'
+import EmojiPanel from '@/components/EmojiPanel.vue'
 import MentionModal from '@/components/mention/MentionModal.vue'
 import ContentRenderer from '@/components/ContentRenderer.vue'
 import ContentEditableInput from '@/components/ContentEditableInput.vue'
@@ -20,7 +20,6 @@ import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
 import { useFollowStore } from '@/stores/follow'
 import { useNotificationStore } from '@/stores/notification'
-import { useThemeStore } from '@/stores/theme'
 import { useCommentLikeStore } from '@/stores/commentLike'
 import { useCommentStore } from '@/stores/comment'
 import { formatTime } from '@/utils/timeFormat'
@@ -36,7 +35,6 @@ const commentStore = useCommentStore()
 const authStore = useAuthStore()
 const followStore = useFollowStore()
 const notificationStore = useNotificationStore()
-const themeStore = useThemeStore()
 
 
 // 常量定义
@@ -1097,6 +1095,11 @@ const toggleEmojiPanel = (item) => {
   }
 }
 
+const closeEmojiPanel = () => {
+  showEmojiPanel.value = false
+  currentEmojiItem.value = null
+}
+
 const handleEmojiSelect = (emoji) => {
   if (currentEmojiItem.value) {
     const item = currentEmojiItem.value
@@ -1116,8 +1119,6 @@ const handleEmojiSelect = (emoji) => {
       })
     }
   }
-  showEmojiPanel.value = false
-  currentEmojiItem.value = null
 }
 
 // mention选择相关方法
@@ -1527,12 +1528,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
   <MessageToast v-if="showToast" :message="toastMessage" :type="toastType" @close="showToast = false" />
 
 
-  <div v-if="showEmojiPanel && currentEmojiItem" class="emoji-panel-overlay" @click="showEmojiPanel = false">
-    <div class="emoji-panel-container" @click.stop>
-      <EmojiPicker :theme="themeStore.isDark ? 'dark' : 'light'" @select="handleEmojiSelect" :native="true"
-        :hide-search="false" :hide-skin-tones="true" set="native" />
-    </div>
-  </div>
+  <EmojiPanel v-if="showEmojiPanel && currentEmojiItem" @select="handleEmojiSelect" @close="closeEmojiPanel" />
 
 
   <MentionModal :visible="!!(showMentionPanel && currentMentionItem)" @close="closeMentionPanel"
@@ -2172,27 +2168,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
 
 /* 表情面板样式 */
 .emoji-panel-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1600;
-  animation: fadeIn 0.2s ease;
-}
-
-.emoji-panel-container {
-  background-color: var(--bg-color-primary);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  animation: scaleIn 0.2s ease;
-  max-width: 90vw;
-  max-height: 90vh;
+  --ep-overlay-z: 1600;
 }
 
 @keyframes fadeIn {

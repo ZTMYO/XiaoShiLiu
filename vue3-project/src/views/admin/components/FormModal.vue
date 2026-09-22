@@ -154,12 +154,8 @@
   </div>
 
 
-  <div v-if="showEmojiPanel" class="emoji-panel-overlay" v-click-outside.mousedown="closeEmojiPanel"
-    v-escape-key="closeEmojiPanel">
-    <div class="emoji-panel" @mousedown.stop>
-      <EmojiPicker @select="handleEmojiSelect" />
-    </div>
-  </div>
+  <EmojiPanel v-if="showEmojiPanel" v-escape-key="closeEmojiPanel" @select="handleEmojiSelect"
+    @close="closeEmojiPanel" />
 
 
   <MentionModal :visible="showMentionPanel" @close="closeMentionPanel" @select="handleContentEditableMentionSelect" />
@@ -177,7 +173,7 @@ import VideoUpload from '@/components/VideoUpload.vue'
 import TagSelector from '@/components/TagSelector.vue'
 import DropdownSelect from '@/components/DropdownSelect.vue'
 import MbtiPicker from '@/components/MbtiPicker.vue'
-import EmojiPicker from '@/components/EmojiPicker.vue'
+import EmojiPanel from '@/components/EmojiPanel.vue'
 import MentionModal from '@/components/mention/MentionModal.vue'
 import ContentEditableInput from '@/components/ContentEditableInput.vue'
 import messageManager from '@/utils/messageManager'
@@ -344,7 +340,6 @@ const handleEmojiSelect = (emoji) => {
   const contentEditableRef = contentEditableRefs.value[fieldKey]
   if (contentEditableRef && contentEditableRef.insertEmoji) {
     contentEditableRef.insertEmoji(emojiChar)
-    closeEmojiPanel()
     return
   }
 
@@ -370,8 +365,6 @@ const handleEmojiSelect = (emoji) => {
       }, 0)
     })
   }
-
-  closeEmojiPanel()
 }
 
 // 获取纯文本长度（去除HTML标签）
@@ -1693,27 +1686,7 @@ defineExpose({
 
 /* 表情选择器面板样式 */
 .emoji-panel-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  animation: fadeIn 0.2s ease;
-}
-
-.emoji-panel {
-  background: var(--bg-color-primary);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  animation: scaleIn 0.2s ease;
-  max-width: 90vw;
-  max-height: 90vh;
+  --ep-overlay-z: 10000;
 }
 
 @keyframes fadeIn {

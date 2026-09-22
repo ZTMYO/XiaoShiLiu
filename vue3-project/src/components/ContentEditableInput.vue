@@ -1,12 +1,14 @@
 <template>
   <div ref="inputRef" :class="inputClass" contenteditable="true" @input="handleInput" @focus="handleFocus"
-    @blur="handleBlur" @keydown="handleKeydown" @click="handleClick" @paste="handlePaste" :placeholder="placeholder">
+    @blur="handleBlur" @keydown="handleKeydown" @click="handleClick" @mousedown="handleMouseDown" @paste="handlePaste"
+    @copy="handleClipboardWrite" @cut="handleClipboardWrite" :placeholder="placeholder">
   </div>
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { sanitizeText } from '@/utils/contentSecurity'
+import { hydrateStickers, hasStickerMarker, stickerImgFromNode, stickerMarkerFromNode, stickerNodeFromText, stickerClipboardPayload } from '@/utils/inlineSticker'
 
 const props = defineProps({
   modelValue: {
@@ -57,9 +59,18 @@ const updateHtmlContent = (content) => {
   if (!inputRef.value) return
   // 将换行符转换为 HTML 格式（保持 mention 链接）
   const htmlContent = convertTextToMentionLinks(content || '')
-  if (inputRef.value.innerHTML !== htmlContent) {
+  // 行内表情在 DOM 里是带派生样式的 span，直接比 innerHTML 会把「内容没变」误判成变了、
+  // 重写 innerHTML 把光标弹回开头；统一按落库形态比对（该函数会把 span 拆回标记明文）
+  if (convertMentionLinksToText(inputRef.value.innerHTML) !== (content || '')) {
+    // 只有真的被外部换掉内容（回填草稿、发送后清空）才重置撤销时间线。
+    // 不能放在函数开头：父组件的 modelValue 回灌可能晚一拍到达，那时 DOM 早已一致，
+    // 若照样重置，每敲一个字历史都被清一次，Ctrl+Z 就成了「毫无反应」
+    resetHistory(content)
     inputRef.value.innerHTML = htmlContent
-    nextTick(ensureMentionLinksNonEditable)
+    nextTick(() => {
+      ensureMentionLinksNonEditable()
+      hydrateStickers(inputRef.value)
+    })
   }
 }
 
@@ -162,6 +173,8 @@ const convertMentionLinksToText = (html) => {
         } else if (child.tagName === 'A' && child.classList.contains('mention-link')) {
           // 保持mention链接的HTML格式
           result += child.outerHTML
+        } else if (child.tagName === 'IMG' && child.classList.contains('inline-sticker')) {
+          result += stickerMarkerFromNode(child)
         } else {
           // 其他标签直接处理内容
           result += processNode(child)
@@ -174,16 +187,100 @@ const convertMentionLinksToText = (html) => {
   return processNode(tempDiv)
 }
 
+// ── 撤销 / 重做 ──
+// 原生撤销栈靠不住：浏览器只在「编辑命令」这一层记历史，脚本直接改 DOM（重写 innerHTML、
+// Range 插节点、删空节点、失焦时插标记节点）都会把它清空或留下对不上的半截快照，
+// 于是 Ctrl+Z 时而跳回不该出现的内容、时而毫无反应。所以按落库形态自己存快照。
+const HISTORY_LIMIT = 100
+// 连续敲字合并成一步：停手 400ms 才落栈，撤销粒度按词句而不是按字符
+const HISTORY_IDLE = 400
+
+const historyStack = ['']
+let historyIndex = 0
+let historyTimer = null
+
+const domModel = () => convertMentionLinksToText(inputRef.value ? inputRef.value.innerHTML : '')
+
+const resetHistory = (value) => {
+  if (historyTimer) {
+    clearTimeout(historyTimer)
+    historyTimer = null
+  }
+  historyStack.splice(0, historyStack.length, value || '')
+  historyIndex = 0
+}
+
+// 与栈顶同值就跳过：粘贴、插表情既直接改 DOM 又补发 input 事件，不设这道闸会把同一步记两次
+const commitHistory = (value) => {
+  if (historyStack[historyIndex] === value) return
+  historyStack.splice(historyIndex + 1)
+  historyStack.push(value)
+  if (historyStack.length > HISTORY_LIMIT) {
+    historyStack.splice(0, historyStack.length - HISTORY_LIMIT)
+  }
+  historyIndex = historyStack.length - 1
+}
+
+const scheduleHistoryCommit = () => {
+  if (historyTimer) clearTimeout(historyTimer)
+  historyTimer = setTimeout(() => {
+    historyTimer = null
+    commitHistory(domModel())
+  }, HISTORY_IDLE)
+}
+
+const commitHistoryNow = () => {
+  if (historyTimer) {
+    clearTimeout(historyTimer)
+    historyTimer = null
+  }
+  commitHistory(domModel())
+}
+
+// 落回某一步：整块重写 DOM 后把光标收到末尾。
+// 键盘事件里已 preventDefault，原生撤销不会插手，这里也不必管浏览器的栈
+const applyHistory = (value) => {
+  isUserTyping.value = true
+  cursorMarkerId.value = null
+  inputRef.value.innerHTML = convertTextToMentionLinks(value || '')
+  ensureMentionLinksNonEditable()
+  hydrateStickers(inputRef.value)
+
+  const selection = window.getSelection()
+  const range = endOfContentRange()
+  selection.removeAllRanges()
+  selection.addRange(range)
+
+  emit('update:modelValue', value || '')
+  resetUserTypingFlag()
+}
+
+const undoHistory = () => {
+  // 刚敲的字可能还在防抖里，先落栈，否则第一次 Ctrl+Z 只会把这段输入固化下来
+  commitHistoryNow()
+  if (historyIndex === 0) return
+  historyIndex -= 1
+  applyHistory(historyStack[historyIndex])
+}
+
+const redoHistory = () => {
+  commitHistoryNow()
+  if (historyIndex >= historyStack.length - 1) return
+  historyIndex += 1
+  applyHistory(historyStack[historyIndex])
+}
+
 // 处理输入事件
 const handleInput = (event) => {
   isUserTyping.value = true
 
   let content = event.target.innerHTML
 
-  // 如果内容为空，清空innerHTML以显示placeholder
+  // 内容为空时只把模型归一成空串，不要动 innerHTML：
+  // 程序化清空 DOM 会连带清掉浏览器的原生撤销栈，剪空内容后再 Ctrl+Z 就失效了。
+  // placeholder 交给 CSS（:empty / :has），DOM 里残留的 <br> 不影响显示。
   if (!content.trim() || content === '<br>' || content === '<div><br></div>') {
     content = ''
-    event.target.innerHTML = content
   }
 
   if (props.enableMention && event.inputType === 'insertText' && event.data === '@') {
@@ -231,6 +328,7 @@ const handleInput = (event) => {
   ensureMentionLinksNonEditable()
   const textContent = convertMentionLinksToText(content)
   emit('update:modelValue', textContent)
+  scheduleHistoryCommit()
   resetUserTypingFlag()
 }
 
@@ -302,6 +400,91 @@ const handleClick = (event) => {
       window.open(userUrl, '_blank')
     }
   }
+}
+
+const rangeFromPoint = (x, y) => {
+  if (document.caretRangeFromPoint) return document.caretRangeFromPoint(x, y)
+  const position = document.caretPositionFromPoint && document.caretPositionFromPoint(x, y)
+  if (!position) return null
+  const range = document.createRange()
+  range.setStart(position.offsetNode, position.offset)
+  range.collapse(true)
+  return range
+}
+
+// 锚点在贴纸上按下时定，终点跟着鼠标走
+const stickerDragAnchor = { range: null }
+
+const endStickerDrag = () => {
+  stickerDragAnchor.range = null
+  document.removeEventListener('mousemove', handleStickerDragMove)
+  document.removeEventListener('mouseup', endStickerDrag)
+}
+
+// 监听挂在 document 上、防抖计时器还没停，组件卸载时都得收拾干净
+onBeforeUnmount(() => {
+  endStickerDrag()
+  if (historyTimer) {
+    clearTimeout(historyTimer)
+    historyTimer = null
+  }
+})
+
+const handleStickerDragMove = (event) => {
+  // 在窗口外松开鼠标就收不到 mouseup 了，靠按键状态兜底回收，
+  // 否则监听会一直挂着，之后光移动鼠标也会改选区
+  if (!event.buttons) {
+    endStickerDrag()
+    return
+  }
+  const anchor = stickerDragAnchor.range
+  if (!anchor) return
+  const focus = rangeFromPoint(event.clientX, event.clientY)
+  if (!focus || !inputRef.value.contains(focus.startContainer)) return
+
+  const range = document.createRange()
+  // 往左拖时终点在锚点之前，直接 setStart(锚点)/setEnd(终点) 会因顺序反了而抛错
+  const backwards = focus.compareBoundaryPoints(Range.START_TO_START, anchor) < 0
+  range.setStart(backwards ? focus.startContainer : anchor.startContainer, backwards ? focus.startOffset : anchor.startOffset)
+  range.setEnd(backwards ? anchor.startContainer : focus.startContainer, backwards ? anchor.startOffset : focus.startOffset)
+
+  const selection = window.getSelection()
+  selection.removeAllRanges()
+  selection.addRange(range)
+}
+
+// 贴纸是原子行内元素，浏览器自己的点击落点规则会把光标吸到整行开头或结尾，
+// 挨在一起的贴纸之间那道缝根本点不进去。这里按点击落在贴纸的左半还是右半自行决定落点。
+// 但 preventDefault 会连带掐掉浏览器自己的拖拽选区（从贴纸上按住往左右划选不动），
+// 所以拖拽也一并接管：锚点就是刚算出的落点，终点跟随鼠标。
+const handleMouseDown = (event) => {
+  const target = event.target
+  if (!inputRef.value || !target || target.nodeType !== Node.ELEMENT_NODE) return
+  if (!target.classList.contains('inline-sticker')) return
+
+  const rect = target.getBoundingClientRect()
+  const placeBefore = event.clientX < rect.left + rect.width / 2
+
+  // 接管后浏览器不会再自己给焦点，得手动补上
+  event.preventDefault()
+  if (document.activeElement !== inputRef.value) inputRef.value.focus()
+
+  const range = document.createRange()
+  if (placeBefore) {
+    range.setStartBefore(target)
+  } else {
+    range.setStartAfter(target)
+  }
+  range.collapse(true)
+
+  const selection = window.getSelection()
+  selection.removeAllRanges()
+  selection.addRange(range)
+
+  // 同一处落点既当光标也当拖拽锚点，用副本保存，免得后面被选区改动带跑
+  stickerDragAnchor.range = range.cloneRange()
+  document.addEventListener('mousemove', handleStickerDragMove)
+  document.addEventListener('mouseup', endStickerDrag)
 }
 
 const removeMentionLink = (linkElement) => {
@@ -448,6 +631,23 @@ const mergeLineBackward = () => {
 }
 
 const handleKeydown = (event) => {
+  // 撤销/重做自己接管：原生撤销在这套 DOM 结构下本来就不可用，见上面 history 段注释。
+  // Meta 覆盖 macOS 的 Cmd+Z，Ctrl+Shift+Z 与 Ctrl+Y 都当重做
+  if (
+    (event.ctrlKey || event.metaKey) &&
+    !event.altKey &&
+    (event.key.toLowerCase() === 'z' || event.key.toLowerCase() === 'y')
+  ) {
+    const isRedo = event.key.toLowerCase() === 'y' || event.shiftKey
+    event.preventDefault()
+    if (isRedo) {
+      redoHistory()
+    } else {
+      undoHistory()
+    }
+    return
+  }
+
   // 处理Enter键
   if (event.key === 'Enter') {
     if (event.ctrlKey && props.enableCtrlEnterSend) {
@@ -562,6 +762,154 @@ const handleKeydown = (event) => {
   emit('keydown', event)
 }
 
+const clearEmptyContent = () => {
+  const el = inputRef.value
+  if (!el || convertMentionLinksToText(el.innerHTML)) return
+  Array.from(el.childNodes).forEach((node) => node.remove())
+}
+
+const setCaretToEndOf = (node) => {
+  if (!node) {
+    const selection = window.getSelection()
+    const range = endOfContentRange()
+    selection.removeAllRanges()
+    selection.addRange(range)
+    return
+  }
+  const isDetached = !(node.nodeType === Node.TEXT_NODE
+    ? node.parentNode && document.contains(node.parentNode)
+    : document.contains(node))
+  if (isDetached) {
+    const selection = window.getSelection()
+    const range = endOfContentRange()
+    selection.removeAllRanges()
+    selection.addRange(range)
+    return
+  }
+  const selection = window.getSelection()
+  const range = document.createRange()
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    const tag = node.tagName
+    const isVoidElement = tag === 'IMG' || tag === 'BR' || tag === 'HR'
+    if (isVoidElement || node.childNodes.length === 0) {
+      range.setStartAfter(node)
+      range.collapse(true)
+    } else {
+      range.selectNodeContents(node)
+      range.collapse(false)
+    }
+  } else {
+    range.setStartAfter(node)
+    range.collapse(true)
+  }
+  selection.removeAllRanges()
+  selection.addRange(range)
+}
+
+// 编辑器末尾的落点。直接在根节点上 collapse(false) 得到的是「最后一个行块之后」，
+// 落在那里的光标和插入内容都会被浏览器另起一行 —— 表现就是内容跑到第二行、第一行空着
+const endOfContentRange = () => {
+  const root = inputRef.value
+  let line = null
+  for (let node = root.lastElementChild; node; node = node.previousElementSibling) {
+    if (node.tagName === 'DIV' || node.tagName === 'P') {
+      line = node
+      break
+    }
+  }
+  const range = document.createRange()
+  range.selectNodeContents(line || root)
+  range.collapse(false)
+  return range
+}
+
+// 复制/剪切：浏览器序列化选区时会把行内表情的 <img> 丢掉，只有自己覆写 clipboardData 才能
+// 把标记带走（ProseMirror、TinyMCE 都是这么做的）。选区里没有表情时直接返回，交还原生行为。
+const handleClipboardWrite = (event) => {
+  const selection = window.getSelection()
+  if (selection.rangeCount === 0) return
+
+  const range = selection.getRangeAt(0)
+  if (!inputRef.value.contains(range.startContainer)) return
+
+  let payload = stickerClipboardPayload(inputRef.value, range)
+
+  if (!payload) {
+    const cloned = range.cloneContents()
+    const htmlTmp = document.createElement('div')
+    htmlTmp.appendChild(cloned.cloneNode(true))
+    const lines = []
+    const pushTextHtml = (node, line) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        line.t.push(node.nodeValue)
+        line.h.push(node.nodeValue
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'))
+        return
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return
+      const tag = node.tagName
+      if (tag === 'BR') {
+        line.h.push('<br>')
+        line.t.push('\n')
+        return
+      }
+      if (tag === 'DIV' || tag === 'P') {
+        lines.push({ h: [...line.h], t: [...line.t] })
+        line.h = []
+        line.t = []
+        Array.from(node.childNodes).forEach((c) => pushTextHtml(c, line))
+        return
+      }
+      if (tag === 'A' && node.classList && node.classList.contains('mention-link')) {
+        const id = node.getAttribute('data-user-id')
+        const nick = node.textContent.replace(/^@/, '')
+        if (id) {
+          line.h.push(`<a class="mention-link" data-user-id="${id}">@${nick}</a>`)
+        }
+        line.t.push(node.textContent)
+        return
+      }
+      if (tag === 'IMG' && node.classList && node.classList.contains('inline-sticker')) {
+        const mk = node.getAttribute('alt') || node.getAttribute('data-sticker')
+        if (mk && mk.startsWith('[st:')) {
+          line.h.push(mk.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'))
+          line.t.push(mk)
+        }
+        return
+      }
+      Array.from(node.childNodes).forEach((c) => pushTextHtml(c, line))
+    }
+    const current = { h: [], t: [] }
+    Array.from(cloned.childNodes).forEach((c) => pushTextHtml(c, current))
+    if (current.h.length || current.t.length) lines.push({ h: current.h, t: current.t })
+    payload = {
+      html: lines.map((l) => `<div>${l.h.join('') || '<br>'}</div>`).join(''),
+      text: lines.map((l) => l.t.join('')).join('\n')
+    }
+  }
+
+  if (!payload || (!payload.text && !payload.html)) return
+
+  event.clipboardData.setData('text/plain', payload.text)
+  event.clipboardData.setData('text/html', payload.html)
+  event.preventDefault()
+
+  if (event.type === 'cut') {
+    // cut 已 preventDefault，浏览器不会自己删选区内容，得手动删。
+    // 否则跨行剪切会在原位留下一排空行。
+    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null
+    if (range && inputRef.value.contains(range.commonAncestorContainer)) {
+      const touchedLines = Array.from(inputRef.value.children).filter((line) => range.intersectsNode(line))
+      range.deleteContents()
+      touchedLines.forEach((line) => {
+        if (!line.textContent && !line.querySelector('img.inline-sticker')) line.remove()
+      })
+    }
+    clearEmptyContent()
+    syncModelFromDom()
+  }
+}
+
 const handlePaste = (event) => {
   event.preventDefault()
   const clipboardData = event.clipboardData || window.clipboardData
@@ -582,15 +930,67 @@ const handlePaste = (event) => {
     }
   }
 
-  const selection = window.getSelection()
-  if (selection.rangeCount === 0) return
+  const pastedHtml = clipboardData.getData('text/html')
+  const pastedText = clipboardData.getData('text/plain')
 
-  const range = selection.getRangeAt(0)
-  range.deleteContents()
+  const htmlKeptSticker = !!pastedHtml && pastedHtml.includes('inline-sticker')
+  const hasTextSticker = hasStickerMarker(pastedText)
+
+  // 决策顺序：text/plain 里有贴纸标记时强制走纯文本分支（最稳定，hydrateStickers 100% 还原）
+  // 只有 text 没标记、text/html 能确认有标签才走 HTML 分支（保留 mention/换行/外链格式）
+  const useHtml = !hasTextSticker && !!pastedHtml && htmlKeptSticker
+
+  // 在「根节点下直接挂着行内元素、没有行 div 包裹」时会返回 true 却什么都不插，
+  // 于是 fallback 永远不触发，表现为「粘贴毫无反应」。Range 直插则是必然生效的 DOM 操作。
+  const insertFragment = (fragment) => {
+    if (!fragment || fragment.childNodes.length === 0) return false
+
+    // 只 hydrate 待插入的 fragment，插入后不再 hydrate 整棵 DOM：
+    // 否则刚落地的 <img> 会被整体换掉，行内锚点引用失效，下一次粘贴的落点就算错
+    hydrateStickers(fragment)
+
+    clearEmptyContent()
+
+    const selection = window.getSelection()
+    let range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null
+
+    // 清空占位符可能把光标所在的节点一起移除，此时选区已脱离 DOM，退回到内容末尾
+    if (!range || !inputRef.value.contains(range.startContainer)) {
+      try {
+        inputRef.value.focus()
+      } catch (_) {}
+      range = endOfContentRange()
+      selection.removeAllRanges()
+      selection.addRange(range)
+    }
+
+    const lastNode = fragment.lastChild
+    range.deleteContents()
+    range.insertNode(fragment)
+
+    // 落点放在插入内容之后：粘完贴纸光标应停在贴纸右侧，否则浏览器会把它归到左侧
+    const caret = document.createRange()
+    if (lastNode.nodeType === Node.ELEMENT_NODE && (lastNode.tagName === 'DIV' || lastNode.tagName === 'P')) {
+      caret.selectNodeContents(lastNode)
+      caret.collapse(false)
+    } else {
+      caret.setStartAfter(lastNode)
+      caret.collapse(true)
+    }
+    selection.removeAllRanges()
+    selection.addRange(caret)
+
+    ensureMentionLinksNonEditable()
+
+    const inputEvent = new Event('input', { bubbles: true })
+    inputRef.value.dispatchEvent(inputEvent)
+    // 粘贴是一步独立操作，别和随后的敲字合并成一次撤销
+    commitHistoryNow()
+    return true
+  }
 
   // 优先处理HTML格式的粘贴（保留换行和mention链接）
-  const pastedHtml = clipboardData.getData('text/html')
-  if (pastedHtml) {
+  if (useHtml) {
     // 创建临时div解析HTML
     const tempDiv = document.createElement('div')
     tempDiv.innerHTML = pastedHtml
@@ -643,6 +1043,10 @@ const handlePaste = (event) => {
           }
           // 递归处理子节点
           Array.from(node.childNodes).forEach(processNodeToLines)
+        } else if (node.tagName === 'IMG' && node.classList.contains('inline-sticker')) {
+          // 从别处粘来的行内表情：按标记重建，外来属性全丢
+          const stickerImg = stickerImgFromNode(node)
+          if (stickerImg) currentLine.appendChild(stickerImg)
         } else if (node.classList && node.classList.contains('mention-link')) {
           // 保留mention链接
           const userId = node.getAttribute('data-user-id')
@@ -668,8 +1072,6 @@ const handlePaste = (event) => {
     // 构建最终的 fragment，使用 div 标签来表示每一行（符合 contenteditable 默认行为）
     const fragment = document.createDocumentFragment()
     
-    if (lines.length === 0) return
-    
     lines.forEach((lineFragment, index) => {
       if (index === 0) {
         // 第一行直接添加内容，不用 div 包裹
@@ -691,24 +1093,11 @@ const handlePaste = (event) => {
       }
     })
     
-    // 插入处理后的内容
-    if (fragment.childNodes.length > 0) {
-      range.insertNode(fragment)
-      
-      // 将光标移到插入内容后面
-      range.collapse(false)
-      selection.removeAllRanges()
-      selection.addRange(range)
-      
-      // 触发input事件
-      const inputEvent = new Event('input', { bubbles: true })
-      inputRef.value.dispatchEvent(inputEvent)
-    }
-    return
+    // HTML 里解析不出可插入内容时不 return，继续往下走纯文本分支兜底
+    if (insertFragment(fragment)) return
   }
 
   // 降级处理：处理纯文本粘贴
-  const pastedText = clipboardData.getData('text/plain')
   if (!pastedText) return
 
   // 将文本中的换行符转换为 div 标签（符合 contenteditable 默认行为）
@@ -736,13 +1125,7 @@ const handlePaste = (event) => {
     }
   })
   
-  range.insertNode(fragment)
-  range.collapse(false)
-  selection.removeAllRanges()
-  selection.addRange(range)
-  
-  const inputEvent = new Event('input', { bubbles: true })
-  inputRef.value.dispatchEvent(inputEvent)
+  insertFragment(fragment)
 }
 
 
@@ -758,6 +1141,9 @@ const resetUserTypingFlag = () => {
 const syncModelFromDom = () => {
   isUserTyping.value = true
   emit('update:modelValue', convertMentionLinksToText(inputRef.value.innerHTML))
+  // 走这条路的都是「删掉一个艾特」「选中提及用户」这类结构性改动，
+  // 直接落栈，让它们各自成为可撤销的一步
+  commitHistoryNow()
   resetUserTypingFlag()
 }
 
@@ -952,27 +1338,18 @@ const focus = () => {
         } catch (e) {
           // 异常处理：删除标记节点并聚焦到末尾
           marker.remove()
-          const range = document.createRange()
-          range.selectNodeContents(inputRef.value)
-          range.collapse(false)
-          selection.addRange(range)
+          selection.addRange(endOfContentRange())
         }
         // 清空标记ID
         cursorMarkerId.value = null
       } else {
         // 标记节点不存在，聚焦到末尾
-        const range = document.createRange()
-        range.selectNodeContents(inputRef.value)
-        range.collapse(false)
-        selection.addRange(range)
+        selection.addRange(endOfContentRange())
         cursorMarkerId.value = null
       }
     } else {
       // 无标记时，聚焦到末尾
-      const range = document.createRange()
-      range.selectNodeContents(inputRef.value)
-      range.collapse(false)
-      selection.addRange(range)
+      selection.addRange(endOfContentRange())
     }
   })
 }
@@ -986,13 +1363,15 @@ const insertEmoji = (emojiChar) => {
   if (!inputRef.value) return
   isUserTyping.value = true
 
+  // 表情包选择器发来的是 [st:包/序号] 标记，插入成行内小图；普通 emoji 仍按纯文本插入
+  const emojiNode = stickerNodeFromText(emojiChar) || document.createTextNode(emojiChar)
+
   // 查找标记节点
   if (cursorMarkerId.value) {
     const marker = document.getElementById(cursorMarkerId.value)
     if (marker) {
       // 直接在标记节点位置插入表情
-      const textNode = document.createTextNode(emojiChar)
-      marker.parentNode.insertBefore(textNode, marker)
+      marker.parentNode.insertBefore(emojiNode, marker)
 
       // 删除标记节点
       marker.remove()
@@ -1001,36 +1380,40 @@ const insertEmoji = (emojiChar) => {
       // 设置光标到表情后面
       const selection = window.getSelection()
       const range = document.createRange()
-      range.setStartAfter(textNode)
-      range.setEndAfter(textNode)
+      range.setStartAfter(emojiNode)
+      range.setEndAfter(emojiNode)
       selection.removeAllRanges()
       selection.addRange(range)
 
       // 触发input事件同步内容
       const inputEvent = new Event('input', { bubbles: true })
       inputRef.value.dispatchEvent(inputEvent)
+      // 每插一个表情都算一步：一串贴纸连点时才不会整串被一次撤销抹掉
+      commitHistoryNow()
 
       resetUserTypingFlag()
       return
     }
   }
 
-  // 如果没有标记节点，回退到原有逻辑（在末尾插入）
+  // 如果没有标记节点，回退到在末尾插入
   inputRef.value.focus()
-  const selection = window.getSelection()
-  const range = document.createRange()
-  range.selectNodeContents(inputRef.value)
-  range.collapse(false)
 
-  const textNode = document.createTextNode(emojiChar)
-  range.insertNode(textNode)
-  range.setStartAfter(textNode)
-  range.setEndAfter(textNode)
+  // 剪切后残留的占位 <br> 会把插入点顶到第二行（第一行看着是空的），先清掉再取落点
+  clearEmptyContent()
+
+  const selection = window.getSelection()
+  const range = endOfContentRange()
+
+  range.insertNode(emojiNode)
+  range.setStartAfter(emojiNode)
+  range.setEndAfter(emojiNode)
   selection.removeAllRanges()
   selection.addRange(range)
 
   const inputEvent = new Event('input', { bubbles: true })
   inputRef.value.dispatchEvent(inputEvent)
+  commitHistoryNow()
 
   resetUserTypingFlag()
 }
@@ -1067,15 +1450,26 @@ defineExpose({
 [contenteditable] {
   outline: none;
   white-space: normal;
+  position: relative;
 }
 
-/* placeholder实现 - 当元素为空时显示 */
-[contenteditable]:empty::before {
-  content: attr(placeholder);
+[contenteditable]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: inherit;
   color: var(--text-color-secondary, #999);
   pointer-events: none;
-  display: block;
   opacity: 0.6;
+}
+
+[contenteditable]:empty::before {
+  content: attr(placeholder);
+}
+
+[contenteditable]:has(> br:only-child)::before,
+[contenteditable]:has(> div:only-child > br:only-child)::before {
+  content: attr(placeholder);
 }
 
 [contenteditable] :deep(p) {

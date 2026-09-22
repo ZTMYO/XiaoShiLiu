@@ -31,6 +31,12 @@ select {
   font-family: inherit;
 }
 
+.inline-sticker {
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.2em;
+}
+
 #app {
   display: flex;
   justify-content: center;

@@ -66,11 +66,7 @@
                 </div>
 
                 <!-- Emoji选择器 -->
-                <div v-if="showEmojiPanel" class="emoji-panel-overlay" @click="closeEmojiPanel">
-                  <div class="emoji-panel" @click.stop>
-                    <EmojiPicker @select="handleEmojiSelect" @close="closeEmojiPanel" />
-                  </div>
-                </div>
+                <EmojiPanel v-if="showEmojiPanel" @select="handleEmojiSelect" @close="closeEmojiPanel" />
               </div>
             </div>
 
@@ -103,8 +99,9 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import ContentEditableInput from '@/components/ContentEditableInput.vue'
-import EmojiPicker from '@/components/EmojiPicker.vue'
+import EmojiPanel from '@/components/EmojiPanel.vue'
 import DropdownSelect from '@/components/DropdownSelect.vue'
+import { STICKER_EM, splitStickerSegments, stickerDrawInfo } from '@/utils/inlineSticker'
 
 const props = defineProps({
   visible: {
@@ -141,12 +138,16 @@ const fontOptions = [
   { label: '华文隶书', value: 'STLiti' }
 ]
 
+// 表情按 1 个字算：标记本身有十几个字符，不能直接数长度
+const displayLength = (line) =>
+  splitStickerSegments(line).reduce((sum, seg) => sum + (seg.type === 'sticker' ? 1 : seg.value.length), 0)
+
 // 自动计算最合适的字体大小
 const calculateOptimalFontSize = () => {
   if (!inputText.value) return 30
   
   const lines = processText(inputText.value)
-  const maxLineLength = Math.max(...lines.map(line => line.length))
+  const maxLineLength = Math.max(...lines.map(displayLength))
   
   // 根据每行字符数确定字体大小
   if (maxLineLength <= 5) {
@@ -223,6 +224,53 @@ const processText = (text) => {
   return filteredLines
 }
 
+// 雪碧图只在第一次用到时加载，之后复用
+const sheetCache = new Map()
+const loadSheet = (src) => {
+  if (!sheetCache.has(src)) {
+    sheetCache.set(src, new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = reject
+      img.src = src
+    }))
+  }
+  return sheetCache.get(src)
+}
+
+// 把一行按段排好：文字量宽度，表情按字号倍数占位，都记下起始 x
+const layoutLine = (ctx, line, fontSize, centerX) => {
+  const stickerSize = fontSize * STICKER_EM
+  const placed = []
+  let total = 0
+
+  for (const seg of splitStickerSegments(line)) {
+    if (seg.type === 'sticker') {
+      const info = stickerDrawInfo(seg.packId, seg.itemId)
+      if (info) {
+        placed.push({ kind: 'sticker', info, width: stickerSize })
+        total += stickerSize
+        continue
+      }
+      // 表情不存在时退回明文，跟页面上的表现保持一致
+      const width = ctx.measureText(seg.raw).width
+      placed.push({ kind: 'text', value: seg.raw, width })
+      total += width
+      continue
+    }
+    const width = ctx.measureText(seg.value).width
+    placed.push({ kind: 'text', value: seg.value, width })
+    total += width
+  }
+
+  let x = centerX - total / 2
+  placed.forEach((seg) => {
+    seg.x = x
+    x += seg.width
+  })
+  return { placed, stickerSize }
+}
+
 // 绘制canvas预览
 const drawCanvas = async () => {
   if (!previewCanvas.value || !selectedTemplate.value) {
@@ -278,7 +326,7 @@ const drawCanvas = async () => {
 
       // 设置文字样式
       ctx.font = `bold ${currentFontSize}px ${selectedFont.value}, Arial, sans-serif`
-      ctx.textAlign = 'center'
+      ctx.textAlign = 'left'
       ctx.textBaseline = 'middle'
       ctx.lineWidth = 3
 
@@ -287,20 +335,45 @@ const drawCanvas = async () => {
       const totalHeight = lines.length * lineHeight
       const startY = (canvas.height - totalHeight) / 2 + lineHeight / 2
 
-      // 绘制每一行文字
-      lines.forEach((line, index) => {
-        if (line && typeof line === 'string') {
-          const y = startY + index * lineHeight
-          const x = canvas.width / 2
-
-          // 先绘制描边
-          ctx.strokeStyle = strokeColor.value
-          ctx.strokeText(line, x, y)
-
-          // 再绘制文字
-          ctx.fillStyle = textColor.value
-          ctx.fillText(line, x, y)
+      // 行内表情要用的雪碧图先全部就位，避免边画边等
+      const sheets = new Map()
+      for (const line of lines) {
+        for (const seg of splitStickerSegments(line)) {
+          if (seg.type !== 'sticker') continue
+          const info = stickerDrawInfo(seg.packId, seg.itemId)
+          if (info) sheets.set(info.sheet, await loadSheet(info.sheet))
         }
+      }
+
+      // 逐行绘制：先统一描边、再统一填充，最后贴表情，避免相邻两段互相压边
+      lines.forEach((line, index) => {
+        if (!line || typeof line !== 'string') return
+
+        const y = startY + index * lineHeight
+        const { placed, stickerSize } = layoutLine(ctx, line, currentFontSize, canvas.width / 2)
+
+        ctx.strokeStyle = strokeColor.value
+        placed.forEach((seg) => {
+          if (seg.kind === 'text') ctx.strokeText(seg.value, seg.x, y)
+        })
+
+        ctx.fillStyle = textColor.value
+        placed.forEach((seg) => {
+          if (seg.kind === 'text') ctx.fillText(seg.value, seg.x, y)
+        })
+
+        placed.forEach((seg) => {
+          if (seg.kind !== 'sticker') return
+          const sheet = sheets.get(seg.info.sheet)
+          if (!sheet) return
+          const cellWidth = sheet.naturalWidth / seg.info.columns
+          const cellHeight = sheet.naturalHeight / seg.info.rows
+          ctx.drawImage(
+            sheet,
+            seg.info.x * cellWidth, seg.info.y * cellHeight, cellWidth, cellHeight,
+            seg.x, y - stickerSize / 2, stickerSize, stickerSize
+          )
+        })
       })
     }
   } catch (error) {
@@ -362,8 +435,6 @@ const handleEmojiSelect = (emoji) => {
   } else {
     inputText.value += emojiChar
   }
-
-  closeEmojiPanel()
 }
 
 // 选择模版
@@ -695,27 +766,7 @@ watch(() => props.visible, (newVal) => {
 }
 
 .emoji-panel-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease;
-}
-
-.emoji-panel {
-  background: var(--bg-color-primary);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  animation: scaleIn 0.2s ease;
-  max-width: 90vw;
-  max-height: 80vh;
+  --ep-overlay-z: 1000;
 }
 
 @keyframes fadeIn {

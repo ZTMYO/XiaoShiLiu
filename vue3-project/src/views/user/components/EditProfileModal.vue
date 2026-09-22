@@ -158,12 +158,8 @@
     @confirm="handleCropConfirm" />
 
 
-  <div v-if="showEmojiPanel" class="emoji-panel-overlay" v-click-outside.mousedown="closeEmojiPanel"
-    v-escape-key="closeEmojiPanel">
-    <div class="emoji-panel" @mousedown.stop>
-      <EmojiPicker @select="handleEmojiSelect" />
-    </div>
-  </div>
+  <EmojiPanel v-if="showEmojiPanel" v-escape-key="closeEmojiPanel" @select="handleEmojiSelect"
+    @close="closeEmojiPanel" />
 
 
   <MentionModal :visible="showMentionPanel" @close="closeMentionPanel" @select="handleMentionSelect" />
@@ -180,7 +176,7 @@ import SvgIcon from '@/components/SvgIcon.vue'
 import { imageUploadApi, authApi } from '@/api/index.js'
 import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.css'
-import EmojiPicker from '@/components/EmojiPicker.vue'
+import EmojiPanel from '@/components/EmojiPanel.vue'
 import DropdownSelect from '@/components/DropdownSelect.vue'
 import MbtiPicker from '@/components/MbtiPicker.vue'
 import MentionModal from '@/components/mention/MentionModal.vue'
@@ -668,8 +664,6 @@ const handleEmojiSelect = (emoji) => {
       }
     })
   }
-
-  closeEmojiPanel()
 }
 
 // 兴趣爱好相关方法
@@ -1239,27 +1233,7 @@ const handleSave = async () => {
 
 /* 表情选择器面板样式 */
 .emoji-panel-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  animation: fadeIn 0.2s ease;
-}
-
-.emoji-panel {
-  background: var(--bg-color-primary);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  animation: scaleIn 0.2s ease;
-  max-width: 90vw;
-  max-height: 90vh;
+  --ep-overlay-z: 10000;
 }
 
 @keyframes fadeIn {
