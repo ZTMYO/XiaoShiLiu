@@ -194,17 +194,13 @@ The video upload strategy is selected by `VIDEO_UPLOAD_STRATEGY`, which supports
 ### IP Location Query Configuration
 
 ```env
-# Primary API URL
-IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
-# Primary API timeout (milliseconds)
-IP_LOCATION_PRIMARY_TIMEOUT=10000
-# Backup API URL
-IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
-# Backup API timeout (milliseconds)
-IP_LOCATION_BACKUP_TIMEOUT=5000
+# API URL (Baidu opendata, free, no API key required)
+IP_LOCATION_API=https://opendata.baidu.com/api.php
+# Request timeout (milliseconds)
+IP_LOCATION_TIMEOUT=8000
 ```
 
-The system automatically switches to the backup API when the primary API fails; the timeout can be adjusted according to network conditions.
+The API requires no registration or key; the timeout can be adjusted according to network conditions.
 
 ### Sensitive Word Detection Configuration
 
@@ -218,8 +214,8 @@ SENSITIVE_WORD_CHECK_WHITELIST=
 ```
 
 - The detection method is keyword matching; the word list is located at `express-project/scripts/违规词库.txt`, with one word per line
-- Detection scope: XiaoShiLiu ID, user nickname, personal bio, tag names, post titles and content, comments
-- On a match, except for the XiaoShiLiu ID which is automatically reissued with a random code, the content enters a manual audit queue for an administrator to decide: a tag whose name matches is deleted along with its links when rejected, while nicknames, personal bios, post titles and content, and comments are replaced with the corresponding "违规xx" marker when rejected, and no notification is sent
+- Detection scope: ShiLiu ID, user nickname, personal bio, tag names, post titles and content, comments
+- On a match, except for the ShiLiu ID which is automatically reissued with a random code, the content enters a manual audit queue for an administrator to decide: a tag whose name matches is deleted along with its links when rejected, while nicknames, personal bios, post titles and content, and comments are replaced with the corresponding "违规xx" marker when rejected, and no notification is sent
 - User IDs in `SENSITIVE_WORD_CHECK_WHITELIST` are excluded from detection
 - The detection interval is 24 hours; detection runs once when the backend starts and then repeats at that interval, and no task is registered when it is not enabled
 

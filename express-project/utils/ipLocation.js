@@ -1,6 +1,24 @@
 const axios = require('axios');
 const config = require('../config/config');
 
+// 百度 opendata 返回的属地是「江苏省南京市 电信」这类整串，按开头的行政区名截取
+const CHINA_REGIONS = [
+  '北京', '天津', '上海', '重庆',
+  '河北', '山西', '辽宁', '吉林', '黑龙江',
+  '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南', '湖北', '湖南',
+  '广东', '海南', '四川', '贵州', '云南', '陕西', '甘肃', '青海', '台湾',
+  '内蒙古', '广西', '西藏', '宁夏', '新疆', '香港', '澳门'
+];
+
+function extractRegion(location) {
+  if (!location) return '';
+  const text = location.trim();
+  const matched = CHINA_REGIONS.find((name) => text.startsWith(name));
+  if (matched) return matched;
+  // 海外 IP 百度只给国家名（如「美国」），原样返回
+  return text.split(/\s+/)[0];
+}
+
 /**
  * 获取IP属地信息
  * @param {string} ip - IP地址
@@ -14,37 +32,21 @@ async function getIPLocation(ip) {
     }
 
     // 调用IP属地API
-    const response = await axios.get(config.ipLocation.primaryApi, {
+    const response = await axios.get(config.ipLocation.api, {
       params: {
-        ip: ip
+        query: ip,
+        co: '',
+        resource_id: '6006',
+        oe: 'utf8'
       },
-      timeout: config.ipLocation.primaryTimeout
+      timeout: config.ipLocation.timeout
     });
 
-    if (response.data && response.data.code === 200 && response.data.data) {
-      const locationData = response.data.data;
-      // 根据API返回的数据结构提取省份信息
-      if (locationData.subdivisions) {
-        return locationData.subdivisions.replace('省', '').replace('壮族自治区', '').replace('回族自治区', '').replace('回族自治区', '').replace('特别行政区', '').replace('市', '').replace('维吾尔自治区', '').replace('自治区', '');
-      } else if (locationData.region) {
-        return locationData.region.replace('省', '').replace('壮族自治区', '').replace('回族自治区', '').replace('回族自治区', '').replace('特别行政区', '').replace('市', '').replace('维吾尔自治区', '').replace('自治区', '');
-      }
-    }
-
-    // 如果主接口返回未知，尝试备用接口
-    try {
-      const backupResponse = await axios.get(config.ipLocation.backupApi, {
-        params: {
-          ip: ip
-        },
-        timeout: config.ipLocation.backupTimeout
-      });
-
-      if (backupResponse.data && backupResponse.data.code === 200 && backupResponse.data.data && backupResponse.data.data.province) {
-        return backupResponse.data.data.province.replace('省', '').replace('壮族自治区', '').replace('回族自治区', '').replace('回族自治区', '').replace('特别行政区', '').replace('市', '').replace('维吾尔自治区', '').replace('自治区', '');
-      }
-    } catch (backupError) {
-      console.error('备用IP属地接口调用失败:', backupError.message);
+    // 成功时 status 是字符串 '0'，失败是数字 1，类型不一致，不能直接比较
+    if (String(response.data && response.data.status) === '0') {
+      const item = response.data.data && response.data.data[0];
+      const region = extractRegion(item && item.location);
+      if (region) return region;
     }
 
     return '未知';

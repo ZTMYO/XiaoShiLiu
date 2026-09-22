@@ -15,7 +15,7 @@ Database name `xiaoshiliu`, 18 tables in total, covering users, content, social 
 |-------|------|-------------|
 | id | BIGINT | Primary key, auto-increment |
 | password | VARCHAR(255) | Password, nullable |
-| user_id | VARCHAR(50) | XiaoShiLiu ID, unique |
+| user_id | VARCHAR(50) | ShiLiu ID, unique |
 | nickname | VARCHAR(100) | Nickname |
 | email | VARCHAR(100) | Email, nullable |
 | avatar | VARCHAR(500) | Avatar URL |

@@ -155,12 +155,10 @@ const config = {
     }
   },
 
-  // IP属地查询配置
+  // IP属地查询配置（百度 opendata：公开接口，免费、无需密钥）
   ipLocation: {
-    primaryApi: process.env.IP_LOCATION_PRIMARY_API || 'https://api.pearktrue.cn/api/ip/details',
-    backupApi: process.env.IP_LOCATION_BACKUP_API || 'https://api.pearktrue.cn/api/ip/high',
-    primaryTimeout: parseInt(process.env.IP_LOCATION_PRIMARY_TIMEOUT) || 10000,
-    backupTimeout: parseInt(process.env.IP_LOCATION_BACKUP_TIMEOUT) || 5000
+    api: process.env.IP_LOCATION_API || 'https://opendata.baidu.com/api.php',
+    timeout: parseInt(process.env.IP_LOCATION_TIMEOUT) || 8000
   },
 
   // 违规词检测配置

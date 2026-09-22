@@ -124,7 +124,7 @@ GET /api/auth/captcha
 
 **请求示例**:
 ```http
-GET /api/auth/check-user-id?user_id=xiaoshiliu001
+GET /api/auth/check-user-id?user_id=user001
 ```
 
 **响应示例**:
@@ -172,8 +172,8 @@ POST /api/auth/register
 Content-Type: application/json
 
 {
-  "user_id": "xiaoshiliu001",
-  "nickname": "小石榴",
+  "user_id": "user001",
+  "nickname": "用户1",
   "password": "123456",
   "captchaId": "1725690000000a1b2c3d4e5",
   "captchaText": "aB3d",
@@ -190,8 +190,8 @@ Content-Type: application/json
   "data": {
     "user": {
       "id": 1,
-      "user_id": "xiaoshiliu001",
-      "nickname": "小石榴",
+      "user_id": "user001",
+      "nickname": "用户1",
       "avatar": "",
       "bio": "",
       "location": "北京",
@@ -249,7 +249,7 @@ POST /api/auth/login
 Content-Type: application/json
 
 {
-  "user_id": "xiaoshiliu123",
+  "user_id": "user002",
   "password": "123456"
 }
 ```
@@ -262,8 +262,8 @@ Content-Type: application/json
   "data": {
     "user": {
       "id": 1,
-      "user_id": "xiaoshiliu123",
-      "nickname": "小石榴用户",
+      "user_id": "user002",
+      "nickname": "用户2",
       "avatar": "https://example.com/avatar.jpg",
       "bio": "这是我的个人简介",
       "location": "北京",
@@ -395,8 +395,8 @@ Authorization: Bearer <access_token>
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": "user_001",
-    "nickname": "小石榴",
+    "user_id": "user001",
+    "nickname": "用户1",
     "avatar": "https://example.com/avatar.jpg",
     "bio": "这是个人简介",
     "location": "北京",
@@ -616,7 +616,7 @@ Content-Type: application/json
   "code": 200,
   "message": "验证码发送成功，请查收邮箱",
   "data": {
-    "user_id": "xiaoshiliu"
+    "user_id": "user001"
   }
 }
 ```
@@ -722,8 +722,8 @@ Content-Type: application/json
     "users": [
       {
         "id": 1,
-        "user_id": "user_001",
-        "nickname": "小石榴",
+        "user_id": "user001",
+        "nickname": "用户1",
         "avatar": "https://example.com/avatar.jpg",
         "bio": "这是个人简介",
         "location": "北京",
@@ -760,8 +760,8 @@ Content-Type: application/json
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": "user_001",
-    "nickname": "小石榴",
+    "user_id": "user001",
+    "nickname": "用户1",
     "avatar": "https://example.com/avatar.jpg",
     "bio": "这是个人简介",
     "location": "北京",
@@ -782,10 +782,10 @@ Content-Type: application/json
   "message": "success",
   "data": {
     "id": 2,
-    "user_id": "user_002",
-    "nickname": "测试用户",
+    "user_id": "user002",
+    "nickname": "用户2",
     "avatar": "https://example.com/avatar2.jpg",
-    "bio": "测试用户简介",
+    "bio": "用户2简介",
     "location": "上海",
     "follow_count": 5,
     "fans_count": 8,
@@ -874,7 +874,7 @@ Content-Type: application/json
     "following": [
       {
         "id": 2,
-        "user_id": "user_002",
+        "user_id": "user002",
         "nickname": "用户2",
         "avatar": "https://example.com/avatar2.jpg",
         "bio": "个人简介",
@@ -918,7 +918,7 @@ Content-Type: application/json
     "followers": [
       {
         "id": 3,
-        "user_id": "user_003",
+        "user_id": "user003",
         "nickname": "用户3",
         "avatar": "https://example.com/avatar3.jpg",
         "bio": "个人简介",
@@ -958,8 +958,8 @@ Content-Type: application/json
     "users": [
       {
         "id": 1,
-        "user_id": "user_001",
-        "nickname": "小石榴",
+        "user_id": "user001",
+        "nickname": "用户1",
         "avatar": "https://example.com/avatar.jpg",
         "bio": "这是个人简介",
         "location": "北京",
@@ -1057,8 +1057,8 @@ Content-Type: application/json
         "created_at": "2025-08-30T00:00:00.000Z",
         "user": {
           "id": 1,
-          "user_id": "user_001",
-          "nickname": "小石榴",
+          "user_id": "user001",
+          "nickname": "用户1",
           "avatar": "https://example.com/avatar.jpg",
           "verified": 0
         }
@@ -1113,7 +1113,7 @@ Content-Type: application/json
         "created_at": "2025-08-30T00:00:00.000Z",
         "user": {
           "id": 2,
-          "user_id": "user_002",
+          "user_id": "user002",
           "nickname": "用户2",
           "avatar": "https://example.com/avatar2.jpg",
           "verified": 0
@@ -1176,7 +1176,7 @@ Content-Type: application/json
     "mutualFollows": [
       {
         "id": 3,
-        "user_id": "user_003",
+        "user_id": "user003",
         "nickname": "用户3",
         "avatar": "https://example.com/avatar3.jpg",
         "bio": "个人简介",
@@ -1246,7 +1246,7 @@ Content-Type: application/json
   "message": "用户信息更新成功",
   "data": {
     "id": 1,
-    "user_id": "user_001",
+    "user_id": "user001",
     "nickname": "新昵称",
     "avatar": "https://example.com/new_avatar.jpg",
     "bio": "新的个人简介",
@@ -1295,7 +1295,7 @@ Content-Type: application/json
     "id": 1,
     "type": 2,
     "status": 0,
-    "real_name": "张三",
+    "real_name": "用户1",
     "id_card": "110101199001011234",
     "contact_name": null,
     "contact_phone": "13800138000",
@@ -1573,7 +1573,7 @@ Content-Type: application/json
         "comment_count": 5,
         "collect_count": 3,
         "created_at": "2025-08-30T00:00:00.000Z",
-        "nickname": "小石榴",
+        "nickname": "用户1",
         "user_avatar": "https://example.com/avatar.jpg",
         "verified": 0,
         "images": [
@@ -1794,8 +1794,8 @@ Content-Type: application/json
         "created_at": "2025-08-30T00:00:00.000Z",
         "user": {
           "id": 1,
-          "user_id": "user_001",
-          "nickname": "小石榴",
+          "user_id": "user001",
+          "nickname": "用户1",
           "avatar": "https://example.com/avatar.jpg",
           "verified": 0
         }
@@ -1974,11 +1974,11 @@ Content-Type: application/json
         "id": 1,
         "content": "这是一条普通评论",
         "user_id": 1,
-        "nickname": "张三",
+        "nickname": "用户1",
         "user_avatar": "https://img.example.com/avatar1.jpg",
         "verified": 0,
         "user_auto_id": 1,
-        "user_display_id": "user123",
+        "user_display_id": "user001",
         "post_id": 1,
         "parent_id": null,
         "created_at": "2025-08-30T00:00:00.000Z",
@@ -1987,13 +1987,13 @@ Content-Type: application/json
       },
       {
         "id": 2,
-        "content": "<p><a href=\"/user/user012\" data-user-id=\"user012\" class=\"mention-link\" contenteditable=\"false\">@摄影爱好者</a>&nbsp;你的作品真的很棒！</p>",
+        "content": "<p><a href=\"/user/user001\" data-user-id=\"user001\" class=\"mention-link\" contenteditable=\"false\">@用户1</a>&nbsp;你的作品真的很棒！</p>",
         "user_id": 2,
-        "nickname": "李四",
+        "nickname": "用户2",
         "user_avatar": "https://img.example.com/avatar2.jpg",
         "verified": 0,
         "user_auto_id": 2,
-        "user_display_id": "user456",
+        "user_display_id": "user002",
         "post_id": 1,
         "parent_id": null,
         "created_at": "2025-08-30T01:00:00.000Z",
@@ -2048,7 +2048,7 @@ Content-Type: application/json
 **包含@用户的请求示例**:
 ```json
 {
-  "content": "<p><a href=\"/user/user012\" data-user-id=\"user012\" class=\"mention-link\" contenteditable=\"false\">@摄影爱好者</a>&nbsp;你的作品真的很棒！</p>",
+  "content": "<p><a href=\"/user/user001\" data-user-id=\"user001\" class=\"mention-link\" contenteditable=\"false\">@用户1</a>&nbsp;你的作品真的很棒！</p>",
   "parent_id": null
 }
 ```
@@ -2060,7 +2060,7 @@ Content-Type: application/json
   "message": "评论创建成功",
   "data": {
     "id": 1,
-    "content": "<p><a href=\"/user/user012\" data-user-id=\"user012\" class=\"mention-link\" contenteditable=\"false\">@摄影爱好者</a>&nbsp;你的作品真的很棒！</p>",
+    "content": "<p><a href=\"/user/user001\" data-user-id=\"user001\" class=\"mention-link\" contenteditable=\"false\">@用户1</a>&nbsp;你的作品真的很棒！</p>",
     "user_id": 1,
     "parent_id": null,
     "created_at": "2025-08-30T00:00:00.000Z"
@@ -2101,7 +2101,7 @@ Content-Type: application/json
         "id": 2,
         "content": "这是一条回复",
         "user_id": 2,
-        "nickname": "李四",
+        "nickname": "用户2",
         "user_avatar": "https://img.example.com/avatar2.jpg",
         "verified": 0,
         "parent_id": 1,
@@ -2813,7 +2813,7 @@ Content-Type: application/json
           "title": "生活小记",
           "content": "今天的生活很美好",
           "author_id": 1,
-          "author_name": "张三",
+          "author_name": "用户1",
           "author_avatar": "https://img.example.com/avatar1.jpg",
           "created_at": "2025-08-30T00:00:00.000Z",
           "likes_count": 10,
@@ -2825,8 +2825,8 @@ Content-Type: application/json
       "users": [
         {
           "id": 1,
-          "username": "张三",
-          "nickname": "小张",
+          "username": "用户1",
+          "nickname": "用户1",
           "avatar": "https://img.example.com/avatar1.jpg",
           "bio": "热爱生活",
           "verified": 0,
@@ -2891,8 +2891,8 @@ Content-Type: application/json
     ],
     "users": [
       {
-        "text": "小石榴",
-        "userId": "shiliu001",
+        "text": "用户1",
+        "userId": "user001",
         "count": 320,
         "matched": ""
       }
@@ -3398,12 +3398,12 @@ Content-Type: application/json
         "id": 1,
         "user_id": 1,
         "type": 1,
-        "real_name": "张三",
+        "real_name": "用户1",
         "id_card": "110101199001011234",
         "id_card_front": "https://example.com/id_front.jpg",
         "id_card_back": "https://example.com/id_back.jpg",
         "contact_phone": "13800138000",
-        "contact_email": "zhangsan@example.com",
+        "contact_email": "user001@example.com",
         "description": "申请个人认证",
         "status": 0,
         "audit_time": null,
@@ -3411,8 +3411,8 @@ Content-Type: application/json
         "created_at": "2025-01-02T00:00:00.000Z",
         "user": {
           "id": 1,
-          "user_id": "user_001",
-          "nickname": "张三",
+          "user_id": "user001",
+          "nickname": "用户1",
           "avatar": "https://example.com/avatar.jpg"
         }
       }
@@ -3445,12 +3445,12 @@ Content-Type: application/json
     "id": 1,
     "user_id": 1,
     "type": 1,
-    "real_name": "张三",
+    "real_name": "用户1",
     "id_card": "110101199001011234",
     "id_card_front": "https://example.com/id_front.jpg",
     "id_card_back": "https://example.com/id_back.jpg",
     "contact_phone": "13800138000",
-    "contact_email": "zhangsan@example.com",
+    "contact_email": "user001@example.com",
     "description": "申请个人认证",
     "status": 0,
     "audit_time": null,
@@ -3458,8 +3458,8 @@ Content-Type: application/json
     "created_at": "2025-01-02T00:00:00.000Z",
     "user": {
       "id": 1,
-      "user_id": "user_001",
-      "nickname": "张三",
+      "user_id": "user001",
+      "nickname": "用户1",
       "avatar": "https://example.com/avatar.jpg",
       "verified": 0
     }
@@ -3707,8 +3707,8 @@ Content-Type: application/json
   "data": [
     {
       "id": 1,
-      "user_id": "user_001",
-      "nickname": "测试用户"
+      "user_id": "user001",
+      "nickname": "用户1"
     }
   ]
 }
@@ -3817,7 +3817,7 @@ curl -X GET "http://localhost:3001/api/auth/admin/me" \
 curl -X POST "http://localhost:3001/api/admin/users" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN" \
-  -d '{"user_id": "test_user", "nickname": "测试用户", "password": "123456"}'
+  -d '{"user_id": "user001", "nickname": "用户1", "password": "123456"}'
 
 # 删除笔记
 curl -X DELETE "http://localhost:3001/api/admin/posts/1" \
@@ -3850,12 +3850,12 @@ curl -X DELETE "http://localhost:3001/api/admin/comments" \
 # 用户注册
 curl -X POST "http://localhost:3001/api/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "nickname": "测试用户", "password": "123456"}'
+  -d '{"user_id": "user001", "nickname": "用户1", "password": "123456"}'
 
 # 用户登录
 curl -X POST "http://localhost:3001/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "password": "123456"}'
+  -d '{"user_id": "user001", "password": "123456"}'
 
 # 需要认证的接口统一携带 JWT
 curl -X GET "http://localhost:3001/api/auth/me" \
@@ -3884,7 +3884,7 @@ async function example() {
   // 登录并保存访问令牌
   const login = await apiRequest('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ user_id: 'test_user', password: '123456' })
+    body: JSON.stringify({ user_id: 'user001', password: '123456' })
   });
   const token = login.data.tokens.access_token;
 

@@ -154,7 +154,7 @@
 ## Third-Party APIs
 - **Image Storage**: Sample images are from [Liciyuan Image Hosting](https://t.alcy.cc/), providing stable image storage service
 - **Image Upload**: User-uploaded images use [Xiarou API](https://api.aa1.cn/doc/360tc.html) to ensure stability and speed
-- **IP Location Query**: IP location service uses [Pear API](https://api.pearktrue.cn/console/detail?id=290) for accurate IP positioning
+- **IP Location Query**: IP location service uses [Baidu opendata](https://www.baidu.com/) — free, no API key required — for accurate IP positioning
 
 ## Environment Requirements
 

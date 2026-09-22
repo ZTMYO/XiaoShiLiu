@@ -108,8 +108,8 @@ Authorization: Bearer <access_token>
   "data": {
     "user": {
       "id": 1,
-      "user_id": "user_001",
-      "nickname": "小石榴",
+      "user_id": "user001",
+      "nickname": "用戶1",
       "avatar": "https://example.com/avatar.jpg",
       "bio": "這是個人簡介",
       "location": "北京",
@@ -141,8 +141,8 @@ Authorization: Bearer <access_token>
   "data": {
     "user": {
       "id": 1,
-      "user_id": "xiaoshiliu123",
-      "nickname": "小石榴用户",
+      "user_id": "user002",
+      "nickname": "用戶2",
       "avatar": "http://example.com/avatar.jpg",
       "bio": "這是我的個人簡介",
       "location": "北京",
@@ -204,8 +204,8 @@ Authorization: Bearer <access_token>
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": "user_001",
-    "nickname": "小石榴",
+    "user_id": "user001",
+    "nickname": "用戶1",
     "avatar": "https://example.com/avatar.jpg",
     "bio": "這是個人簡介",
     "location": "北京",
@@ -227,8 +227,8 @@ Authorization: Bearer <access_token>
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": "user_001",
-    "nickname": "小石榴",
+    "user_id": "user001",
+    "nickname": "用戶1",
     "avatar": "https://example.com/avatar.jpg",
     "bio": "這是個人簡介",
     "location": "北京",
@@ -341,7 +341,7 @@ Authorization: Bearer <access_token>
   "code": 200,
   "message": "驗證碼發送成功，請查收郵箱",
   "data": {
-    "user_id": "xiaoshiliu"
+    "user_id": "user001"
   }
 }
 ```
@@ -407,8 +407,8 @@ Authorization: Bearer <access_token>
     "users": [
       {
         "id": 1,
-        "user_id": "user_001",
-        "nickname": "小石榴",
+        "user_id": "user001",
+        "nickname": "用戶1",
         "avatar": "https://example.com/avatar.jpg",
         "bio": "這是個人簡介",
         "location": "北京",
@@ -444,8 +444,8 @@ Authorization: Bearer <access_token>
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": "user_001",
-    "nickname": "小石榴",
+    "user_id": "user001",
+    "nickname": "用戶1",
     "avatar": "https://example.com/avatar.jpg",
     "bio": "這是個人簡介",
     "location": "北京",
@@ -466,10 +466,10 @@ Authorization: Bearer <access_token>
   "message": "success",
   "data": {
     "id": 2,
-    "user_id": "user_002",
-    "nickname": "測試用戶",
+    "user_id": "user002",
+    "nickname": "用戶2",
     "avatar": "https://example.com/avatar2.jpg",
-    "bio": "測試用戶簡介",
+    "bio": "用戶2簡介",
     "location": "上海",
     "follow_count": 5,
     "fans_count": 8,
@@ -556,7 +556,7 @@ Authorization: Bearer <access_token>
     "following": [
       {
         "id": 2,
-        "user_id": "user_002",
+        "user_id": "user002",
         "nickname": "用戶2",
         "avatar": "https://example.com/avatar2.jpg",
         "bio": "個人簡介",
@@ -599,7 +599,7 @@ Authorization: Bearer <access_token>
     "followers": [
       {
         "id": 3,
-        "user_id": "user_003",
+        "user_id": "user003",
         "nickname": "用戶3",
         "avatar": "https://example.com/avatar3.jpg",
         "bio": "個人簡介",
@@ -638,8 +638,8 @@ Authorization: Bearer <access_token>
     "users": [
       {
         "id": 1,
-        "user_id": "user_001",
-        "nickname": "小石榴",
+        "user_id": "user001",
+        "nickname": "用戶1",
         "avatar": "https://example.com/avatar.jpg",
         "bio": "這是個人簡介",
         "location": "北京",
@@ -735,8 +735,8 @@ Authorization: Bearer <access_token>
         "created_at": "2025-08-30T00:00:00.000Z",
         "user": {
           "id": 1,
-          "user_id": "user_001",
-          "nickname": "小石榴",
+          "user_id": "user001",
+          "nickname": "用戶1",
           "avatar": "https://example.com/avatar.jpg",
           "verified": 0
         }
@@ -790,7 +790,7 @@ Authorization: Bearer <access_token>
         "created_at": "2025-08-30T00:00:00.000Z",
         "user": {
           "id": 2,
-          "user_id": "user_002",
+          "user_id": "user002",
           "nickname": "用戶2",
           "avatar": "https://example.com/avatar2.jpg",
           "verified": 0
@@ -852,7 +852,7 @@ Authorization: Bearer <access_token>
     "mutualFollows": [
       {
         "id": 3,
-        "user_id": "user_003",
+        "user_id": "user003",
         "nickname": "用戶3",
         "avatar": "https://example.com/avatar3.jpg",
         "個人簡介": "個人簡介",
@@ -921,7 +921,7 @@ Authorization: Bearer <access_token>
   "message": "用戶信息更新成功",
   "data": {
     "id": 1,
-    "user_id": "user_001",
+    "user_id": "user001",
     "nickname": "新昵稱",
     "avatar": "https://example.com/new_avatar.jpg",
     "bio": "新的個人情簡介",
@@ -970,7 +970,7 @@ Authorization: Bearer <access_token>
     "id": 1,
     "type": 2,
     "status": 0,
-    "real_name": "張三",
+    "real_name": "用戶1",
     "id_card": "110101199001011234",
     "contact_name": null,
     "contact_phone": "13800138000",
@@ -1246,7 +1246,7 @@ Authorization: Bearer <access_token>
         "comment_count": 5,
         "collect_count": 3,
         "created_at": "2025-08-30T00:00:00.000Z",
-        "nickname": "小石榴",
+        "nickname": "用戶1",
         "user_avatar": "https://example.com/avatar.jpg",
         "verified": 0,
         "images": [
@@ -1461,8 +1461,8 @@ Authorization: Bearer <access_token>
         "created_at": "2025-08-30T00:00:00.000Z",
         "user": {
           "id": 1,
-          "user_id": "user_001",
-          "nickname": "小石榴",
+          "user_id": "user001",
+          "nickname": "用戶1",
           "avatar": "https://example.com/avatar.jpg",
           "verified": 0
         }
@@ -1638,11 +1638,11 @@ Authorization: Bearer <access_token>
         "id": 1,
         "content": "這是一條普通評論",
         "user_id": 1,
-        "nickname": "張三",
+        "nickname": "用戶1",
         "user_avatar": "https://img.example.com/avatar1.jpg",
         "verified": 0,
         "user_auto_id": 1,
-        "user_display_id": "user123",
+        "user_display_id": "user001",
         "post_id": 1,
         "parent_id": null,
         "created_at": "2025-08-30T00:00:00.000Z",
@@ -1651,13 +1651,13 @@ Authorization: Bearer <access_token>
       },
       {
         "id": 2,
-        "content": "<p><a href=\"/user/user012\" data-user-id=\"user012\" class=\"mention-link\" contenteditable=\"false\">@攝影愛好者</a>&nbsp;你的作品真的很棒！</p>",
+        "content": "<p><a href=\"/user/user001\" data-user-id=\"user001\" class=\"mention-link\" contenteditable=\"false\">@用戶1</a>&nbsp;你的作品真的很棒！</p>",
         "user_id": 2,
-        "nickname": "李四",
+        "nickname": "用戶2",
         "user_avatar": "https://img.example.com/avatar2.jpg",
         "verified": 0,
         "user_auto_id": 2,
-        "user_display_id": "user456",
+        "user_display_id": "user002",
         "post_id": 1,
         "parent_id": null,
         "created_at": "2025-08-30T01:00:00.000Z",
@@ -1713,7 +1713,7 @@ Authorization: Bearer <access_token>
 **包含@用戶的請求示例**:
 ```json
 {
-  "content": "<p><a href=\"/user/user012\" data-user-id=\"user012\" class=\"mention-link\" contenteditable=\"false\">@攝影愛好者</a>&nbsp;你的作品真的很棒！</p>",
+  "content": "<p><a href=\"/user/user001\" data-user-id=\"user001\" class=\"mention-link\" contenteditable=\"false\">@用戶1</a>&nbsp;你的作品真的很棒！</p>",
   "parent_id": null
 }
 ```
@@ -1725,7 +1725,7 @@ Authorization: Bearer <access_token>
   "message": "評論創建成功",
   "data": {
     "id": 1,
-    "content": "<p><a href=\"/user/user012\" data-user-id=\"user012\" class=\"mention-link\" contenteditable=\"false\">@攝影愛好者</a>&nbsp;你的作品真的很棒！</p>",
+    "content": "<p><a href=\"/user/user001\" data-user-id=\"user001\" class=\"mention-link\" contenteditable=\"false\">@用戶1</a>&nbsp;你的作品真的很棒！</p>",
     "user_id": 1,
     "parent_id": null,
     "created_at": "2025-08-30T00:00:00.000Z"
@@ -1766,7 +1766,7 @@ Authorization: Bearer <access_token>
         "id": 2,
         "content": "這是一條回覆",
         "user_id": 2,
-        "nickname": "李四",
+        "nickname": "用戶2",
         "user_avatar": "https://img.example.com/avatar2.jpg",
         "verified": 0,
         "parent_id": 1,
@@ -2478,7 +2478,7 @@ Authorization: Bearer <access_token>
           "title": "生活小記",
           "content": "今天的生活很美好",
           "author_id": 1,
-          "author_name": "張三",
+          "author_name": "用戶1",
           "author_avatar": "https://img.example.com/avatar1.jpg",
           "created_at": "2025-08-30T00:00:00.000Z",
           "likes_count": 10,
@@ -2490,8 +2490,8 @@ Authorization: Bearer <access_token>
       "users": [
         {
           "id": 1,
-          "username": "張三",
-          "nickname": "小張",
+          "username": "用戶1",
+          "nickname": "用戶1",
           "avatar": "https://img.example.com/avatar1.jpg",
           "bio": "熱愛生活",
           "verified": 0,
@@ -2556,8 +2556,8 @@ Authorization: Bearer <access_token>
     ],
     "users": [
       {
-        "text": "小石榴",
-        "userId": "shiliu001",
+        "text": "用戶1",
+        "userId": "user001",
         "count": 320,
         "matched": ""
       }
@@ -3061,12 +3061,12 @@ Authorization: Bearer <access_token>
         "id": 1,
         "user_id": 1,
         "type": 1,
-        "real_name": "張三",
+        "real_name": "用戶1",
         "id_card": "110101199001011234",
         "id_card_front": "https://example.com/id_front.jpg",
         "id_card_back": "https://example.com/id_back.jpg",
         "contact_phone": "13800138000",
-        "contact_email": "zhangsan@example.com",
+        "contact_email": "user001@example.com",
         "description": "申請個人認證",
         "status": 0,
         "audit_time": null,
@@ -3074,8 +3074,8 @@ Authorization: Bearer <access_token>
         "created_at": "2025-01-02T00:00:00.000Z",
         "user": {
           "id": 1,
-          "user_id": "user_001",
-          "nickname": "張三",
+          "user_id": "user001",
+          "nickname": "用戶1",
           "avatar": "https://example.com/avatar.jpg"
         }
       }
@@ -3108,12 +3108,12 @@ Authorization: Bearer <access_token>
     "id": 1,
     "user_id": 1,
     "type": 1,
-    "real_name": "張三",
+    "real_name": "用戶1",
     "id_card": "110101199001011234",
     "id_card_front": "https://example.com/id_front.jpg",
     "id_card_back": "https://example.com/id_back.jpg",
     "contact_phone": "13800138000",
-    "contact_email": "zhangsan@example.com",
+    "contact_email": "user001@example.com",
     "description": "申請個人認證",
     "status": 0,
     "audit_time": null,
@@ -3121,8 +3121,8 @@ Authorization: Bearer <access_token>
     "created_at": "2025-01-02T00:00:00.000Z",
     "user": {
       "id": 1,
-      "user_id": "user_001",
-      "nickname": "張三",
+      "user_id": "user001",
+      "nickname": "用戶1",
       "avatar": "https://example.com/avatar.jpg",
       "verified": 0
     }
@@ -3370,8 +3370,8 @@ Authorization: Bearer <access_token>
   "data": [
     {
       "id": 1,
-      "user_id": "user_001",
-      "nickname": "測試用戶"
+      "user_id": "user001",
+      "nickname": "用戶1"
     }
   ]
 }
@@ -3480,7 +3480,7 @@ curl -X GET "http://localhost:3001/api/auth/admin/me" \
 curl -X POST "http://localhost:3001/api/admin/users" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN" \
-  -d '{"user_id": "test_user", "nickname": "測試用戶", "password": "123456"}'
+  -d '{"user_id": "user001", "nickname": "用戶1", "password": "123456"}'
 
 # 刪除筆記
 curl -X DELETE "http://localhost:3001/api/admin/posts/1" \
@@ -3513,12 +3513,12 @@ curl -X DELETE "http://localhost:3001/api/admin/comments" \
 # 用戶註冊
 curl -X POST "http://localhost:3001/api/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "nickname": "測試用戶", "password": "123456"}'
+  -d '{"user_id": "user001", "nickname": "用戶1", "password": "123456"}'
 
 # 用戶登錄
 curl -X POST "http://localhost:3001/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "password": "123456"}'
+  -d '{"user_id": "user001", "password": "123456"}'
 
 # 需要認證的接口統一攜帶 JWT
 curl -X GET "http://localhost:3001/api/auth/me" \
@@ -3547,7 +3547,7 @@ async function example() {
   // 登錄並保存訪問令牌
   const login = await apiRequest('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ user_id: 'test_user', password: '123456' })
+    body: JSON.stringify({ user_id: 'user001', password: '123456' })
   });
   const token = login.data.tokens.access_token;
 

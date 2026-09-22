@@ -62,9 +62,8 @@
                   class="api-link"><img :src="xiaRouUrl" alt="夏柔" class="api-icon">夏柔API</a>，确保图片上传的稳定性和速度。
               </p>
               <p>
-                <strong>属地查询：</strong>IP属地查询服务使用 <a href="https://api.pearktrue.cn/console/detail?id=290"
-                  target="_blank" class="api-link"><img :src="baoLuoUrl" alt="保罗"
-                    class="api-icon">保罗API</a>，实现精准的IP属地定位功能。
+                <strong>属地查询：</strong>IP属地查询服务使用 <a href="https://www.baidu.com/" target="_blank"
+                  class="api-link"><img :src="baiduUrl" alt="百度" class="api-icon">百度opendata</a>，实现精准的IP属地定位功能。
               </p>
             </div>
           </div>
@@ -127,7 +126,7 @@ const logoUrl = new URL('@/assets/imgs/小石榴.png', import.meta.url).href
 const ztmyoUrl = new URL('@/assets/imgs/ztmyo.png', import.meta.url).href
 const liciUrl = new URL('@/assets/imgs/栗次元.ico', import.meta.url).href
 const xiaRouUrl = new URL('@/assets/imgs/夏柔.ico', import.meta.url).href
-const baoLuoUrl = new URL('@/assets/imgs/保罗.ico', import.meta.url).href
+const baiduUrl = new URL('@/assets/imgs/百度.ico', import.meta.url).href
 
 const isAnimating = ref(false)
 

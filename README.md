@@ -154,7 +154,7 @@
 ## 第三方API
 - **图片存储：** 灌装的示例图片来自 [栗次元图床](https://t.alcy.cc/)，提供稳定的图片存储服务
 - **图片上传：** 用户上传图片使用了 [夏柔API](https://api.aa1.cn/doc/360tc.html)，确保图片上传的稳定性和速度
-- **属地查询：** IP属地查询服务使用 [保罗API](https://api.pearktrue.cn/console/detail?id=290)，实现精准的IP属地定位功能
+- **属地查询：** IP属地查询服务使用 [百度opendata](https://www.baidu.com/)，免费、无需密钥，实现精准的IP属地定位功能
 
 ## 环境要求
 

@@ -194,17 +194,13 @@ npm run preview        # 本地预览，默认 http://localhost:4173
 ### IP属地查询配置
 
 ```env
-# 主API地址
-IP_LOCATION_PRIMARY_API=https://api.pearktrue.cn/api/ip/details
-# 主API超时时间（毫秒）
-IP_LOCATION_PRIMARY_TIMEOUT=10000
-# 备用API地址
-IP_LOCATION_BACKUP_API=https://api.pearktrue.cn/api/ip/high
-# 备用API超时时间（毫秒）
-IP_LOCATION_BACKUP_TIMEOUT=5000
+# API地址（百度 opendata，免费、无需密钥）
+IP_LOCATION_API=https://opendata.baidu.com/api.php
+# 请求超时时间（毫秒）
+IP_LOCATION_TIMEOUT=8000
 ```
 
-系统会在主 API 失败时自动切换到备用 API，超时时间可根据网络情况调整。
+接口无需注册和密钥，超时时间可根据网络情况调整。
 
 ### 违规词检测配置
 

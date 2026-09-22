@@ -1,12 +1,12 @@
 <template>
-  <div ref="inputRef" :class="inputClass" contenteditable="true" @input="handleInput" @focus="handleFocus"
+  <div ref="inputRef" :class="[inputClass, { 'is-empty': isEmpty }]" contenteditable="true" @input="handleInput" @focus="handleFocus"
     @blur="handleBlur" @keydown="handleKeydown" @click="handleClick" @mousedown="handleMouseDown" @paste="handlePaste"
     @copy="handleClipboardWrite" @cut="handleClipboardWrite" :placeholder="placeholder">
   </div>
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { sanitizeText } from '@/utils/contentSecurity'
 import { hydrateStickers, hasStickerMarker, stickerImgFromNode, stickerMarkerFromNode, stickerNodeFromText, stickerClipboardPayload } from '@/utils/inlineSticker'
 
@@ -46,6 +46,10 @@ const emit = defineEmits(['update:modelValue', 'focus', 'blur', 'keydown', 'ment
 const inputRef = ref(null)
 const isUserTyping = ref(false)
 const cursorMarkerId = ref(null)
+
+// placeholder 只由真实内容决定。不能用 DOM 判断空不空：回车后的空行是 <div><br></div>，
+// :only-child 不把裸文本节点算作兄弟，会把它误判成「空」，占位符就压到第一行的字上
+const isEmpty = computed(() => !props.modelValue || !props.modelValue.trim())
 
 const ensureMentionLinksNonEditable = () => {
   if (!inputRef.value) return
@@ -278,7 +282,7 @@ const handleInput = (event) => {
 
   // 内容为空时只把模型归一成空串，不要动 innerHTML：
   // 程序化清空 DOM 会连带清掉浏览器的原生撤销栈，剪空内容后再 Ctrl+Z 就失效了。
-  // placeholder 交给 CSS（:empty / :has），DOM 里残留的 <br> 不影响显示。
+  // placeholder 由 .is-empty 类控制（按模型值判断），DOM 里残留的 <br> 不影响显示。
   if (!content.trim() || content === '<br>' || content === '<div><br></div>') {
     content = ''
   }
@@ -821,6 +825,18 @@ const endOfContentRange = () => {
   range.selectNodeContents(line || root)
   range.collapse(false)
   return range
+}
+
+// 空行里的单个 <br> 是浏览器自己塞的占位符，不是用户敲出来的内容。它留在原地时，
+// 行内表情会被插到它后面，于是「空行」和「表情」各占一行，视觉上凭空多出一行
+const dropLinePlaceholderBr = (container, keepNode) => {
+  if (!container || container.nodeType !== Node.ELEMENT_NODE) return false
+  const children = Array.from(container.childNodes)
+  const br = children.find((node) => node.nodeType === Node.ELEMENT_NODE && node.tagName === 'BR')
+  if (!br) return false
+  if (children.some((node) => node !== br && node !== keepNode)) return false
+  br.remove()
+  return true
 }
 
 // 复制/剪切：浏览器序列化选区时会把行内表情的 <img> 丢掉，只有自己覆写 clipboardData 才能
@@ -1371,6 +1387,7 @@ const insertEmoji = (emojiChar) => {
     const marker = document.getElementById(cursorMarkerId.value)
     if (marker) {
       // 直接在标记节点位置插入表情
+      dropLinePlaceholderBr(marker.parentNode, marker)
       marker.parentNode.insertBefore(emojiNode, marker)
 
       // 删除标记节点
@@ -1404,6 +1421,12 @@ const insertEmoji = (emojiChar) => {
 
   const selection = window.getSelection()
   const range = endOfContentRange()
+
+  // 落点若落在空行的占位 <br> 之后，先摘掉它并把落点收回行首，避免表情被顶到下一行
+  if (dropLinePlaceholderBr(range.startContainer)) {
+    range.setStart(range.startContainer, 0)
+    range.collapse(true)
+  }
 
   range.insertNode(emojiNode)
   range.setStartAfter(emojiNode)
@@ -1463,12 +1486,7 @@ defineExpose({
   opacity: 0.6;
 }
 
-[contenteditable]:empty::before {
-  content: attr(placeholder);
-}
-
-[contenteditable]:has(> br:only-child)::before,
-[contenteditable]:has(> div:only-child > br:only-child)::before {
+[contenteditable].is-empty::before {
   content: attr(placeholder);
 }
 

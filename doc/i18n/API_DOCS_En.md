@@ -108,8 +108,8 @@ General parameters for interfaces that support pagination:
   "data": {
     "user": {
       "id": 1,
-      "user_id": "user_001",
-      "nickname": "XiaoShiLiu",
+      "user_id": "user001",
+      "nickname": "User 1",
       "avatar": "https://example.com/avatar.jpg",
       "bio": "This is a personal introduction",
       "location": "Beijing",
@@ -130,7 +130,7 @@ General parameters for interfaces that support pagination:
 **Request Parameters**:
 | Parameter | Type | Required | Description |
 |------|------|------|------|
-| user_id | string | Yes | XiaoShiLiu ID |
+| user_id | string | Yes | ShiLiu ID |
 | password | string | Yes | Password |
 
 **Response Example**:
@@ -141,8 +141,8 @@ General parameters for interfaces that support pagination:
   "data": {
     "user": {
       "id": 1,
-      "user_id": "xiaoshiliu123",
-      "nickname": "XiaoShiLiu User",
+      "user_id": "user002",
+      "nickname": "User 2",
       "avatar": "http://example.com/avatar.jpg",
       "bio": "This is my personal introduction",
       "location": "Beijing",
@@ -204,8 +204,8 @@ General parameters for interfaces that support pagination:
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": "user_001",
-    "nickname": "Pear石榴",
+    "user_id": "user001",
+    "nickname": "User 1",
     "avatar": "https://example.com/avatar.jpg",
     "bio": "This is a personal introduction",
     "location": "Beijing",
@@ -227,8 +227,8 @@ General parameters for interfaces that support pagination:
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": "user_001",
-    "nickname": "Pear石榴",
+    "user_id": "user001",
+    "nickname": "User 1",
     "avatar": "https://example.com/avatar.jpg",
     "bio": "This is a personal introduction",
     "location": "Beijing",
@@ -341,7 +341,7 @@ General parameters for interfaces that support pagination:
   "code": 200,
   "message": "Verification code sent successfully",
   "data": {
-    "user_id": "xiaoshiliu"
+    "user_id": "user001"
   }
 }
 ```
@@ -407,8 +407,8 @@ General parameters for interfaces that support pagination:
     "users": [
       {
         "id": 1,
-        "user_id": "user_001",
-        "nickname": "Pear石榴",
+        "user_id": "user001",
+        "nickname": "User 1",
         "avatar": "https://example.com/avatar.jpg",
         "bio": "This is a personal introduction",
         "location": "Beijing",
@@ -444,8 +444,8 @@ General parameters for interfaces that support pagination:
   "message": "success",
   "data": {
     "id": 1,
-    "user_id": "user_001",
-    "nickname": "Pear石榴",
+    "user_id": "user001",
+    "nickname": "User 1",
     "avatar": "https://example.com/avatar.jpg",
     "bio": "This is a personal introduction",
     "location": "Beijing",
@@ -466,10 +466,10 @@ General parameters for interfaces that support pagination:
   "message": "success",
   "data": {
     "id": 2,
-    "user_id": "user_002",
-    "nickname": "Test User",
+    "user_id": "user002",
+    "nickname": "User 2",
     "avatar": "https://example.com/avatar2.jpg",
-    "bio": "Test user bio",
+    "bio": "User 2 bio",
     "location": "Shanghai",
     "follow_count": 5,
     "fans_count": 8,
@@ -556,7 +556,7 @@ General parameters for interfaces that support pagination:
     "following": [
       {
         "id": 2,
-        "user_id": "user_002",
+        "user_id": "user002",
         "nickname": "User 2",
         "avatar": "https://example.com/avatar2.jpg",
         "bio": "Personal introduction",
@@ -599,7 +599,7 @@ General parameters for interfaces that support pagination:
     "followers": [
       {
         "id": 3,
-        "user_id": "user_003",
+        "user_id": "user003",
         "nickname": "User 3",
         "avatar": "https://example.com/avatar3.jpg",
         "bio": "Personal introduction",
@@ -625,7 +625,7 @@ General parameters for interfaces that support pagination:
 **Request Parameters**:
 | Parameter | Type | Required | Description |
 |------|------|------|------|
-| keyword | string | Yes | Search keyword (supports nickname and Xiaosu ID search) |
+| keyword | string | Yes | Search keyword (supports nickname and ShiLiu ID search) |
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
 
@@ -638,8 +638,8 @@ General parameters for interfaces that support pagination:
     "users": [
       {
         "id": 1,
-        "user_id": "user_001",
-        "nickname": "小石榴",
+        "user_id": "user001",
+        "nickname": "User 1",
         "avatar": "https://example.com/avatar.jpg",
         "bio": "This is a personal bio",
         "location": "Beijing",
@@ -700,7 +700,7 @@ General parameters for interfaces that support pagination:
 **Path Parameters**:
 | Parameter | Type | Required | Description |
 |------|------|------|------|
-| id | string | Yes | User's XiaoShiLiu ID |
+| id | string | Yes | User's ShiLiu ID |
 
 **Request Parameters**:
 | Parameter | Type | Required | Description |
@@ -735,8 +735,8 @@ General parameters for interfaces that support pagination:
         "created_at": "2025-08-30T00:00:00.000Z",
         "user": {
           "id": 1,
-          "user_id": "user_001",
-          "nickname": "小石榴",
+          "user_id": "user001",
+          "nickname": "User 1",
           "avatar": "https://example.com/avatar.jpg",
           "verified": 0
         }
@@ -790,7 +790,7 @@ General parameters for interfaces that support pagination:
         "created_at": "2025-08-30T00:00:00.000Z",
         "user": {
           "id": 2,
-          "user_id": "user_002",
+          "user_id": "user002",
           "nickname": "User 2",
           "avatar": "https://example.com/avatar2.jpg",
           "verified": 0
@@ -852,7 +852,7 @@ General parameters for interfaces that support pagination:
     "mutualFollows": [
       {
         "id": 3,
-        "user_id": "user_003",
+        "user_id": "user003",
         "nickname": "User 3",
         "avatar": "https://example.com/avatar3.jpg",
         "bio": "Personal bio",
@@ -921,7 +921,7 @@ General parameters for interfaces that support pagination:
   "message": "User information updated successfully",
   "data": {
     "id": 1,
-    "user_id": "user_001",
+    "user_id": "user001",
     "nickname": "New Nickname",
     "avatar": "https://example.com/new_avatar.jpg",
     "bio": "New personal bio",
@@ -970,7 +970,7 @@ General parameters for interfaces that support pagination:
     "id": 1,
     "type": 2,
     "status": 0,
-    "real_name": "Zhang San",
+    "real_name": "User 1",
     "id_card": "110101199001011234",
     "contact_name": null,
     "contact_phone": "13800138000",
@@ -1247,7 +1247,7 @@ General parameters for interfaces that support pagination:
         "comment_count": 5,
         "collect_count": 3,
         "created_at": "2025-08-30T00:00:00.000Z",
-        "nickname": "Xiao Shisui",
+        "nickname": "User 1",
         "user_avatar": "https://example.com/avatar.jpg",
         "verified": 0,
         "images": [
@@ -1463,8 +1463,8 @@ General parameters for interfaces that support pagination:
         "created_at": "2025-08-30T00:00:00.000Z",
         "user": {
           "id": 1,
-          "user_id": "user_001",
-          "nickname": "Xiao Shiliu",
+          "user_id": "user001",
+          "nickname": "User 1",
           "avatar": "https://example.com/avatar.jpg",
           "verified": 0
         }
@@ -1640,11 +1640,11 @@ General parameters for interfaces that support pagination:
         "id": 1,
         "content": "This is a normal comment",
         "user_id": 1,
-        "nickname": "Zhang San",
+        "nickname": "User 1",
         "user_avatar": "https://img.example.com/avatar1.jpg",
         "verified": 0,
         "user_auto_id": 1,
-        "user_display_id": "user123",
+        "user_display_id": "user001",
         "post_id": 1,
         "parent_id": null,
         "created_at": "2025-08-30T00:00:00.000Z",
@@ -1653,13 +1653,13 @@ General parameters for interfaces that support pagination:
       },
       {
         "id": 2,
-        "content": "<p><a href=\"/user/user012\" data-user-id=\"user012\" class=\"mention-link\" contenteditable=\"false\">@Photography Lover</a>&nbsp;Your work is really great!</p>",
+        "content": "<p><a href=\"/user/user001\" data-user-id=\"user001\" class=\"mention-link\" contenteditable=\"false\">@User 1</a>&nbsp;Your work is really great!</p>",
         "user_id": 2,
-        "nickname": "Li Si",
+        "nickname": "User 2",
         "user_avatar": "https://img.example.com/avatar2.jpg",
         "verified": 0,
         "user_auto_id": 2,
-        "user_display_id": "user456",
+        "user_display_id": "user002",
         "post_id": 1,
         "parent_id": null,
         "created_at": "2025-08-30T01:00:00.000Z",
@@ -1714,7 +1714,7 @@ General parameters for interfaces that support pagination:
 **Request Example with @User Mention**:
 ```json
 {
-  "content": "<p><a href=\"/user/user012\" data-user-id=\"user012\" class=\"mention-link\" contenteditable=\"false\">@Photography Lover</a>&nbsp;Your work is really great!</p>",
+  "content": "<p><a href=\"/user/user001\" data-user-id=\"user001\" class=\"mention-link\" contenteditable=\"false\">@User 1</a>&nbsp;Your work is really great!</p>",
   "parent_id": null
 }
 ```
@@ -1726,7 +1726,7 @@ General parameters for interfaces that support pagination:
   "message": "Comment created successfully",
   "data": {
     "id": 1,
-    "content": "<p><a href=\"/user/user012\" data-user-id=\"user012\" class=\"mention-link\" contenteditable=\"false\">@Photography Lover</a>&nbsp;Your work is really great!</p>",
+    "content": "<p><a href=\"/user/user001\" data-user-id=\"user001\" class=\"mention-link\" contenteditable=\"false\">@User 1</a>&nbsp;Your work is really great!</p>",
     "user_id": 1,
     "parent_id": null,
     "created_at": "2025-08-30T00:00:00.000Z"
@@ -1767,7 +1767,7 @@ General parameters for interfaces that support pagination:
         "id": 2,
         "content": "This is a reply",
         "user_id": 2,
-        "nickname": "Li Si",
+        "nickname": "User 2",
         "user_avatar": "https://img.example.com/avatar2.jpg",
         "verified": 0,
         "parent_id": 1,
@@ -1989,7 +1989,7 @@ The notification system supports the following types:
         "id": 4,
         "type": "collection",
         "sender_id": 5,
-        "sender_nickname": "User5",
+        "sender_nickname": "User 5",
         "sender_avatar": "https://example.com/avatar5.jpg",
         "sender_verified": 0,
         "post_id": 1,
@@ -2030,7 +2030,7 @@ The notification system supports the following types:
         "id": 1,
         "type": "comment",
         "sender_id": 2,
-        "sender_nickname": "User2",
+        "sender_nickname": "User 2",
         "sender_avatar": "https://example.com/avatar2.jpg",
         "sender_verified": 0,
         "post_id": 1,
@@ -2478,7 +2478,7 @@ The notification system supports the following types:
           "title": "Life Diary",
           "content": "Today's life is wonderful",
           "author_id": 1,
-          "author_name": "Zhang San",
+          "author_name": "User 1",
           "author_avatar": "https://img.example.com/avatar1.jpg",
           "created_at": "2025-08-30T00:00:00.000Z",
           "likes_count": 10,
@@ -2490,8 +2490,8 @@ The notification system supports the following types:
       "users": [
         {
           "id": 1,
-          "username": "Zhang San",
-          "nickname": "Xiao Zhang",
+          "username": "User 1",
+          "nickname": "User 1",
           "avatar": "https://img.example.com/avatar1.jpg",
           "bio": "Loving life",
           "verified": 0,
@@ -2556,8 +2556,8 @@ Candidate completion while typing in the search box. Candidates come from an in-
     ],
     "users": [
       {
-        "text": "小石榴",
-        "userId": "shiliu001",
+        "text": "User 1",
+        "userId": "user001",
         "count": 320,
         "matched": ""
       }
@@ -2655,7 +2655,7 @@ Administrator interfaces use JWT authentication:
 |------|------|------|------|
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
-| user_display_id | string | No | Xiaosuiliu number search |
+| user_display_id | string | No | ShiLiu ID search |
 | nickname | string | No | Nickname search |
 | status | int | No | Status filter (1=active, 0=disabled) |
 | ban_status | string | No | Ban status filter (normal=normal, banned=banned) |
@@ -2764,7 +2764,7 @@ Administrator interfaces use JWT authentication:
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
 | title | string | No | Title search |
-| user_display_id | string | No | Filter by author display ID |
+| user_display_id | string | No | Filter by author ShiLiu ID |
 | category_id | int | No | Category ID filter |
 | sortField | string | No | Sorting field (id, view_count, like_count, collect_count, comment_count, created_at) |
 | sortOrder | string | No | Sorting direction (ASC, DESC) |
@@ -2808,7 +2808,7 @@ Administrator interfaces use JWT authentication:
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
 | keyword | string | No | Search keyword (title or content) |
-| user_display_id | string | No | Filter by author XiaoShiLiu number |
+| user_display_id | string | No | Filter by author ShiLiu ID |
 | category_id | int/string | No | Category ID filter, pass "null" to filter uncategorized records |
 
 **Response Data**:
@@ -2820,7 +2820,7 @@ Administrator interfaces use JWT authentication:
 | type | int | Record type: 1-Image/Text, 2-Video |
 | category | string | Category name |
 | status | int | Record status: 2-Pending Review |
-| user_display_id | string | Author XiaoShiLiu number |
+| user_display_id | string | Author ShiLiu ID |
 | nickname | string | Author nickname |
 | tags | array | Tag list |
 | images | array | Image URL list |
@@ -2881,7 +2881,7 @@ Administrator interfaces use JWT authentication:
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
 | content | string | No | Content search |
-| user_display_id | string | No | Filter by comment author's display ID |
+| user_display_id | string | No | Filter by comment author's ShiLiu ID |
 | post_id | int | No | Filter by record ID |
 | id | int | No | Filter by exact comment ID |
 | status | int | No | Filter by comment status: 0-pending, 1-visible, 2-rejected |
@@ -2940,7 +2940,7 @@ Administrator interfaces use JWT authentication:
 | content | string | Comment content |
 | status | int | Comment status: 0-pending |
 | user_id | int | Commenter user ID |
-| user_display_id | string | Commenter XiaoShiLiu number |
+| user_display_id | string | Commenter ShiLiu ID |
 | nickname | string | Commenter nickname |
 | post_id | int | Post ID |
 | post_title | string | Post title |
@@ -3046,7 +3046,7 @@ Administrator interfaces use JWT authentication:
 | limit | int | No | Number of items per page, default 20 |
 | type | int | No | Certificate type filter (1-Individual Certificate, 2-Enterprise Certificate) |
 | status | int | No | Audit status filter (0-Pending, 1-Approved, 2-Rejected) |
-| user_display_id | string | No | User display ID search |
+| user_display_id | string | No | User ShiLiu ID search |
 | real_name | string | No | Real name search |
 | sortField | string | No | Sorting field (id, created_at, audit_time) |
 | sortOrder | string | No | Sorting direction (ASC, DESC) |
@@ -3062,12 +3062,12 @@ Administrator interfaces use JWT authentication:
         "id": 1,
         "user_id": 1,
         "type": 1,
-        "real_name": "Zhang San",
+        "real_name": "User 1",
         "id_card": "110101199001011234",
         "id_card_front": "https://example.com/id_front.jpg",
         "id_card_back": "https://example.com/id_back.jpg",
         "contact_phone": "13800138000",
-        "contact_email": "zhangsan@example.com",
+        "contact_email": "user001@example.com",
         "description": "Apply for individual certificate",
         "status": 0,
         "audit_time": null,
@@ -3075,8 +3075,8 @@ Administrator interfaces use JWT authentication:
         "created_at": "2025-01-02T00:00:00.000Z",
         "user": {
           "id": 1,
-          "user_id": "user_001",
-          "nickname": "Zhang San",
+          "user_id": "user001",
+          "nickname": "User 1",
           "avatar": "https://example.com/avatar.jpg"
         }
       }
@@ -3109,12 +3109,12 @@ Administrator interfaces use JWT authentication:
     "id": 1,
     "user_id": 1,
     "type": 1,
-    "real_name": "Zhang San",
+    "real_name": "User 1",
     "id_card": "110101199001011234",
     "id_card_front": "https://example.com/id_front.jpg",
     "id_card_back": "https://example.com/id_back.jpg",
     "contact_phone": "13800138000",
-    "contact_email": "zhangsan@example.com",
+    "contact_email": "user001@example.com",
     "description": "Apply for individual certificate",
     "status": 0,
     "audit_time": null,
@@ -3122,8 +3122,8 @@ Administrator interfaces use JWT authentication:
     "created_at": "2025-01-02T00:00:00.000Z",
     "user": {
       "id": 1,
-      "user_id": "user_001",
-      "nickname": "Zhang San",
+      "user_id": "user001",
+      "nickname": "User 1",
       "avatar": "https://example.com/avatar.jpg",
       "verified": 0
     }
@@ -3195,7 +3195,7 @@ Administrator interfaces use JWT authentication:
 |------|------|------|------|
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
-| user_display_id | string | No | Filter by user display ID |
+| user_display_id | string | No | Filter by user ShiLiu ID |
 | target_type | int | No | Target type (1=Note, 2=Comment) |
 | sortField | string | No | Sorting field (id, user_id, created_at) |
 | sortOrder | string | No | Sorting direction (ASC, DESC) |
@@ -3248,7 +3248,7 @@ Administrator interfaces use JWT authentication:
 |------|------|------|------|
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
-| user_display_id | string | No | Filter by user display ID |
+| user_display_id | string | No | Filter by user ShiLiu ID |
 | sortBy | string | No | Sorting field (id, user_id, created_at) |
 | sortOrder | string | No | Sorting direction (ASC, DESC) |
 
@@ -3275,7 +3275,7 @@ Administrator interfaces use JWT authentication:
 |------|------|------|------|
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
-| user_display_id | string | No | Filter by user display ID |
+| user_display_id | string | No | Filter by user ShiLiu ID |
 | sortField | string | No | Sorting field (id, follower_id, following_id, created_at) |
 | sortOrder | string | No | Sorting direction (ASC, DESC) |
 
@@ -3303,7 +3303,7 @@ Administrator interfaces use JWT authentication:
 |------|------|------|------|
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
-| user_display_id | string | No | Filter by user display ID |
+| user_display_id | string | No | Filter by user ShiLiu ID |
 | type | string | No | Filter by notification type |
 | is_read | int | No | Read status (0=Unread, 1=Read) |
 | sortField | string | No | Sorting field (id, created_at) |
@@ -3336,7 +3336,7 @@ Administrator interfaces use JWT authentication:
 |------|------|------|------|
 | page | int | No | Page number, default 1 |
 | limit | int | No | Number of items per page, default 20 |
-| user_display_id | string | No | Filter by user display ID |
+| user_display_id | string | No | Filter by user ShiLiu ID |
 | is_active | int | No | Active status (0=Inactive, 1=Active) |
 | sortField | string | No | Sorting field (id, is_active, expires_at, created_at) |
 | sortOrder | string | No | Sorting direction (ASC, DESC) |
@@ -3372,8 +3372,8 @@ Administrator interfaces use JWT authentication:
   "data": [
     {
       "id": 1,
-      "user_id": "user_001",
-      "nickname": "Test User"
+      "user_id": "user001",
+      "nickname": "User 1"
     }
   ]
 }
@@ -3482,7 +3482,7 @@ curl -X GET "http://localhost:3001/api/auth/admin/me" \
 curl -X POST "http://localhost:3001/api/admin/users" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN" \
-  -d '{"user_id": "test_user", "nickname": "Test User", "password": "123456"}'
+  -d '{"user_id": "user001", "nickname": "User 1", "password": "123456"}'
 
 # Deleting a Note
 curl -X DELETE "http://localhost:3001/api/admin/posts/1" \
@@ -3515,12 +3515,12 @@ curl -X DELETE "http://localhost:3001/api/admin/comments" \
 # User registration
 curl -X POST "http://localhost:3001/api/auth/register" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "nickname": "Test User", "password": "123456"}'
+  -d '{"user_id": "user001", "nickname": "User 1", "password": "123456"}'
 
 # User login
 curl -X POST "http://localhost:3001/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": "test_user", "password": "123456"}'
+  -d '{"user_id": "user001", "password": "123456"}'
 
 # Authenticated interfaces carry the JWT
 curl -X GET "http://localhost:3001/api/auth/me" \
@@ -3549,7 +3549,7 @@ async function example() {
   // Login and save the access token
   const login = await apiRequest('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ user_id: 'test_user', password: '123456' })
+    body: JSON.stringify({ user_id: 'user001', password: '123456' })
   });
   const token = login.data.tokens.access_token;
 
