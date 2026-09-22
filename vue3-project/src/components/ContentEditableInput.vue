@@ -47,9 +47,10 @@ const inputRef = ref(null)
 const isUserTyping = ref(false)
 const cursorMarkerId = ref(null)
 
-// placeholder 只由真实内容决定。不能用 DOM 判断空不空：回车后的空行是 <div><br></div>，
-// :only-child 不把裸文本节点算作兄弟，会把它误判成「空」，占位符就压到第一行的字上
-const isEmpty = computed(() => !props.modelValue || !props.modelValue.trim())
+// placeholder 只由「有没有输入字符」决定。不能用 DOM 判断空不空：回车后的空行是 <div><br></div>，
+// :only-child 不把裸文本节点算作兄弟，会把它误判成「空」，占位符就压到第一行的字上。
+// 也不能按 trim 判断：空格虽然提交时算无效内容，但光标那格确实被占住了，占位符再盖上去就重叠了
+const isEmpty = computed(() => !props.modelValue)
 
 const ensureMentionLinksNonEditable = () => {
   if (!inputRef.value) return
@@ -280,10 +281,11 @@ const handleInput = (event) => {
 
   let content = event.target.innerHTML
 
-  // 内容为空时只把模型归一成空串，不要动 innerHTML：
+  // 只剩浏览器自塞的占位标签时把模型归一成空串，不要动 innerHTML：
   // 程序化清空 DOM 会连带清掉浏览器的原生撤销栈，剪空内容后再 Ctrl+Z 就失效了。
   // placeholder 由 .is-empty 类控制（按模型值判断），DOM 里残留的 <br> 不影响显示。
-  if (!content.trim() || content === '<br>' || content === '<div><br></div>') {
+  // 只输入空格时不走这里：空格是真实按键，归一成空串会让占位符压在有空格的那一行上
+  if (content === '<br>' || content === '<div><br></div>') {
     content = ''
   }
 
