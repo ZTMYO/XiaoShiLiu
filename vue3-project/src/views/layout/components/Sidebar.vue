@@ -7,6 +7,7 @@ import { useRouteUtils } from '@/composables/useRouteUtils'
 import { useUserStore } from '@/stores/user.js'
 import { useNotificationStore } from '@/stores/notification'
 import { useAuthStore } from '@/stores/auth'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 
 const { route, handleExploreClick } = useRouteUtils()
 const userStore = useUserStore()
@@ -105,7 +106,7 @@ onMounted(() => {
         <RouterLink :to="menuItems[3].path" class="sidebar-link"
           :class="{ 'active-link': route.path === menuItems[3].path }">
           <span class="sidebar-icon">
-            <img :src="userStore.userInfo?.avatar || defaultAvatar" :alt="userStore.userInfo?.nickname || '用户头像'"
+            <img :src="userStore.userInfo?.avatar || getDefaultAvatar(userStore.userInfo?.user_id)" :alt="userStore.userInfo?.nickname || '用户头像'"
               class="avatar-icon" @error="handleAvatarError" />
           </span>
           <span class="sidebar-label">{{ menuItems[3].label }}</span>

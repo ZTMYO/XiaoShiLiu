@@ -483,7 +483,7 @@ import { commentApi, userApi, postApi, imageUploadApi } from '@/api/index.js'
 import { getPostDetail } from '@/api/posts.js'
 import { useScrollLock } from '@/composables/useScrollLock'
 import { formatTime } from '@/utils/timeFormat'
-import { getThumbnailUrl, supportsThumbnail } from '@/utils/imageUtils.js'
+import { getThumbnailUrl, supportsThumbnail, getDefaultAvatar } from '@/utils/imageUtils.js'
 import defaultAvatar from '@/assets/imgs/avatar.png'
 
 const router = useRouter()
@@ -836,7 +836,7 @@ const authorData = computed(() => {
   return {
     id: userId,
     name: props.item.nickname || props.item.author || '匿名用户',
-    avatar: props.item.user_avatar || props.item.avatar || new URL('@/assets/imgs/未加载.png', import.meta.url).href,
+    avatar: props.item.user_avatar || props.item.avatar || getDefaultAvatar(userId),
     verified: props.item.verified || props.item.author_verified || 0,
     isFollowing: followState.followed,
     buttonType: followState.buttonType
@@ -2518,7 +2518,7 @@ const handleSendComment = async () => {
           user_id: response.data.user_display_id || response.data.user_id,
           user_auto_id: response.data.user_auto_id || response.data.user_id,
           username: response.data.nickname || '匿名用户',
-          avatar: response.data.user_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,
+          avatar: response.data.user_avatar || getDefaultAvatar(response.data.user_display_id || response.data.user_id),
           verified: response.data.verified || 0, // 认证状态
           content: response.data.content,
           time: formatTime(response.data.created_at) || '刚刚',

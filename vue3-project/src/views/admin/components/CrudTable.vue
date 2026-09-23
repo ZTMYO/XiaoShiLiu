@@ -118,8 +118,8 @@
                 <span>{{ item[column.key] || '-' }}</span>
               </slot>
               <span v-else-if="column.type === 'image'">
-                <img :src="item[column.key] || defaultAvatar" alt="图片" class="table-image"
-                  @click="showImageModal(item[column.key] || defaultAvatar)" @error="handleImageError" />
+                <img :src="item[column.key] || getDefaultAvatar(item.user_display_id || item.user_id || item.id)" alt="图片" class="table-image"
+                  @click="showImageModal(item[column.key] || getDefaultAvatar(item.user_display_id || item.user_id || item.id))" @error="handleImageError" />
               </span>
               <span v-else-if="column.type === 'image-gallery'">
                 <span v-if="loadingGallery === item.id" class="loading-text">
@@ -258,14 +258,6 @@
       :loading="formLoading" @submit="submitForm" @close="closeModals" />
 
 
-    <div v-if="showLoadingOverlay" class="loading-overlay">
-      <div class="loading-spinner">
-        <SvgIcon name="loading" />
-        <span>加载中...</span>
-      </div>
-    </div>
-
-
     <ConfirmDialog v-model:visible="confirmState.visible" :title="confirmState.title" :message="confirmState.message"
       :type="confirmState.type" :confirm-text="confirmState.confirmText" :cancel-text="confirmState.cancelText"
       :show-cancel="confirmState.showCancel" @confirm="handleConfirm" @cancel="handleCancel" />
@@ -286,6 +278,7 @@ import DropdownSelect from '@/components/DropdownSelect.vue'
 import request from '@/api/request'
 import { useConfirm } from '../composables/useConfirm'
 import messageManager from '@/utils/messageManager'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 
 const props = defineProps({
   title: {
@@ -382,27 +375,6 @@ const defaultAvatar = new URL('@/assets/imgs/avatar.png', import.meta.url).href
 
 const data = ref([])
 const loading = ref(false)
-// 遮罩延迟显示：本地接口响应快，如果请求一发出就盖遮罩，会在像素级形成一闪而过的黑纱；
-// 改为请求超过 250ms 仍未返回才显示，快时完全无感，慢网仍有关怀
-const showLoadingOverlay = ref(false)
-let loadingOverlayTimer = null
-
-const showLoading = () => {
-  loading.value = true
-  if (loadingOverlayTimer) clearTimeout(loadingOverlayTimer)
-  loadingOverlayTimer = setTimeout(() => {
-    if (loading.value) showLoadingOverlay.value = true
-  }, 250)
-}
-
-const hideLoading = () => {
-  loading.value = false
-  showLoadingOverlay.value = false
-  if (loadingOverlayTimer) {
-    clearTimeout(loadingOverlayTimer)
-    loadingOverlayTimer = null
-  }
-}
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showDetailModal = ref(false)
@@ -533,7 +505,7 @@ const loadData = async (targetPage = null, useCache = true) => {
   }
 
   if (!targetPage) {
-    showLoading()
+    loading.value = true
   }
 
   try {
@@ -1551,44 +1523,6 @@ const handleCustomAction = (action, item) => {
 .page-numbers button.btn-primary:hover:not(:disabled) {
   background-color: var(--primary-color);
   opacity: 0.9;
-}
-
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--overlay-bg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
-  transition: background-color 0.3s ease;
-}
-
-.loading-spinner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-color-secondary);
-}
-
-.loading-spinner svg {
-  width: 32px;
-  height: 32px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* 按钮样式 */

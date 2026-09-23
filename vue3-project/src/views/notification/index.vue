@@ -24,6 +24,7 @@ import { useCommentLikeStore } from '@/stores/commentLike'
 import { useCommentStore } from '@/stores/comment'
 import { formatTime } from '@/utils/timeFormat'
 import { sanitizeContent } from '@/utils/contentSecurity'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 import avatarPlaceholder from '@/assets/imgs/avatar.png'
 import imagePlaceholder from '@/assets/imgs/未加载.png'
 
@@ -150,7 +151,7 @@ async function loadCommentsData(isLoadMore = false) {
         id: item.from_user_id,
         autoId: item.from_user_auto_id,
         username: item.from_nickname || '未知用户',
-        avatar: item.from_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,
+        avatar: item.from_avatar || getDefaultAvatar(item.from_user_id),
         verified: item.from_verified || 0,
         action: item.title || '评论了你的笔记',
         time: formatTime(item.created_at),
@@ -223,7 +224,7 @@ async function loadLikesData(isLoadMore = false) {
       id: item.from_user_id, // 使用from_user_id字段（小石榴号）用于导航
       autoId: item.from_user_auto_id, // 自增ID，用于API调用
       username: item.from_nickname || '未知用户',
-      avatar: item.from_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,
+      avatar: item.from_avatar || getDefaultAvatar(item.from_user_id),
       verified: item.from_verified || 0,
       action: item.title || '点赞了你的内容', // 使用后端返回的正确标题
       time: formatTime(item.created_at),
@@ -340,7 +341,7 @@ async function loadFollowsData(isLoadMore = false) {
         from_user_id: item.from_user_id, // 添加from_user_id字段供FollowButton使用
         autoId: item.from_user_auto_id, // 自增ID，用于API调用
         username: item.from_nickname || '未知用户',
-        avatar: item.from_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,
+        avatar: item.from_avatar || getDefaultAvatar(item.from_user_id),
         verified: item.from_verified || 0,
         action: actionText,
         time: formatTime(item.created_at),
@@ -409,7 +410,7 @@ async function loadCollectionsData(isLoadMore = false) {
       id: item.from_user_id, // 使用from_user_id字段（小石榴号）用于导航
       autoId: item.from_user_auto_id, // 自增ID，用于API调用
       username: item.from_nickname || '未知用户',
-      avatar: item.from_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,
+      avatar: item.from_avatar || getDefaultAvatar(item.from_user_id),
       verified: item.from_verified || 0,
       action: item.title || '收藏了你的笔记', // 使用后端返回的正确标题
       time: formatTime(item.created_at),

@@ -32,7 +32,7 @@ import { useUserStore } from '@/stores/user'
 import FollowButton from '@/components/FollowButton.vue'
 import VerifiedBadge from '@/components/VerifiedBadge.vue'
 import { userApi } from '@/api/index.js'
-import { supportsThumbnail } from '@/utils/imageUtils.js'
+import { supportsThumbnail, getDefaultAvatar } from '@/utils/imageUtils.js'
 import defaultAvatar from '@/assets/imgs/avatar.png'
 
 const props = defineProps({
@@ -60,7 +60,7 @@ const userStore = useUserStore()
 // 头像为空或指向非本站图床时直接用默认头像，避免外部图片加载失败让头像区域长期空白
 const avatarSrc = computed(() => {
     const url = (props.user.avatar || '').trim()
-    if (!url) return defaultAvatar
+    if (!url) return getDefaultAvatar(props.user.user_id || props.user.userId)
     try {
         const hostname = new URL(url, window.location.origin).hostname.toLowerCase()
         if (supportsThumbnail(url) || hostname === window.location.hostname) return url

@@ -40,6 +40,7 @@ import { apiConfig } from '@/config/api'
 import { useCommentStore } from '@/stores/comment'
 import { useCommentLikeStore } from '@/stores/commentLike'
 import { formatTime } from '@/utils/timeFormat'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 
 // CrudTable 在移动端应用筛选后会抛出 close-filter，这里转发给 AdminLayout 收起筛选面板
 const emit = defineEmits(['closeFilter'])
@@ -177,7 +178,7 @@ const toCommentData = (row, isReply = false, parentRow = null) => ({
   user_id: row.user_display_id || row.user_id,
   user_auto_id: row.user_auto_id || row.user_id,
   username: row.nickname || '匿名用户',
-  avatar: row.user_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,
+  avatar: row.user_avatar || getDefaultAvatar(row.user_display_id || row.user_id),
   verified: row.verified || 0,
   content: row.content,
   time: formatTime(row.created_at),

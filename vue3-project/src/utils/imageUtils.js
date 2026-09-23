@@ -182,3 +182,29 @@ export function getThumbnailUrl(url, width = 480, options = {}) {
   const separator = url.includes('?') ? '&' : '?'
   return url + separator + 'x-oss-process=' + process.join('/')
 }
+
+const DEFAULT_AVATARS = Object.values(
+  import.meta.glob('../assets/imgs/avatars/*.{svg,png,jpg,jpeg,webp,avif,gif}', { eager: true, import: 'default' })
+).sort()
+
+const DEFAULT_AVATAR_FALLBACK = new URL('@/assets/imgs/avatar.png', import.meta.url).href
+
+/**
+ * 获取默认头像：同一 userKey 始终返回同一张默认头像
+ * @param {string|number} userKey - 用户唯一标识（小石榴号等）
+ * @returns {string} 默认头像 URL
+ */
+export function getDefaultAvatar(userKey) {
+  if (!DEFAULT_AVATARS.length) {
+    return DEFAULT_AVATAR_FALLBACK
+  }
+  if (userKey === undefined || userKey === null || userKey === '') {
+    return DEFAULT_AVATARS[0]
+  }
+  let hash = 5381
+  const s = String(userKey)
+  for (let i = 0; i < s.length; i++) {
+    hash = ((hash << 5) + hash + s.charCodeAt(i)) >>> 0
+  }
+  return DEFAULT_AVATARS[hash % DEFAULT_AVATARS.length]
+}

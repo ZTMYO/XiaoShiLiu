@@ -188,6 +188,7 @@ import { useUserStore } from '@/stores/user.js'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { apiConfig } from '@/config/api'
 import { formatFileSize } from '@/utils/fileSize'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 
 const props = defineProps({
   visible: {
@@ -210,8 +211,6 @@ const { lock, unlock } = useScrollLock()
 
 // 用户store
 const userStore = useUserStore()
-
-const defaultAvatar = new URL('@/assets/imgs/avatar.png', import.meta.url).href
 
 // 邮箱相关
 const emailEnabled = ref(false)
@@ -446,7 +445,7 @@ watch(() => props.visible, (newValue) => {
     // 初始化表单数据
     // 检查头像URL是否有效（排除错误的默认头像路径）
     const isValidAvatar = props.userInfo.avatar && !props.userInfo.avatar.includes('/asset/imgs/avatar.png')
-    form.avatar = isValidAvatar ? props.userInfo.avatar : defaultAvatar
+    form.avatar = isValidAvatar ? props.userInfo.avatar : getDefaultAvatar(props.userInfo.user_id || userStore.userInfo?.user_id)
     form.nickname = props.userInfo.nickname || ''
     form.bio = props.userInfo.bio || ''
 

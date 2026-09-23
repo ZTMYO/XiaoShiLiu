@@ -2,6 +2,7 @@ import { postApi } from './index.js'
 import request from './request.js'
 import apiConfig from '@/config/api.js'
 import { hasViewedPost, markPostAsViewed } from '@/utils/viewTracker.js'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 
 // 转换后端数据格式为前端瀑布流需要的格式
 function transformPostData(backendPost) {
@@ -23,7 +24,7 @@ function transformPostData(backendPost) {
     video_url: backendPost.video_url,
     cover_url: backendPost.cover_url,
     videos: backendPost.videos || [],
-    avatar: backendPost.user_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,
+    avatar: backendPost.user_avatar || getDefaultAvatar(backendPost.author_account || backendPost.author_auto_id),
     author: backendPost.nickname || '匿名用户',
     location: backendPost.location || '',
     // 统计数据 - 统一使用后端字段名

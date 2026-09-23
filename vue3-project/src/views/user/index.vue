@@ -14,6 +14,7 @@ import { userApi } from '@/api/index.js'
 import BackToTopButton from '@/components/BackToTopButton.vue'
 import ImageViewer from '@/components/ImageViewer.vue'
 import VerifiedBadge from '@/components/VerifiedBadge.vue'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 
 const router = useRouter()
 const navigationStore = useNavigationStore()
@@ -52,7 +53,7 @@ const closeEditProfileModal = () => {
 const previewAvatar = () => {
   console.log('点击头像预览 - 开始')
   console.log('userStore.userInfo:', userStore.userInfo)
-  const avatarUrl = userStore.userInfo?.avatar || defaultAvatar
+  const avatarUrl = userStore.userInfo?.avatar || getDefaultAvatar(userStore.userInfo?.user_id)
   console.log('avatarUrl:', avatarUrl)
   currentImageUrl.value = avatarUrl
   showImageViewer.value = true
@@ -312,7 +313,7 @@ function handleCollect(data) {
   <div class="content-container">
     <div class="user-info" v-if="userStore.isLoggedIn">
       <div class="basic-info">
-        <img :src="userStore.userInfo?.avatar || defaultAvatar" :alt="userStore.userInfo?.nickname || '用户头像'"
+        <img :src="userStore.userInfo?.avatar || getDefaultAvatar(userStore.userInfo?.user_id)" :alt="userStore.userInfo?.nickname || '用户头像'"
           class="avatar" @click="previewAvatar" @error="handleAvatarError">
         <div class="user-basic">
           <div class="user-nickname">

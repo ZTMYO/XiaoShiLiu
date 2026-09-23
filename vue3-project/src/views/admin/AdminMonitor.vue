@@ -14,7 +14,7 @@
           <div v-for="activity in activities" :key="activity.id" class="activity-item"
             @click="handleActivityClick(activity)">
             <div class="activity-icon">
-              <img :src="activity.avatar || defaultAvatar" alt="avatar" class="activity-avatar"
+              <img :src="activity.avatar || getDefaultAvatar(activity.user_id)" alt="avatar" class="activity-avatar"
                 @error="onAvatarError($event)" />
             </div>
             <div class="activity-content">
@@ -44,6 +44,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { adminApi } from '@/api'
 import defaultAvatar from '@/assets/imgs/avatar.png'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 import ContentRenderer from '@/components/ContentRenderer.vue'
 const router = useRouter()
 const activities = ref([])

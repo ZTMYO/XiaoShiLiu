@@ -3,7 +3,7 @@
 
     <div class="card-header">
       <div class="avatar-info">
-        <img :src="userInfo.avatar" :alt="userInfo.nickname" class="avatar" @error="handleAvatarError" />
+        <img :src="userInfo.avatar || getDefaultAvatar(userInfo.user_id || userInfo.userId || userInfo.id)" :alt="userInfo.nickname" class="avatar" @error="handleAvatarError" />
         <div class="nickname-container">
           <span class="nickname">{{ userInfo.nickname }}</span>
           <VerifiedBadge :verified="userInfo.verified" />
@@ -61,6 +61,7 @@ import FollowButton from './FollowButton.vue'
 import ContentRenderer from './ContentRenderer.vue'
 import VerifiedBadge from './VerifiedBadge.vue'
 import defaultAvatar from '@/assets/imgs/avatar.png'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 
 const router = useRouter()
 const followStore = useFollowStore()

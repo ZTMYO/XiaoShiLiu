@@ -33,7 +33,7 @@
           <div v-for="user in displayedUsers" :key="user.id" class="friend-item"
             :class="{ 'loading-disabled': loading || searchLoading }"
             @click="!(loading || searchLoading) && selectFriend(user)">
-            <img :src="getImageSrc(user.avatar || defaultAvatar, user.id)" :alt="user.nickname" class="friend-avatar"
+            <img :src="getImageSrc(user.avatar || getDefaultAvatar(user.user_id || user.id), user.id)" :alt="user.nickname" class="friend-avatar"
               @load="onImageLoad(user.id)" @error="onImageError(user.id)" />
             <div class="friend-info">
               <div class="friend-nickname-container">
@@ -63,6 +63,7 @@ import SkeletonList from '@/components/skeleton/SkeletonList.vue'
 import VerifiedBadge from '@/components/VerifiedBadge.vue'
 import { userApi, authApi } from '@/api/index.js'
 import { useScrollLock } from '@/composables/useScrollLock'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 
 const props = defineProps({
   visible: {

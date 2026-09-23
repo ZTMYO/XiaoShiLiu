@@ -14,6 +14,7 @@ import ContentRenderer from '@/components/ContentRenderer.vue'
 import BackToTopButton from '@/components/BackToTopButton.vue'
 import ImageViewer from '@/components/ImageViewer.vue'
 import VerifiedBadge from '@/components/VerifiedBadge.vue'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 
 const route = useRoute()
 const router = useRouter()
@@ -210,7 +211,7 @@ function handleAvatarError(event) {
 const previewAvatar = () => {
   console.log('点击头像预览 - 开始')
   console.log('userInfo.value:', userInfo.value)
-  const avatarUrl = userInfo.value.avatar || defaultAvatar
+  const avatarUrl = userInfo.value.avatar || getDefaultAvatar(userId.value)
   console.log('avatarUrl:', avatarUrl)
   currentImageUrl.value = avatarUrl
   showImageViewer.value = true
@@ -256,7 +257,7 @@ onMounted(async () => {
 
     <div class="user-info" v-if="userInfo.nickname">
       <div class="basic-info">
-        <img :src="userInfo.avatar || defaultAvatar" :alt="userInfo.nickname || '用户头像'" class="avatar"
+        <img :src="userInfo.avatar || getDefaultAvatar(userId)" :alt="userInfo.nickname || '用户头像'" class="avatar"
           @click="previewAvatar" @error="handleAvatarError">
         <div class="user-basic">
           <div class="user-nickname">

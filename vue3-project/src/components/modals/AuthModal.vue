@@ -118,6 +118,7 @@ import MessageToast from '@/components/MessageToast.vue'
 import CaptchaModal from '@/components/modals/CaptchaModal.vue'
 import { useUserStore } from '@/stores/user.js'
 import { useScrollLock } from '@/composables/useScrollLock'
+import { getDefaultAvatar } from '@/utils/imageUtils'
 
 const props = defineProps({
   initialMode: {
@@ -480,7 +481,7 @@ const performSubmit = async () => {
         password: formData.password,
         captchaId: captchaId.value,
         captchaText: formData.captchaText,
-        avatar: new URL('@/assets/imgs/avatar.png', import.meta.url).href,
+        avatar: getDefaultAvatar(formData.user_id),
         bio: '用户没有任何简介',
         location: '未知'
       }
