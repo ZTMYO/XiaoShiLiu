@@ -41,34 +41,41 @@ const docsRoutes = require('./routes/docs');
 
 const app = express();
 
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500,
+// 关键修复：Nginx 反代下不设置 trust proxy 会导致 req.ip 恒为 Nginx 的 IP，
+// express-rate-limit 默认按 req.ip 计数时全站共用同一个桶（A 触发上限 → 全站 429 全崩）。
+// production 部署在 Nginx 后时需在 .env 设置 TRUST_PROXY=true。
+app.set('trust proxy', config.server.trustProxy);
+
+// 统一限流 key：必须用 req.ip（trust proxy 开启后为 XFF 最右的真实客户端 IP）。
+// 不要取 X-Forwarded-For 的第一个值——攻击者可以伪造该头绕过限流。
+const clientKey = (req) => req.ip;
+
+const createLimiter = (options) => rateLimit({
+  windowMs: options.windowMs,
+  max: options.max,
+  keyGenerator: clientKey,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json({
+      code: RESPONSE_CODES.TOO_MANY_REQUESTS,
+      message: '请求过于频繁，请稍后再试'
+    });
+  },
+  ...options.extra
 });
 
-const authLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false
-});
+const { rateLimit: rateLimitConfig } = config;
 
-const uploadLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 60,
-  standardHeaders: true,
-  legacyHeaders: false
-});
-
-// 搜索联想随输入实时触发，单独放宽一档限制
-const suggestLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 120,
-  standardHeaders: true,
-  legacyHeaders: false
-});
+// 读接口（GET）放宽，全局限流只针对写操作：避免校园 NAT 出口共享 IP 误伤全体用户
+const skipGet = (req) => req.method === 'GET' || req.path === '/api/health';
+const apiLimiter = createLimiter({ ...rateLimitConfig.api, extra: { skip: skipGet } });
+const authLimiter = createLimiter({ ...rateLimitConfig.auth, extra: { skip: (req) => req.method === 'GET' } });
+const registerLimiter = createLimiter({ ...rateLimitConfig.register, extra: { skipFailedRequests: true } });
+const captchaLimiter = createLimiter(rateLimitConfig.captcha);
+const sendCodeLimiter = createLimiter(rateLimitConfig.sendCode);
+const uploadLimiter = createLimiter(rateLimitConfig.upload);
+const suggestLimiter = createLimiter(rateLimitConfig.suggest);
 
 // 中间件配置
 // CORS配置
@@ -95,7 +102,12 @@ app.get('/api/health', (req, res) => {
 });
 
 // 路由配置
+// 先挂精确路径的专用限流（验证码 GET、注册、邮件验证码发送），再挂宽路径限流
 app.use('/api', apiLimiter);
+app.use('/api/auth/captcha', captchaLimiter);
+app.use('/api/auth/register', registerLimiter);
+app.use('/api/auth/send-email-code', sendCodeLimiter);
+app.use('/api/auth/send-reset-code', sendCodeLimiter);
 app.use('/api/auth', authLimiter);
 app.use('/api/upload', uploadLimiter);
 app.use('/api/search/suggest', suggestLimiter);

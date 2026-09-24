@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { HTTP_STATUS, RESPONSE_CODES, ERROR_MESSAGES } = require('../constants');
-const { pool, email: emailConfig } = require('../config/config');
+const { pool, email: emailConfig, rateLimit: { loginLock } } = require('../config/config');
 const { generateAccessToken, generateRefreshToken, verifyToken } = require('../utils/jwt');
 const { authenticateToken } = require('../middleware/auth');
 const { getIPLocation, getRealIP } = require('../utils/ipLocation');
@@ -47,6 +47,48 @@ function isValidEmail(email) {
 const captchaStore = new Map();
 // 存储邮箱验证码的临时对象
 const emailCodeStore = new Map();
+// 登录失败锁定（账号维度，15 分钟 5 次，防暴力破解）
+const loginFailStore = new Map();
+
+// 检查账号是否处于锁定状态
+function isLoginLocked(key) {
+  const record = loginFailStore.get(key);
+  if (!record) return false;
+  const now = Date.now();
+  if (record.lockUntil && record.lockUntil > now) return true;
+  loginFailStore.delete(key);
+  return false;
+}
+
+// 记录一次登录失败，达到阈值后锁定账号
+function recordLoginFail(key) {
+  const now = Date.now();
+  const record = loginFailStore.get(key) || {};
+  const count = (record.count || 0) + 1;
+  if (count >= loginLock.maxFailures) {
+    loginFailStore.set(key, { count: 0, lockUntil: now + loginLock.windowMs });
+  } else {
+    loginFailStore.set(key, { count, updatedAt: now });
+  }
+  // 惰性清理过期记录，防止 Map 无界增长
+  for (const [k, v] of loginFailStore.entries()) {
+    const expired = v.lockUntil && v.lockUntil < now;
+    const stale = !v.lockUntil && now - (v.updatedAt || 0) > loginLock.windowMs;
+    if (expired || stale) loginFailStore.delete(k);
+  }
+}
+
+// 登录成功时清除失败记录
+function clearLoginLock(key) {
+  loginFailStore.delete(key);
+}
+
+function lockedResponse(res) {
+  return res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json({
+    code: RESPONSE_CODES.TOO_MANY_REQUESTS,
+    message: '登录失败次数过多，请15分钟后再试'
+  });
+}
 
 // 获取邮件功能配置状态
 router.get('/email-config', (req, res) => {
@@ -629,6 +671,11 @@ router.post('/login', async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '缺少必要参数' });
     }
 
+    // 锁定检查（账号维度，防暴力破解）
+    if (isLoginLocked(user_id.toString())) {
+      return lockedResponse(res);
+    }
+
     // 查找用户
     const [userRows] = await pool.execute(
       'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, is_active, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE user_id = ?',
@@ -636,6 +683,7 @@ router.post('/login', async (req, res) => {
     );
 
     if (userRows.length === 0) {
+      recordLoginFail(user_id.toString());
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.NOT_FOUND, message: '用户不存在' });
     }
 
@@ -652,8 +700,12 @@ router.post('/login', async (req, res) => {
     );
 
     if (passwordCheck.length === 0) {
+      recordLoginFail(user_id.toString());
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '密码错误' });
     }
+
+    // 登录成功，清除失败记录
+    clearLoginLock(user_id.toString());
 
     // 生成JWT令牌
     const accessToken = generateAccessToken({ userId: user.id, user_id: user.user_id });
@@ -864,6 +916,12 @@ router.post('/admin/login', async (req, res) => {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '缺少必要参数' });
     }
 
+    // 锁定检查（账号维度，防暴力破解）
+    const adminLockKey = `admin:${username}`;
+    if (isLoginLocked(adminLockKey)) {
+      return lockedResponse(res);
+    }
+
     // 查找管理员
     const [adminRows] = await pool.execute(
       'SELECT id, username, password FROM admin WHERE username = ?',
@@ -871,6 +929,7 @@ router.post('/admin/login', async (req, res) => {
     );
 
     if (adminRows.length === 0) {
+      recordLoginFail(adminLockKey);
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.NOT_FOUND, message: '管理员账号不存在' });
     }
 
@@ -883,8 +942,12 @@ router.post('/admin/login', async (req, res) => {
     );
 
     if (passwordCheck.length === 0) {
+      recordLoginFail(adminLockKey);
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '密码错误' });
     }
+
+    // 登录成功，清除失败记录
+    clearLoginLock(adminLockKey);
 
     // 生成JWT令牌
     const accessToken = generateAccessToken({

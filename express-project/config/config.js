@@ -18,7 +18,54 @@ const config = {
   // 服务器配置
   server: {
     port: process.env.PORT || 3001,
+    // 生产环境有 Nginx 反代时必须设为 true，否则 req.ip 恒为 Nginx 的 IP，
+    // 限流会对全站用户共用同一个计数器（A 触发上限 → 全站 429）
+    trustProxy: process.env.TRUST_PROXY === 'true',
     env: process.env.NODE_ENV || 'development'
+  },
+
+  // 限流配置（按真实客户端 IP 计数）
+  rateLimit: {
+    // 通用 API：15 分钟 500 次
+    api: {
+      windowMs: 15 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_API_MAX) || 500
+    },
+    // 认证接口（登录/注册/发码等）：5 分钟 20 次
+    auth: {
+      windowMs: 5 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_AUTH_MAX) || 20
+    },
+    // 注册接口：10 分钟 6 次（防注册轰炸）
+    register: {
+      windowMs: 10 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_REGISTER_MAX) || 6
+    },
+    // 图形验证码获取：10 分钟 30 次（防脚本循环取码）
+    captcha: {
+      windowMs: 10 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_CAPTCHA_MAX) || 30
+    },
+    // 邮箱验证码发送：10 分钟 10 次
+    sendCode: {
+      windowMs: 10 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_SENDCODE_MAX) || 10
+    },
+    // 上传接口：15 分钟 60 次
+    upload: {
+      windowMs: 15 * 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_UPLOAD_MAX) || 60
+    },
+    // 搜索联想：1 分钟 120 次
+    suggest: {
+      windowMs: 60 * 1000,
+      max: parseInt(process.env.RATE_LIMIT_SUGGEST_MAX) || 120
+    },
+    // 登录失败锁定：同账号 15 分钟 5 次后临时锁定
+    loginLock: {
+      windowMs: 15 * 60 * 1000,
+      maxFailures: 5
+    }
   },
 
   // CORS配置
