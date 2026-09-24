@@ -84,11 +84,17 @@ export const sanitizeContent = (content) => {
     return textarea.value
   }
   
-  // 5. 将所有剩余的HTML标签转义为纯文本（使用DOM的textContent特性）
+  // 5. 将所有剩余的HTML标签转义为纯文本（不解析DOM，只按字符转义，
+  // 否则不换行空格会被浏览器序列化成 &nbsp;，后端再转义一次就变成 &amp;nbsp;，显示为字面 nbsp）
   const escapeHtml = (text) => {
-    const div = document.createElement('div')
-    div.textContent = text
-    return div.innerHTML
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }
+    return text.replace(/[&<>"']/g, (char) => map[char])
   }
   
   // 先解码，再编码，避免重复编码问题

@@ -80,10 +80,18 @@ const activeIndex = ref(-1)
 // 输入非空时展示联想结果，历史记录让位
 const isSearching = computed(() => props.searchText.trim().length > 0)
 
-// 三类候选合并成一个列表，标签优先，笔记、用户依次在后，组内已由服务端按热度排好
+// 三类候选合并成一个列表，标签优先，笔记、用户依次在后，同名项只保留一条
 const suggestionList = computed(() => {
     const { tags, posts, users } = suggestions.value
-    return [...tags, ...posts, ...users].slice(0, MAX_SUGGESTIONS)
+    const seen = new Set()
+    const merged = []
+    for (const item of [...tags, ...posts, ...users]) {
+        if (!seen.has(item.text)) {
+            seen.add(item.text)
+            merged.push(item)
+        }
+    }
+    return merged.slice(0, MAX_SUGGESTIONS)
 })
 
 // 有内容可展示才渲染下拉，避免出现空白浮层

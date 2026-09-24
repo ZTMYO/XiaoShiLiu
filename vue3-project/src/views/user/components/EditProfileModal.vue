@@ -48,8 +48,9 @@
                   <SvgIcon name="emoji" class="emoji-icon" width="20" height="20" />
                 </button>
               </div>
-              <div class="char-count">{{ form.bio.length }}/200</div>
+              <div class="char-count" :class="{ 'is-over': bioCharCount > 200 }">{{ bioCharCount }}/200</div>
             </div>
+            <div v-if="bioCharCount > 200" class="bio-over-hint">个人简介不能超过200字符</div>
           </div>
 
 
@@ -491,12 +492,12 @@ watch(showCropModal, (newValue) => {
   }
 })
 
-// 监听个人简介字数，限制在200字符内
-watch(() => form.bio, (newValue) => {
-  if (newValue && newValue.length > 200) {
-    // 截断到200字符
-    form.bio = newValue.substring(0, 200)
-  }
+// 按可见文字统计简介字数：艾特链接只计 @昵称、贴纸记1个、不把标签算进去；超限仅提示，不截断
+const bioCharCount = computed(() => {
+  if (!form.bio) return 0
+  const div = document.createElement('div')
+  div.innerHTML = form.bio.replace(/\[st:[^\]]*\]/g, ' ')
+  return (div.textContent || '').length
 })
 
 // 头像上传相关方法
@@ -694,8 +695,8 @@ const handleSave = async () => {
   // 对个人简介进行安全过滤
   const sanitizedBio = sanitizeContent(form.bio)
 
-  if (sanitizedBio.length > 200) {
-    console.error('个人简介不能超过200字符')
+  if (bioCharCount.value > 200) {
+    $message.error('个人简介不能超过200字符')
     return
   }
 
@@ -1001,6 +1002,18 @@ const handleSave = async () => {
   background: var(--bg-color-primary);
   padding: 0.25rem;
   border-radius: 4px;
+}
+
+.char-count.is-over {
+  color: var(--danger-color);
+  font-weight: 600;
+}
+
+.bio-over-hint {
+  font-size: 12px;
+  color: var(--danger-color);
+  margin-top: 4px;
+  text-align: right;
 }
 
 
