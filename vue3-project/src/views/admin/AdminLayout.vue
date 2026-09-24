@@ -297,7 +297,7 @@ const currentPageTitle = computed(() => {
 // 当前页面描述
 const currentPageDescription = computed(() => {
   const descriptions = {
-    '/admin/monitor': '查看系统最近动态和活动监控',
+    '/admin/monitor': '查看系统动态和活动监控',
     '/admin/users': '管理用户账户和权限',
     '/admin/post-audit': '管理笔记审核',
     '/admin/comment-audit': '审核命中违规词的用户评论',
@@ -317,10 +317,14 @@ const currentPageDescription = computed(() => {
   return descriptions[route.path]
 })
 
-// 两类审核队列的待处理数量，用于菜单红点提示
+// 三类审核队列的待处理数量，用于菜单红点提示
 let auditBadgeTimer = null
-const auditBadge = ref({ posts: 0, comments: 0 })
-const auditBadgePaths = { '/admin/post-audit': 'posts', '/admin/comment-audit': 'comments' }
+const auditBadge = ref({ posts: 0, comments: 0, verifications: 0 })
+const auditBadgePaths = {
+  '/admin/post-audit': 'posts',
+  '/admin/comment-audit': 'comments',
+  '/admin/audit': 'verifications'
+}
 
 const loadAuditBadge = async () => {
   if (!adminStore.token) return
@@ -328,12 +332,14 @@ const loadAuditBadge = async () => {
     const headers = { Authorization: `Bearer ${adminStore.token}` }
     const responses = await Promise.all([
       fetch(`${apiConfig.baseURL}/admin/posts-audit/stats`, { headers }),
-      fetch(`${apiConfig.baseURL}/admin/comments-audit/stats`, { headers })
+      fetch(`${apiConfig.baseURL}/admin/comments-audit/stats`, { headers }),
+      fetch(`${apiConfig.baseURL}/admin/audit/stats`, { headers })
     ])
-    const [postsResult, commentsResult] = await Promise.all(responses.map(res => res.json()))
+    const [postsResult, commentsResult, verificationsResult] = await Promise.all(responses.map(res => res.json()))
     auditBadge.value = {
       posts: postsResult?.data?.pending || 0,
-      comments: commentsResult?.data?.pending || 0
+      comments: commentsResult?.data?.pending || 0,
+      verifications: verificationsResult?.data?.pending || 0
     }
   } catch (error) {
     console.error('获取待审核数量失败:', error)

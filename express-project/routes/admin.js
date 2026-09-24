@@ -2797,6 +2797,27 @@ router.post('/audit', adminAuth, auditHandlers.create)
 router.put('/audit/:id', adminAuth, auditHandlers.update)
 router.delete('/audit/:id', adminAuth, auditHandlers.deleteOne)
 router.delete('/audit', adminAuth, auditHandlers.deleteMany)
+
+// 认证审核统计（必须注册在 /audit/:id 之前，避免 stats 被当作 :id 拦截）
+router.get('/audit/stats', adminAuth, async (req, res) => {
+  try {
+    const [[pendingRow]] = await pool.execute('SELECT COUNT(*) AS pending FROM user_verification WHERE status = 0')
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: {
+        pending: Number(pendingRow.pending) || 0
+      }
+    })
+  } catch (error) {
+    console.error('获取认证审核统计失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '获取认证审核统计失败'
+    })
+  }
+})
+
 router.get('/audit/:id', adminAuth, async (req, res) => {
   try {
     const result = await auditCrudConfig.customQueries.getOne(req)

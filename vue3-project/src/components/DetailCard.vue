@@ -11,7 +11,7 @@
           'page-mode': pageMode 
         }"
         @animationend="handleAnimationEnd">
-      <button v-if="!pageMode" class="close-btn" @click="closeModal" @mouseenter="showTooltip = true"
+      <button v-if="!pageMode && !isMobile" class="close-btn" @click="closeModal" @mouseenter="showTooltip = true"
         @mouseleave="showTooltip = false">
         <SvgIcon name="close" />
         <div v-if="showTooltip" class="tooltip">
@@ -84,6 +84,9 @@
 
         <div class="content-section" ref="contentSection" :style="windowWidth > 768 ? { width: contentSectionWidth + 'px' } : {}">
           <div class="author-wrapper" ref="authorWrapper">
+            <button v-if="!pageMode && isMobile" class="mobile-close-btn" @click="closeModal" aria-label="关闭">
+              <SvgIcon name="close" />
+            </button>
             <div class="author-info">
               <div class="author-avatar-container">
                 <img :src="authorData.avatar" :alt="authorData.name" class="author-avatar "
@@ -252,8 +255,8 @@
                         @image-click="handleCommentImageClick" />
                     </div>
                     <span v-if="comment.pinned" class="comment-pinned-badge">置顶评论</span>
-                    <span class="comment-time">{{ comment.time }} {{ comment.location }}</span>
-                    <div class="comment-actions">
+                    <span v-if="!isMobile" class="comment-time">{{ comment.time }} {{ comment.location }}</span>
+                    <div v-if="!isMobile" class="comment-actions">
                       <div class="comment-like-container">
                         <LikeButton :is-liked="comment.isLiked" size="small"
                           @click="(willBeLiked) => toggleCommentLike(comment, willBeLiked)" />
@@ -263,6 +266,15 @@
                         <SvgIcon name="chat" width="16" height="16" class="comment-replay-icon"
                           @click="handleReplyComment(comment)" />
                         <button class="comment-reply" @click="handleReplyComment(comment)">回复</button>
+                      </div>
+                    </div>
+                    <div v-else class="reply-meta-row">
+                      <span class="reply-meta-text">{{ comment.time }} {{ comment.location }}</span>
+                      <button class="reply-meta-reply" @click="handleReplyComment(comment)">回复</button>
+                      <div class="reply-meta-like">
+                        <LikeButton :is-liked="comment.isLiked" size="small"
+                          @click="(willBeLiked) => toggleCommentLike(comment, willBeLiked)" />
+                        <span class="like-count">{{ comment.likeCount }}</span>
                       </div>
                     </div>
 
@@ -305,8 +317,8 @@
                             <ContentRenderer :content="reply.content" :highlight-words="props.highlightWords"
                               @image-click="handleCommentImageClick" />
                           </div>
-                          <span class="reply-time">{{ reply.time }} {{ reply.location }}</span>
-                          <div class="reply-actions">
+                          <span v-if="!isMobile" class="reply-time">{{ reply.time }} {{ reply.location }}</span>
+                          <div v-if="!isMobile" class="reply-actions">
                             <div class="reply-like-container">
                               <LikeButton :is-liked="reply.isLiked" size="small"
                                 @click="(willBeLiked) => toggleCommentLike(reply, willBeLiked)" />
@@ -316,6 +328,15 @@
                               <SvgIcon name="chat" width="16" height="16" class="reply-replay-icon"
                                 @click="handleReplyComment(reply, reply.id)" />
                               <button class="reply-reply" @click="handleReplyComment(reply, reply.id)">回复</button>
+                            </div>
+                          </div>
+                          <div v-else class="reply-meta-row">
+                            <span class="reply-meta-text">{{ reply.time }} {{ reply.location }}</span>
+                            <button class="reply-meta-reply" @click="handleReplyComment(reply, reply.id)">回复</button>
+                            <div class="reply-meta-like">
+                              <LikeButton :is-liked="reply.isLiked" size="small"
+                                @click="(willBeLiked) => toggleCommentLike(reply, willBeLiked)" />
+                              <span class="like-count">{{ reply.likeCount }}</span>
                             </div>
                           </div>
                         </div>
@@ -3907,7 +3928,7 @@ function handleAvatarError(event) {
 /* 回复列表样式 */
 .replies-list {
   margin-top: 12px;
-  padding-left: 20px;
+  padding-left: 10px;
   border-left: 2px solid var(--border-color-secondary);
 }
 
@@ -3977,7 +3998,7 @@ function handleAvatarError(event) {
 
 .reply-time {
   color: var(--text-color-secondary);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .reply-text {
@@ -4488,22 +4509,6 @@ function handleAvatarError(event) {
     box-sizing: border-box;
   }
 
-  .close-btn {
-    position: fixed;
-    top: calc(16px + constant(safe-area-inset-top));
-    top: calc(16px + env(safe-area-inset-top));
-    left: 16px;
-    z-index: 1001;
-    background: transparent;
-    color: var(--text-color-secondary);
-    width: 36px;
-    height: 36px;
-  }
-
-  .close-btn:hover {
-    background: var(--bg-color-secondary);
-  }
-
   .detail-content {
     flex-direction: column;
     height: 100%;
@@ -4539,16 +4544,47 @@ function handleAvatarError(event) {
     top: 0 !important;
     z-index: 1000 !important;
     min-height: 72px;
-    padding: 12px 16px 0px 60px !important;
+    padding: 12px 16px 0px 16px !important;
     background: var(--bg-color-primary) !important;
     border-bottom: 1px solid var(--border-color-primary) !important;
     box-sizing: border-box !important;
     width: 100% !important;
     flex-shrink: 0;
+    gap: 10px;
+  }
+
+  .mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-color-secondary);
+    border-radius: 50%;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-close-btn:active {
+    background: var(--bg-color-secondary);
+  }
+
+  .mobile-close-btn svg {
+    width: 22px;
+    height: 22px;
   }
 
   .author-right-actions {
     gap: 4px;
+    margin-left: auto;
+  }
+
+  .author-info {
+    margin-right: auto;
+    min-width: 0;
   }
 
   .author-share-btn {
@@ -4840,9 +4876,54 @@ function handleAvatarError(event) {
     height: 28px;
   }
 
+  /* 移动端子评论去掉引导线，头像与父评论内容区对齐 */
+  .replies-list {
+    padding-left: 0;
+    border-left: none;
+  }
+
+  .reply-item {
+    padding-left: 0;
+  }
+
+  /* 移动端子评论 meta 与操作合并在一行 */
+  .reply-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .reply-meta-text {
+    color: var(--text-color-secondary);
+    font-size: 12px;
+  }
+
+  .reply-meta-reply {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--text-color-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .reply-meta-like {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .reply-meta-like .like-count {
+    color: var(--text-color-secondary);
+    font-size: 12px;
+  }
+
   .comment-content,
   .reply-content {
-    margin-left: 12px;
+    margin-left: 0;
   }
 
   /* 移动端头像和认证徽章调整 */

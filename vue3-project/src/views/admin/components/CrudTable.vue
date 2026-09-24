@@ -477,10 +477,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (loadingOverlayTimer) {
-    clearTimeout(loadingOverlayTimer)
-    loadingOverlayTimer = null
-  }
   document.removeEventListener('click', handleClickOutside)
   if (teleportObserver) {
     teleportObserver.disconnect()
