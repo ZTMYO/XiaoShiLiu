@@ -11,13 +11,20 @@ const router = express.Router();
 
 // 可对外提供的文档清单，name 同时作为路由参数白名单，避免路径穿越
 // 数组顺序即左侧文档树的展示顺序，第一项为 /doc 的默认落地页
+// title 为简体中文标题，titles 补充其它语言，取值与各语言文档的一级标题一致
 const DOC_ITEMS = [
-  { name: 'overview', title: '文档总览', file: 'OVERVIEW.md' },
-  { name: 'api', title: '接口文档', file: 'API_DOCS.md' },
-  { name: 'deployment', title: '部署指南', file: 'DEPLOYMENT.md' },
-  { name: 'structure', title: '项目结构', file: 'PROJECT_STRUCTURE.md' },
-  { name: 'database', title: '数据库设计', file: 'DATABASE_DESIGN.md' }
+  { name: 'overview', title: '文档总览', titles: { en: 'Documentation Overview', 'zh-Hant': '文檔總覽' }, file: 'OVERVIEW.md' },
+  { name: 'api', title: '接口文档', titles: { en: 'API Documentation', 'zh-Hant': 'API 接口文檔' }, file: 'API_DOCS.md' },
+  { name: 'deployment', title: '部署指南', titles: { en: 'Deployment Guide', 'zh-Hant': '部署指南' }, file: 'DEPLOYMENT.md' },
+  { name: 'developer', title: '二次开发指南', titles: { en: 'Secondary Development Guide', 'zh-Hant': '二次開發指南' }, file: 'DEVELOPER_GUIDE.md' },
+  { name: 'structure', title: '项目结构', titles: { en: 'Project Structure', 'zh-Hant': '項目結構' }, file: 'PROJECT_STRUCTURE.md' },
+  { name: 'database', title: '数据库设计', titles: { en: 'Database Design', 'zh-Hant': '資料庫設計' }, file: 'DATABASE_DESIGN.md' }
 ];
+
+// 按语言取标题，未提供该语言时回退到简体中文
+function titleOf(docItem, lang) {
+  return (docItem.titles && docItem.titles[lang]) || docItem.title;
+}
 
 // 语言代码 → 文件名后缀，中文为默认文件
 const LANG_SUFFIX = { zh: '', en: '_En', 'zh-Hant': '_zh-Hant' };
@@ -54,16 +61,17 @@ function readDoc(docItem, lang) {
   };
 }
 
-// GET /api/system/docs
-// 返回可读文档清单及各文档已存在的语言版本
+// GET /api/system/docs?lang=zh
+// 返回可读文档清单及各文档已存在的语言版本，标题与语言版本对应
 router.get('/docs', (req, res) => {
   try {
+    const lang = Object.prototype.hasOwnProperty.call(LANG_SUFFIX, req.query.lang) ? req.query.lang : DEFAULT_LANG;
     const items = DOC_ITEMS.map((docItem) => {
-      const languages = Object.keys(LANG_SUFFIX).filter((lang) => resolveDocFile(docItem, lang));
-      const doc = readDoc(docItem, DEFAULT_LANG);
+      const languages = Object.keys(LANG_SUFFIX).filter((item) => resolveDocFile(docItem, item));
+      const doc = readDoc(docItem, lang);
       return {
         name: docItem.name,
-        title: docItem.title,
+        title: titleOf(docItem, lang),
         file: docItem.file,
         languages,
         updatedAt: doc ? doc.updatedAt : null
@@ -119,7 +127,7 @@ router.get('/docs/:name', (req, res) => {
       message: 'success',
       data: {
         name: docItem.name,
-        title: docItem.title,
+        title: titleOf(docItem, lang),
         lang,
         content: doc.content,
         updatedAt: doc.updatedAt

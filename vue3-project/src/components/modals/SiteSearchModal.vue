@@ -129,7 +129,7 @@ let docsCache = null
 let docsLoading = null
 
 async function loadDocsForLang(langNow) {
-  const list = await getDocs()
+  const list = await getDocs(langNow)
   if (!list.success || !list.data?.items) return []
 
   const docs = await Promise.all(

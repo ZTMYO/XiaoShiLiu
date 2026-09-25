@@ -150,6 +150,24 @@ npm run preview        # 本地预览，默认 http://localhost:4173
 
 ---
 
+## 首次登录与管理员账号
+
+项目初始化后自带一个默认管理员账号：
+
+| 项目 | 默认值 |
+|---|---|
+| 后台登录地址 | `http://你的域名/admin/login` |
+| 账号 | `admin` |
+| 密码 | `123456` |
+
+> ⚠️ **务必在首次登录后立即修改密码。** 默认密码是公开的，未修改等同于后台完全开放。
+
+修改方式：登录后台后进入「管理员管理」（`/admin/admins`），编辑 `admin` 记录修改密码；也可先新增一个自己的管理员账号，再删除默认 `admin`。
+
+使用示例数据脚本（`npm run generate-data`）时，还会额外生成 `admin2`、`admin3`，密码同为 `123456`，如不需要请一并删除或改密。
+
+---
+
 ## 配置说明
 
 ### 上传配置
@@ -178,11 +196,48 @@ npm run preview        # 本地预览，默认 http://localhost:4173
 
 ### 阿里云 OSS 配置
 
-1. 登录阿里云控制台，进入对象存储 OSS
-2. 创建 Bucket（推荐使用 `oss-cn-hongkong`，读写权限按需设置）
-3. 创建 RAM 子账号并生成 AccessKey，只授予该 Bucket 的读写权限
-4. 将 `OSS_REGION`、`OSS_BUCKET_NAME`、`OSS_ACCESS_KEY_ID`、`OSS_ACCESS_KEY_SECRET` 填入 `.env`
-5. 绑定自定义域名或 CDN 后可另行设置 `OSS_PUBLIC_URL`；`OSS_IMAGE_PREFIX` 与 `OSS_VIDEO_PREFIX` 分别用于按环境或用途隔离图片与视频，默认 `images/`、`videos/`
+使用 `aliyun` 上传策略时，需要先在阿里云 OSS 控制台完成 Bucket 与账号配置，再回填 `.env`。
+
+#### 1. 创建 Bucket
+
+- 登录阿里云控制台，进入「对象存储 OSS」→ Bucket 列表 → 创建 Bucket
+- 地域（Region）建议选择访问较快的区域，默认实现使用 `oss-cn-hongkong`
+- **读写权限选择「公共读」**：上传的图片/视频需要被浏览器直接访问，选择私有读会导致前端图片裂图
+- **关闭「阻止公共访问」**：新版 OSS 默认开启该开关，开启状态下即便 Bucket 设为公共读，对象也无法匿名访问，需在 Bucket「权限管理 → 阻止公共访问」中关闭
+
+#### 2. 配置防盗链（推荐）
+
+- 进入 Bucket「数据安全 → 防盗链」，开启防盗链
+- 在 Referer 白名单中加入你的站点域名（如 `*.yourdomain.com`），可按需勾选是否允许空 Referer
+- 若同时绑定了自定义域名或 CDN，把对应域名一并加入白名单，否则通过这些域名访问的图片会被拦截
+
+#### 3. 创建 RAM 子账号并生成 AccessKey
+
+- 进入「访问控制 RAM」→ 用户 → 创建用户，勾选「使用永久 AccessKey 访问」
+- 不要使用主账号 AccessKey，建议自定义策略仅授予该 Bucket 的读写权限（资源限定为 `acs:oss:*:*:你的bucket名/*`）
+- 保存生成的 AccessKey ID 与 AccessKey Secret
+
+#### 4. 回填环境变量
+
+```env
+IMAGE_UPLOAD_STRATEGY=aliyun
+VIDEO_UPLOAD_STRATEGY=aliyun
+OSS_REGION=oss-cn-hongkong
+OSS_BUCKET_NAME=your-bucket
+OSS_ACCESS_KEY_ID=your-access-key-id
+OSS_ACCESS_KEY_SECRET=your-access-key-secret
+# 可选：绑定自定义域名/CDN 后填写，留空则使用 https://<bucket>.<region>.aliyuncs.com
+OSS_PUBLIC_URL=
+# 可选：图片与视频的存放目录前缀，默认 images/ 与 videos/
+OSS_IMAGE_PREFIX=images/
+OSS_VIDEO_PREFIX=videos/
+```
+
+- `OSS_REGION` 必须与 Bucket 实际所在地域一致
+- 绑定自定义域名或 CDN 后设置 `OSS_PUBLIC_URL`，并在前端 `.env` 中把域名以 `# VITE_OSS_IMAGE_HOSTS=img.example.com` 的形式补充，否则缩略图只对默认 OSS 域名生效
+- `OSS_IMAGE_PREFIX` 与 `OSS_VIDEO_PREFIX` 可用于按环境或用途隔离图片与视频
+
+> ⚠️ 上传报「阿里云 OSS 配置不完整」说明 AccessKey 或 Bucket 名称为空；配置无误却返回 403，优先检查「阻止公共访问」是否已关闭、防盗链白名单是否包含当前访问域名。
 
 ### 邮件功能配置
 
@@ -312,6 +367,22 @@ server {
 | Node.js 版本不兼容 | `node --version` 确认版本不低于 18，用 nvm 切换：`nvm use 18` |
 | 数据库连接失败 | 检查 MySQL 是否启动、数据库用户权限、防火墙设置 |
 | 依赖安装失败 | `npm cache clean --force`，删除 `node_modules` 后重新 `npm install` |
+
+---
+
+## 上线检查清单
+
+正式对外前，逐项确认：
+
+- 已更换 `DB_PASSWORD`、`JWT_SECRET` 等默认密钥
+- 已修改管理员默认密码 `123456`（含示例数据生成的 `admin2`、`admin3`）
+- `API_BASE_URL`、`LOCAL_BASE_URL`（或 `CORS_ORIGIN`、`VITE_API_BASE_URL`）已改为真实域名/IP，图片可正常显示
+- 未将 `.env` 提交到版本控制
+- 数据库端口（默认 3307）未对公网开放
+- 已配置 HTTPS 与防火墙规则
+- 使用 OSS/R2/图床时上传与访问均正常，防盗链白名单包含站点域名
+- 已完成品牌元素与协议文案改造（见[二次开发指南](DEVELOPER_GUIDE.md)）
+- 数据库已制定备份策略
 
 ---
 

@@ -12,6 +12,7 @@
 │   ├── OVERVIEW.md          # 文档总览
 │   ├── API_DOCS.md          # 接口文档
 │   ├── DEPLOYMENT.md        # 部署指南
+│   ├── DEVELOPER_GUIDE.md   # 二次开发指南
 │   ├── PROJECT_STRUCTURE.md # 项目结构（本文档）
 │   ├── DATABASE_DESIGN.md   # 数据库设计
 │   ├── i18n/                # 文档的英/繁体版本

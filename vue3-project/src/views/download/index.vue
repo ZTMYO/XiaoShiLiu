@@ -48,7 +48,7 @@ const openGithub = () => window.open(GITHUB_URL, '_blank', 'noopener')
         </li>
         <li>
           <SvgIcon name="scale" width="14" height="14" />
-          <span>GPLv3 开源协议</span>
+          <span>AGPL-3.0 开源协议</span>
         </li>
       </ul>
     </main>

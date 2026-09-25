@@ -36,9 +36,13 @@ function inlineToPlain(text) {
     .trim()
 }
 
-// 站内链接：以 / 开头，或文档之间的 .md 相对引用（由文档页转成站内路由），不加新窗口
+// 绝对地址（含协议或协议相对）在新窗口打开
+function isExternalLink(href) {
+  return /^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//')
+}
+
+// 站内链接：以 / 开头，或文档之间的 .md 相对引用（由文档页转成站内路由）
 function isInternalLink(href) {
-  if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//')) return false
   return href.startsWith('/') || /\.md(#.*)?$/.test(href)
 }
 
@@ -51,11 +55,12 @@ function renderInline(text) {
     return `\u0000${codeSpans.length - 1}\u0000`
   })
   html = html.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, '<img src="$2" alt="$1" loading="lazy" />')
-  html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, href) =>
-    isInternalLink(href)
-      ? `<a class="doc-internal-link" href="${href}">${label}</a>`
-      : `<a href="${href}" target="_blank" rel="noopener">${label}</a>`
-  )
+  // 指向源码文件的相对路径（如 ../express-project/app.js）在站点上没有对应页面，渲染为纯文本避免死链
+  html = html.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, href) => {
+    if (isExternalLink(href)) return `<a href="${href}" target="_blank" rel="noopener">${label}</a>`
+    if (isInternalLink(href)) return `<a class="doc-internal-link" href="${href}">${label}</a>`
+    return label
+  })
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>')
   html = html.replace(/(^|[^*\w])\*([^*\n]+)\*/g, '$1<em>$2</em>')
@@ -64,6 +69,7 @@ function renderInline(text) {
 }
 
 const LIST_RE = /^(\s*)([-*+]|\d{1,3}[.、)])\s+/
+const BLOCKQUOTE_RE = /^\s{0,3}>\s?/
 const TABLE_SEPARATOR_RE = /^\s*\|?[\s:|-]+\|?\s*$/
 const HEADING_RE = /^(#{1,6})\s+(.*)$/
 
@@ -85,6 +91,7 @@ function isBlockBoundary(lines, i) {
   return (
     !line.trim() ||
     isFenceLine(line) ||
+    BLOCKQUOTE_RE.test(line) ||
     HEADING_RE.test(line) ||
     isTableStart(lines, i) ||
     LIST_RE.test(line) ||
@@ -156,7 +163,7 @@ export function renderMarkdown(md) {
       const line = lines[i]
       const marker = line.match(LIST_RE)
       if (!line.trim()) break
-      if (isFenceLine(line) || HEADING_RE.test(line) || isTableStart(lines, i) || /^\s{0,3}(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) break
+      if (isFenceLine(line) || BLOCKQUOTE_RE.test(line) || HEADING_RE.test(line) || isTableStart(lines, i) || /^\s{0,3}(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) break
       if (marker) {
         const indent = marker[1].length
         if (indent < baseIndent) break
@@ -193,6 +200,16 @@ export function renderMarkdown(md) {
       i++
       const cls = lang ? ` class="language-${escapeHtml(lang)}"` : ''
       out.push(`<pre class="code-block"><code${cls}>${escapeHtml(codeLines.join('\n'))}</code></pre>`)
+      continue
+    }
+
+    if (BLOCKQUOTE_RE.test(line)) {
+      const quoteLines = []
+      while (i < total && BLOCKQUOTE_RE.test(lines[i])) {
+        quoteLines.push(lines[i].replace(BLOCKQUOTE_RE, ''))
+        i++
+      }
+      out.push(`<blockquote>${renderMarkdown(quoteLines.join('\n')).html}</blockquote>`)
       continue
     }
 

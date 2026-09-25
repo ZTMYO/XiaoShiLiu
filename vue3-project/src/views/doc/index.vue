@@ -24,7 +24,7 @@ const FOOTER_OUT_LINKS = [
   { label: 'GitHub 仓库', href: GITHUB_URL },
   { label: '版本发布', href: `${GITHUB_URL}/releases` },
   { label: '问题反馈', href: `${GITHUB_URL}/issues` },
-  { label: '开源协议（GPLv3）', href: `${GITHUB_URL}/blob/master/LICENSE` }
+  { label: '开源协议（AGPL-3.0）', href: `${GITHUB_URL}/blob/master/LICENSE` }
 ]
 
 // 带语言层访问时（/en/doc/api、/zh-Hant/doc/api）先按 URL 对齐语言，避免先按旧语言拉一次文档
@@ -248,7 +248,7 @@ const formatApiMeta = (html) => {
 }
 
 async function loadDocs() {
-  const res = await getDocs()
+  const res = await getDocs(lang.value)
   if (res.success) {
     docs.value = res.data.items || []
   }
@@ -380,9 +380,9 @@ function onContentClick(event) {
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
   const href = link.getAttribute('href') || ''
   const name = docFileMap.value[href.replace(/^\.\//, '')]
-  if (!name && !href.startsWith('/')) return
   event.preventDefault()
-  router.push(name ? docPath(name) : href)
+  if (name) router.push(docPath(name))
+  else if (href.startsWith('/')) router.push(href)
 }
 
 // 章节 id 可能是中文，取 hash 时解码
@@ -442,8 +442,9 @@ watch(currentName, (name) => {
   if (isSplittable(name)) expandedNames.value[name] = true
 }, { immediate: true })
 
-// 切换语言后章节标题会变，缓存失效后按需重取（当前文档由 loadDoc 一并刷新）
+// 切换语言后文档标题与章节标题都会变，缓存失效后按需重取（当前文档由 loadDoc 一并刷新）
 watch(lang, () => {
+  loadDocs()
   treeSections.value = {}
   Object.keys(expandedNames.value).forEach((name) => {
     if (expandedNames.value[name] && name !== currentName.value) ensureSections(name)
@@ -636,7 +637,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="doc-footer-bottom">
-          <p class="doc-footer-copy">Copyright © 2026 ZTMYO. Released under GPLv3 License.</p>
+          <p class="doc-footer-copy">Copyright © 2026 ZTMYO. Released under AGPL-3.0 License.</p>
         </div>
       </div>
     </footer>
@@ -1074,6 +1075,23 @@ onBeforeUnmount(() => {
 
 .doc-article :deep(li) {
   margin: 6px 0;
+}
+
+.doc-article :deep(blockquote) {
+  margin: 16px 0;
+  padding: 10px 16px;
+  border-left: 3px solid var(--primary-color);
+  border-radius: 0 8px 8px 0;
+  background: var(--bg-color-secondary);
+  color: var(--text-color-secondary);
+}
+
+.doc-article :deep(blockquote > :first-child) {
+  margin-top: 0;
+}
+
+.doc-article :deep(blockquote > :last-child) {
+  margin-bottom: 0;
 }
 
 /* 行内代码：加粗 + 主题深色；只作用于非代码块内的 code */

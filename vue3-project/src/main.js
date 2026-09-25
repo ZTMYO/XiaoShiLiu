@@ -5,7 +5,7 @@
  * @github https://github.com/ZTMYO/XiaoShiLiu
  * @description 基于Vue3+Vite+Pinia的现代化图文社区前端应用
  * @version v1.3.3
- * @license GPLv3
+ * @license AGPL-3.0
  */
 
 import { createApp } from 'vue'

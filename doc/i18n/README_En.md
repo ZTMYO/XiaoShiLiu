@@ -37,7 +37,7 @@
 </p>
 
 > **Disclaimer**  
-> This project is licensed under the [GPLv3 License](../../LICENSE), free and open-source, for learning and communication purposes only. Resale is prohibited; please beware of scams. For commercial use, retain copyright information to ensure legal compliance. Operational risks shall be borne by the user, and the author is not liable.
+> This project is licensed under the [AGPL-3.0 License](../../LICENSE), free and open-source, for learning and communication purposes only. Resale is prohibited; please beware of scams. For commercial use, retain copyright information to ensure legal compliance. Operational risks shall be borne by the user, and the author is not liable.
 
 ---
 
@@ -108,6 +108,7 @@
 | Document | Description |
 |----------|-------------|
 | [Deployment Guide](DEPLOYMENT_En.md) | Deployment configuration and environment setup instructions |
+| [Secondary Development Guide](DEVELOPER_GUIDE_En.md) | Branding customization, author attribution and open-source license obligations |
 | [Project Structure](PROJECT_STRUCTURE_En.md) | Project directory structure and architecture explanation |
 | [Database Design](DATABASE_DESIGN_En.md) | Database table structure design document |
 | [API Docs](API_DOCS_En.md) | Backend API interface description and examples |
