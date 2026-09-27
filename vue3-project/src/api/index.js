@@ -387,6 +387,14 @@ export const notificationApi = {
   }
 }
 
+// 举报相关API
+export const reportApi = {
+  // 发起举报
+  submitReport(data) {
+    return request.post('/reports', data)
+  }
+}
+
 // 搜索相关API
 export const searchApi = {
   // 统一搜索接口
@@ -786,5 +794,20 @@ export const adminApi = {
 
   getMonitorActivities() {
     return request.get('/admin/monitor/activities')
+  },
+
+  // 举报工单列表
+  getReports(params = {}) {
+    return request.get('/admin/reports', { params })
+  },
+
+  // 举报工单统计
+  getReportStats() {
+    return request.get('/admin/reports/stats')
+  },
+
+  // 处理举报工单
+  processReport(reportId, data) {
+    return request.put(`/admin/reports/${reportId}/process`, data)
   }
 }

@@ -2113,6 +2113,38 @@ Authorization: Bearer <access_token>
 
 ---
 
+## 檢舉相關接口
+
+### 1. 發起檢舉
+**接口地址**: `POST /api/reports`
+**需要認證**: 是（需登入）
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| target_type | int | 是 | 目標類型，1-筆記，2-評論 |
+| target_id | int | 是 | 目標 ID（筆記 ID 或評論 ID） |
+| reason | string | 是 | 檢舉原因，可選值：廣告行銷、色情低俗、人身攻擊、侵權盜圖、其他 |
+| detail | string | 否 | 補充說明，最長 500 字 |
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "檢舉已送出，我們會盡快處理",
+  "data": {
+    "id": 1
+  }
+}
+```
+
+**說明**：
+- 不能檢舉自己發布的內容
+- 同一使用者對同一內容（內容未變化時）僅可檢舉一次，重複檢舉回傳 `duplicate: true`
+- 每日檢舉上限 20 次
+
+---
+
 ## 圖片上傳接口
 
 ### 1. 單圖片上傳
@@ -3459,6 +3491,93 @@ Authorization: Bearer <access_token>
   }
 }
 ```
+
+### 17. 檢舉管理
+
+#### 17.1 檢舉工單列表
+**接口地址**: `GET /api/admin/reports`
+**需要認證**: 是（管理員）
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| page | int | 否 | 頁碼，預設1 |
+| limit | int | 否 | 每頁數量，預設10 |
+| status | int | 否 | 處理狀態篩選，0-待處理，1-已處理(違規)，2-已處理(不違規) |
+| target_type | int | 否 | 目標類型篩選，1-筆記，2-評論 |
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "data": [
+      {
+        "id": 1,
+        "reporter_id": 2,
+        "reporter_nickname": "使用者2",
+        "target_type": 1,
+        "target_id": 10,
+        "reason": "廣告行銷",
+        "detail": null,
+        "status": 0,
+        "handle_note": null,
+        "created_at": "2026-09-27T10:00:00.000Z",
+        "handled_at": null,
+        "target_summary": "筆記標題",
+        "target_status": 2
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 1,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+#### 17.2 檢舉工單統計
+**接口地址**: `GET /api/admin/reports/stats`
+**需要認證**: 是（管理員）
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "pending": 1,
+    "violated": 0,
+    "clean": 0
+  }
+}
+```
+
+#### 17.3 處理檢舉工單
+**接口地址**: `PUT /api/admin/reports/:id/process`
+**需要認證**: 是（管理員）
+
+**請求參數**:
+| 參數 | 類型 | 必填 | 說明 |
+|------|------|------|------|
+| verdict | string | 是 | 處理結果，`violation`-確認違規，`clean`-確認不違規 |
+| note | string | 否 | 處理備註，最長 255 字 |
+
+**響應示例**:
+```json
+{
+  "code": 200,
+  "message": "已確認違規，內容已轉入待審核"
+}
+```
+
+**說明**：
+- 確認違規時，筆記置 `status=2`（待審核）、評論置 `status=0`（待審核），並寫入審核佇列（audit 表 type=3/4、source=2），由管理員在審核頁二次確認
+- 確認不違規時僅結單，不改變目標內容狀態
+- 已被處理的工單不可重複處理
 
 ### 管理員接口使用示例
 

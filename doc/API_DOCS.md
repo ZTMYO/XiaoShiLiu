@@ -5,7 +5,7 @@
 - **版本**: v1.3.3
 - **基础URL**: `http://localhost:3001`
 - **数据库**: xiaoshiliu (MySQL)
-- **更新时间**: 2026-09-19
+- **更新时间**: 2026-09-27
 
 ## 通用说明
 
@@ -2448,6 +2448,38 @@ Content-Type: application/json
 
 ---
 
+## 举报相关接口
+
+### 1. 发起举报
+**接口地址**: `POST /api/reports`
+**需要认证**: 是（需登录）
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| target_type | int | 是 | 目标类型，1-笔记，2-评论 |
+| target_id | int | 是 | 目标 ID（笔记 ID 或评论 ID） |
+| reason | string | 是 | 举报原因，可选值：广告营销、色情低俗、人身攻击、侵权盗图、其他 |
+| detail | string | 否 | 补充说明，最长 500 字 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "举报已提交，我们会尽快处理",
+  "data": {
+    "id": 1
+  }
+}
+```
+
+**说明**：
+- 不能举报自己发布的内容
+- 同一用户对同一内容（内容未变化时）仅可举报一次，重复举报返回 `duplicate: true`
+- 每日举报上限 20 次
+
+---
+
 ## 图片上传接口
 
 ### 1. 单图片上传
@@ -3796,6 +3828,93 @@ Content-Type: application/json
   }
 }
 ```
+
+### 17. 举报管理
+
+#### 17.1 举报工单列表
+**接口地址**: `GET /api/admin/reports`
+**需要认证**: 是（管理员）
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | int | 否 | 页码，默认1 |
+| limit | int | 否 | 每页数量，默认10 |
+| status | int | 否 | 处理状态筛选，0-待处理，1-已处理(违规)，2-已处理(不违规) |
+| target_type | int | 否 | 目标类型筛选，1-笔记，2-评论 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "data": [
+      {
+        "id": 1,
+        "reporter_id": 2,
+        "reporter_nickname": "用户2",
+        "target_type": 1,
+        "target_id": 10,
+        "reason": "广告营销",
+        "detail": null,
+        "status": 0,
+        "handle_note": null,
+        "created_at": "2026-09-27T10:00:00.000Z",
+        "handled_at": null,
+        "target_summary": "笔记标题",
+        "target_status": 2
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 1,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+#### 17.2 举报工单统计
+**接口地址**: `GET /api/admin/reports/stats`
+**需要认证**: 是（管理员）
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "pending": 1,
+    "violated": 0,
+    "clean": 0
+  }
+}
+```
+
+#### 17.3 处理举报工单
+**接口地址**: `PUT /api/admin/reports/:id/process`
+**需要认证**: 是（管理员）
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| verdict | string | 是 | 处理结果，`violation`-确认违规，`clean`-确认不违规 |
+| note | string | 否 | 处理备注，最长 255 字 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "已确认违规，内容已转入待审核"
+}
+```
+
+**说明**：
+- 确认违规时，笔记置 `status=2`（待审核）、评论置 `status=0`（待审核），并写入审核队列（audit 表 type=3/4、source=2），由管理员在审核页二次确认
+- 确认不违规时仅结单，不改变目标内容状态
+- 已被处理的工单不可重复处理
 
 ### 管理员接口使用示例
 

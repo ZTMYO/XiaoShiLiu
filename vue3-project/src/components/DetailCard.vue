@@ -178,8 +178,22 @@
                   v-html="`#${highlightText(tag)}`"></span>
               </div>
               <div class="post-meta">
-                <span class="time">{{ postData.time }}</span>
-                <span class="location">{{ postData.location }}</span>
+                <div class="post-meta-info">
+                  <span class="time">{{ postData.time }}</span>
+                  <span class="location">{{ postData.location }}</span>
+                </div>
+                <DropdownMenu v-if="!isCurrentUserPost" direction="up" menu-class="post-more-menu">
+                  <template #trigger>
+                    <button class="post-more-btn" aria-label="更多操作">
+                      <SvgIcon name="more" width="18" height="18" />
+                    </button>
+                  </template>
+                  <template #menu>
+                    <DropdownItem @click="handleReport(1, props.item.id)">
+                      举报
+                    </DropdownItem>
+                  </template>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -234,7 +248,7 @@
                           作者
                         </div>
                       </div>
-                      <DropdownMenu v-if="isCurrentUserComment(comment) || isCurrentUserPost" menu-class="comment-more-menu">
+                      <DropdownMenu menu-class="comment-more-menu">
                         <template #trigger>
                           <button class="comment-more-btn" aria-label="更多操作">
                             <SvgIcon name="more" width="16" height="16" />
@@ -246,6 +260,9 @@
                           </DropdownItem>
                           <DropdownItem v-if="isCurrentUserPost" @click="handlePinComment(comment)">
                             {{ comment.pinned ? '取消置顶' : '置顶' }}
+                          </DropdownItem>
+                          <DropdownItem v-if="!isCurrentUserComment(comment)" @click="handleReport(2, comment.id)">
+                            举报
                           </DropdownItem>
                         </template>
                       </DropdownMenu>
@@ -299,15 +316,18 @@
                                 作者
                               </div>
                             </div>
-                            <DropdownMenu v-if="isCurrentUserComment(reply) || isCurrentUserPost" menu-class="comment-more-menu">
+                            <DropdownMenu menu-class="comment-more-menu">
                               <template #trigger>
                                 <button class="comment-more-btn" aria-label="更多操作">
                                   <SvgIcon name="more" width="16" height="16" />
                                 </button>
                               </template>
                               <template #menu>
-                                <DropdownItem @click="handleDeleteReply(reply, comment.id)">
+                                <DropdownItem v-if="isCurrentUserComment(reply) || isCurrentUserPost" @click="handleDeleteReply(reply, comment.id)">
                                   删除
+                                </DropdownItem>
+                                <DropdownItem v-if="!isCurrentUserComment(reply)" @click="handleReport(2, reply.id)">
+                                  举报
                                 </DropdownItem>
                               </template>
                             </DropdownMenu>
@@ -472,6 +492,10 @@
     <!-- 删除确认弹窗 -->
     <ConfirmDialog v-model:visible="deleteConfirmVisible" :title="deleteConfirmTitle" :message="deleteConfirmMessage"
       type="warning" confirm-text="删除" cancel-text="取消" @confirm="handleDeleteConfirmed" />
+
+    <!-- 举报弹窗 -->
+    <ReportModal :visible="reportVisible" :target-type="reportTargetType" :target-id="reportTargetId"
+      @close="closeReportModal" @success="handleReportSuccess" />
   </div>
 </template>
 
@@ -492,6 +516,7 @@ import VerifiedBadge from './VerifiedBadge.vue'
 import DropdownMenu from '@/components/menu/DropdownMenu.vue'
 import DropdownItem from '@/components/menu/DropdownItem.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import ReportModal from '@/components/ReportModal.vue'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { useLikeStore } from '@/stores/like.js'
@@ -1293,6 +1318,29 @@ const deleteConfirmVisible = ref(false)
 const deleteConfirmTitle = ref('删除评论')
 const deleteConfirmMessage = ref('')
 const pendingDelete = ref(null)
+
+// 举报弹窗状态
+const reportVisible = ref(false)
+const reportTargetType = ref(1)
+const reportTargetId = ref(null)
+
+const handleReport = (targetType, targetId) => {
+  if (!userStore.isLoggedIn) {
+    authStore.openLoginModal()
+    return
+  }
+  reportTargetType.value = targetType
+  reportTargetId.value = targetId
+  reportVisible.value = true
+}
+
+const closeReportModal = () => {
+  reportVisible.value = false
+}
+
+const handleReportSuccess = (data) => {
+  showMessage(data?.duplicate ? '你已举报过该内容' : '举报已提交，我们会尽快处理', 'success')
+}
 
 const handleDeleteComment = (comment) => {
   if (!isCurrentUserComment(comment) && !isCurrentUserPost.value) {
@@ -3557,9 +3605,49 @@ function handleAvatarError(event) {
 
 .post-meta {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   color: var(--text-color-secondary);
   font-size: 14px;
+}
+
+.post-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.post-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  opacity: 0.8;
+}
+
+.post-more-btn:hover {
+  color: var(--text-color-primary);
+  background-color: var(--bg-color-secondary);
+  opacity: 1;
+}
+
+:deep(.dropdown-menu.post-more-menu) {
+  min-width: 0;
+  width: auto;
+}
+
+:deep(.post-more-menu .dropdown-item-content) {
+  font-size: 14px;
+  padding: 8px 12px;
+  white-space: nowrap;
 }
 
 .divider {

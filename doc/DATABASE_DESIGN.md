@@ -2,12 +2,12 @@
 
 ## 概述
 
-数据库名 `xiaoshiliu`，共 18 张表，覆盖用户、内容、社交互动与审核管理。表顺序与编号与 [`init-database.sql`](../express-project/scripts/init-database.sql) 保持一致，字段变更请先改 SQL 再同步本文档。
+数据库名 `xiaoshiliu`，共 19 张表，覆盖用户、内容、社交互动与审核管理。表顺序与编号与 [`init-database.sql`](../express-project/scripts/init-database.sql) 保持一致，字段变更请先改 SQL 再同步本文档。
 
 - 字符集：`utf8mb4`
 - 排序规则：`utf8mb4_unicode_ci`
 - 存储引擎：`InnoDB`
-- 更新时间：2026-09-19
+- 更新时间：2026-09-27
 
 ## 1. 用户表 (users)
 
@@ -302,3 +302,25 @@
 **索引：** `PRIMARY KEY(id)`、`KEY idx_user_id(user_id)`、`KEY idx_status(status)`、`KEY idx_created_at(created_at)`、`KEY idx_operator(operator)`
 
 **外键：** `user_id` → `users(id)` ON DELETE CASCADE
+
+## 19. 举报表 (reports)
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | BIGINT | 主键，自增 |
+| reporter_id | BIGINT | 举报人用户 ID，外键关联 users |
+| target_type | TINYINT(1) | 目标类型：1-笔记，2-评论 |
+| target_id | BIGINT | 目标 ID（笔记 ID 或评论 ID） |
+| reason | VARCHAR(50) | 举报原因（预设枚举） |
+| detail | TEXT | 补充说明，可为空 |
+| content_hash | VARCHAR(64) | 目标内容快照哈希，用于幂等判定，可为空 |
+| status | TINYINT(1) | 处理状态：0-待处理，1-已处理(违规)，2-已处理(不违规)，默认 0 |
+| handle_note | VARCHAR(255) | 管理员处理备注，可为空 |
+| created_at | TIMESTAMP | 创建时间 |
+| handled_at | TIMESTAMP | 处理时间，可为空 |
+
+**索引：** `PRIMARY KEY(id)`、`UNIQUE KEY uk_report_power(reporter_id, target_type, target_id, content_hash)`、`KEY idx_status(status)`、`KEY idx_created_at(created_at)`
+
+**外键：** `reporter_id` → `users(id)` ON DELETE CASCADE
+
+**说明：** 同一用户对同一内容仅可举报一次（通过 content_hash 判重）；确认违规后目标转待审进入审核队列：笔记置 `posts.status=2`、评论置 `comments.status=0`，并在 audit 表写入 `type=3/4`、`source=2` 的记录。

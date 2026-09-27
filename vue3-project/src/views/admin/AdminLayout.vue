@@ -114,7 +114,7 @@
         </div>
       </div>
       <div class="content-body">
-        <router-view @close-filter="isFilterOpen = false" />
+        <router-view @close-filter="isFilterOpen = false" @report-processed="loadAuditBadge" />
       </div>
     </div>
 
@@ -275,6 +275,7 @@ const menuItems = [
   { path: '/admin/posts', title: '笔记管理', icon: 'post' },
   { path: '/admin/post-audit', title: '笔记审核', icon: 'audit' },
   { path: '/admin/comment-audit', title: '评论审核', icon: 'audit' },
+  { path: '/admin/reports', title: '举报管理', icon: 'audit' },
   { path: '/admin/comments', title: '评论管理', icon: 'chat' },
   { path: '/admin/categories', title: '分类管理', icon: 'category' },
   { path: '/admin/tags', title: '标签管理', icon: 'hash' },
@@ -301,6 +302,7 @@ const currentPageDescription = computed(() => {
     '/admin/users': '管理用户账户和权限',
     '/admin/post-audit': '管理笔记审核',
     '/admin/comment-audit': '审核命中违规词的用户评论',
+    '/admin/reports': '处理用户举报的笔记和评论',
     '/admin/posts': '管理用户发布的笔记内容',
     '/admin/comments': '管理用户评论和回复',
     '/admin/categories': '管理笔记分类和分类信息',
@@ -319,11 +321,12 @@ const currentPageDescription = computed(() => {
 
 // 三类审核队列的待处理数量，用于菜单红点提示
 let auditBadgeTimer = null
-const auditBadge = ref({ posts: 0, comments: 0, verifications: 0 })
+const auditBadge = ref({ posts: 0, comments: 0, verifications: 0, reports: 0 })
 const auditBadgePaths = {
   '/admin/post-audit': 'posts',
   '/admin/comment-audit': 'comments',
-  '/admin/audit': 'verifications'
+  '/admin/audit': 'verifications',
+  '/admin/reports': 'reports'
 }
 
 const loadAuditBadge = async () => {
@@ -333,13 +336,15 @@ const loadAuditBadge = async () => {
     const responses = await Promise.all([
       fetch(`${apiConfig.baseURL}/admin/posts-audit/stats`, { headers }),
       fetch(`${apiConfig.baseURL}/admin/comments-audit/stats`, { headers }),
-      fetch(`${apiConfig.baseURL}/admin/audit/stats`, { headers })
+      fetch(`${apiConfig.baseURL}/admin/audit/stats`, { headers }),
+      fetch(`${apiConfig.baseURL}/admin/reports/stats`, { headers })
     ])
-    const [postsResult, commentsResult, verificationsResult] = await Promise.all(responses.map(res => res.json()))
+    const [postsResult, commentsResult, verificationsResult, reportsResult] = await Promise.all(responses.map(res => res.json()))
     auditBadge.value = {
       posts: postsResult?.data?.pending || 0,
       comments: commentsResult?.data?.pending || 0,
-      verifications: verificationsResult?.data?.pending || 0
+      verifications: verificationsResult?.data?.pending || 0,
+      reports: reportsResult?.data?.pending || 0
     }
   } catch (error) {
     console.error('获取待审核数量失败:', error)

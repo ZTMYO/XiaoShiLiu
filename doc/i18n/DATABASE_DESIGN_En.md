@@ -2,12 +2,12 @@
 
 ## Overview
 
-Database name `xiaoshiliu`, 18 tables in total, covering users, content, social interactions, and audit management. Table order and numbering match [`init-database.sql`](../../express-project/scripts/init-database.sql); change the SQL first, then sync this document.
+Database name `xiaoshiliu`, 19 tables in total, covering users, content, social interactions, and audit management. Table order and numbering match [`init-database.sql`](../../express-project/scripts/init-database.sql); change the SQL first, then sync this document.
 
 - Character set: `utf8mb4`
 - Collation: `utf8mb4_unicode_ci`
 - Storage engine: `InnoDB`
-- Update time: 2026-09-19
+- Update time: 2026-09-27
 
 ## 1. Users Table (users)
 
@@ -302,3 +302,25 @@ Database name `xiaoshiliu`, 18 tables in total, covering users, content, social 
 **Indexes:** `PRIMARY KEY(id)`, `KEY idx_user_id(user_id)`, `KEY idx_status(status)`, `KEY idx_created_at(created_at)`, `KEY idx_operator(operator)`
 
 **Foreign keys:** `user_id` → `users(id)` ON DELETE CASCADE
+
+## 19. Reports Table (reports)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | BIGINT | Primary key, auto-increment |
+| reporter_id | BIGINT | Reporter user ID, foreign key to users |
+| target_type | TINYINT(1) | Target type: 1-post, 2-comment |
+| target_id | BIGINT | Target ID (post ID or comment ID) |
+| reason | VARCHAR(50) | Report reason (preset enum) |
+| detail | TEXT | Extra details, nullable |
+| content_hash | VARCHAR(64) | Snapshot hash of target content, used for deduplication, nullable |
+| status | TINYINT(1) | Handling status: 0-pending, 1-handled (violation), 2-handled (clean), default 0 |
+| handle_note | VARCHAR(255) | Admin handling note, nullable |
+| created_at | TIMESTAMP | Creation time |
+| handled_at | TIMESTAMP | Handling time, nullable |
+
+**Indexes:** `PRIMARY KEY(id)`, `UNIQUE KEY uk_report_power(reporter_id, target_type, target_id, content_hash)`, `KEY idx_status(status)`, `KEY idx_created_at(created_at)`
+
+**Foreign keys:** `reporter_id` → `users(id)` ON DELETE CASCADE
+
+**Note:** A user can only report the same content once (deduplicated by content_hash). When a report is confirmed as a violation, the target is moved into the audit queue: posts set to `posts.status=2`, comments set to `comments.status=0`, and a record with `type=3/4`, `source=2` is written to the audit table.

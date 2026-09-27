@@ -275,7 +275,27 @@ CREATE TABLE IF NOT EXISTS `audit` (
   CONSTRAINT `audit_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审核表';
 
--- 17. 用户认证表
+-- 17. 举报表
+CREATE TABLE IF NOT EXISTS `reports` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '举报ID',
+  `reporter_id` bigint(20) NOT NULL COMMENT '举报人用户ID',
+  `target_type` tinyint(1) NOT NULL COMMENT '目标类型：1-笔记 2-评论',
+  `target_id` bigint(20) NOT NULL COMMENT '目标ID（笔记ID或评论ID）',
+  `reason` varchar(50) NOT NULL COMMENT '举报原因（预设枚举）',
+  `detail` text DEFAULT NULL COMMENT '补充说明',
+  `content_hash` varchar(64) DEFAULT NULL COMMENT '目标内容快照哈希（幂等判定）',
+  `status` tinyint(1) DEFAULT 0 COMMENT '处理状态：0-待处理 1-已处理(违规) 2-已处理(不违规)',
+  `handle_note` varchar(255) DEFAULT NULL COMMENT '管理员处理备注',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `handled_at` timestamp NULL DEFAULT NULL COMMENT '处理时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_report_power` (`reporter_id`, `target_type`, `target_id`, `content_hash`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `reports_ibfk_1` FOREIGN KEY (`reporter_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='举报表';
+
+-- 18. 用户认证表
 CREATE TABLE IF NOT EXISTS `user_verification` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',

@@ -317,6 +317,10 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  defaultSearchParams: {
+    type: Object,
+    default: () => ({})
+  },
   showCreateButton: {
     type: Boolean,
     default: true
@@ -438,7 +442,7 @@ const preloadingPages = ref(new Set())
 
 // 初始化搜索参数
 props.searchFields.forEach(field => {
-  searchParams[field.key] = ''
+  searchParams[field.key] = props.defaultSearchParams[field.key] || ''
 })
 
 // 重置表单数据的方法
@@ -604,6 +608,8 @@ const refreshData = () => {
   pagination.page = 1
   loadData()
 }
+
+defineExpose({ refreshData })
 
 const emit = defineEmits(['close-filter', 'custom-action'])
 

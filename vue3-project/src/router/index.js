@@ -35,6 +35,7 @@ import AdminManagement from '@/views/admin/AdminManagement.vue'
 import AuditManagement from '@/views/admin/AuditManagement.vue'
 import PostAudit from '@/views/admin/PostAudit.vue'
 import CommentAudit from '@/views/admin/CommentAudit.vue'
+import ReportAudit from '@/views/admin/ReportAudit.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -225,6 +226,11 @@ const router = createRouter({
           path: 'comment-audit',
           name: 'admin_comment_audit',
           component: CommentAudit
+        },
+        {
+          path: 'reports',
+          name: 'admin_reports',
+          component: ReportAudit
         },
         {
           path: 'posts',

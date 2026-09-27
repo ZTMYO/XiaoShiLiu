@@ -3227,4 +3227,211 @@ router.get('/categories', adminAuth, createAdminListRoute(categoriesCrudConfig, 
   spreadData: true
 }))
 
+// ===== 举报工单管理 =====
+
+// 举报工单列表
+router.get('/reports', adminAuth, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, target_type } = req.query
+    const pageNum = parseInt(page) || 1
+    const limitNum = parseInt(limit) || 10
+    const offset = (pageNum - 1) * limitNum
+
+    const conditions = []
+    const params = []
+
+    const statusNum = parseInt(status)
+    if (!Number.isNaN(statusNum) && [0, 1, 2].includes(statusNum)) {
+      conditions.push('r.status = ?')
+      params.push(statusNum)
+    }
+
+    const typeNum = parseInt(target_type)
+    if (!Number.isNaN(typeNum) && [1, 2].includes(typeNum)) {
+      conditions.push('r.target_type = ?')
+      params.push(typeNum)
+    }
+
+    const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : ''
+
+    const [countRows] = await pool.execute(
+      `SELECT COUNT(*) AS total FROM reports r ${whereClause}`,
+      params
+    )
+
+    const [rows] = await pool.execute(
+      `SELECT
+        r.id,
+        r.reporter_id,
+        r.target_type,
+        r.target_id,
+        r.reason,
+        r.detail,
+        r.status,
+        r.handle_note,
+        r.created_at,
+        r.handled_at,
+        ru.user_id AS reporter_display_id,
+        ru.nickname AS reporter_nickname,
+        ru.avatar AS reporter_avatar,
+        CASE r.target_type
+          WHEN 1 THEN p.content
+          ELSE c.content
+        END AS target_summary,
+        CASE r.target_type
+          WHEN 1 THEN p.status
+          ELSE c.status
+        END AS target_status,
+        CASE r.target_type
+          WHEN 2 THEN c.post_id
+          ELSE NULL
+        END AS target_post_id
+      FROM reports r
+      LEFT JOIN users ru ON r.reporter_id = ru.id
+      LEFT JOIN posts p ON r.target_type = 1 AND r.target_id = p.id
+      LEFT JOIN comments c ON r.target_type = 2 AND r.target_id = c.id
+      ${whereClause}
+      ORDER BY r.created_at DESC
+      LIMIT ${limitNum} OFFSET ${offset}`,
+      params
+    )
+
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: {
+        data: rows,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: countRows[0].total,
+          totalPages: Math.ceil(countRows[0].total / limitNum)
+        }
+      }
+    })
+  } catch (error) {
+    console.error('获取举报工单列表失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '获取举报工单列表失败'
+    })
+  }
+})
+
+// 举报工单统计
+router.get('/reports/stats', adminAuth, async (req, res) => {
+  try {
+    const [[row]] = await pool.execute(
+      `SELECT
+        SUM(status = 0) AS pending,
+        SUM(status = 1) AS violated,
+        SUM(status = 2) AS clean
+       FROM reports`
+    )
+    res.json({
+      code: RESPONSE_CODES.SUCCESS,
+      message: 'success',
+      data: {
+        pending: Number(row.pending) || 0,
+        violated: Number(row.violated) || 0,
+        clean: Number(row.clean) || 0
+      }
+    })
+  } catch (error) {
+    console.error('获取举报工单统计失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '获取举报工单统计失败'
+    })
+  }
+})
+
+// 处理举报工单：确认违规则目标转待审进入审核队列，确认不违规则结单
+router.put('/reports/:id/process', adminAuth, async (req, res) => {
+  try {
+    const reportId = req.params.id
+    const { verdict, note } = req.body
+
+    if (!['violation', 'clean'].includes(verdict)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        code: RESPONSE_CODES.VALIDATION_ERROR,
+        message: '无效的处理结果'
+      })
+    }
+    const cleanNote = String(note || '').trim().slice(0, 255) || null
+
+    const [targetRows] = await pool.execute(
+      'SELECT id, target_type, target_id FROM reports WHERE id = ? AND status = 0',
+      [String(reportId)]
+    )
+    if (targetRows.length === 0) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        code: RESPONSE_CODES.NOT_FOUND,
+        message: '工单不存在或已被处理'
+      })
+    }
+    const report = targetRows[0]
+
+    const connection = await pool.getConnection()
+    try {
+      await connection.beginTransaction()
+
+      if (verdict === 'violation') {
+        const targetId = String(report.target_id)
+        const remark = cleanNote || '用户举报命中'
+
+        if (report.target_type === 1) {
+          await connection.execute('UPDATE posts SET status = 2 WHERE id = ?', [targetId])
+          await connection.execute(
+            'INSERT INTO audit (type, target_id, status, source, remark) VALUES (3, ?, 0, 2, ?)',
+            [targetId, remark]
+          )
+        } else {
+          const [commentRows] = await connection.execute(
+            'SELECT post_id, status FROM comments WHERE id = ?',
+            [targetId]
+          )
+          if (commentRows.length > 0) {
+            const comment = commentRows[0]
+            await connection.execute('UPDATE comments SET status = 0 WHERE id = ?', [targetId])
+            // 已展示评论此前已计入笔记评论数，转待审时回退
+            if (comment.status === 1 && comment.post_id) {
+              await connection.execute(
+                'UPDATE posts SET comment_count = comment_count - 1 WHERE id = ?',
+                [String(comment.post_id)]
+              )
+            }
+            await connection.execute(
+              'INSERT INTO audit (type, target_id, status, source, remark) VALUES (4, ?, 0, 2, ?)',
+              [targetId, remark]
+            )
+          }
+        }
+      }
+
+      await connection.execute(
+        'UPDATE reports SET status = ?, handle_note = ?, handled_at = NOW() WHERE id = ?',
+        [verdict === 'violation' ? 1 : 2, cleanNote, String(reportId)]
+      )
+
+      await connection.commit()
+      res.json({
+        code: RESPONSE_CODES.SUCCESS,
+        message: verdict === 'violation' ? '已确认违规，内容已转入待审核' : '已确认不违规'
+      })
+    } catch (error) {
+      await connection.rollback()
+      throw error
+    } finally {
+      connection.release()
+    }
+  } catch (error) {
+    console.error('处理举报工单失败:', error)
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
+      message: '处理举报工单失败'
+    })
+  }
+})
+
 module.exports = router

@@ -2,12 +2,12 @@
 
 ## 概述
 
-資料庫名 `xiaoshiliu`，共 18 張表，涵蓋使用者、內容、社交互動與審核管理。表順序與編號與 [`init-database.sql`](../../express-project/scripts/init-database.sql) 保持一致，欄位變更請先改 SQL 再同步本文檔。
+資料庫名 `xiaoshiliu`，共 19 張表，涵蓋使用者、內容、社交互動與審核管理。表順序與編號與 [`init-database.sql`](../../express-project/scripts/init-database.sql) 保持一致，欄位變更請先改 SQL 再同步本文檔。
 
 - 字元集：`utf8mb4`
 - 排序規則：`utf8mb4_unicode_ci`
 - 儲存引擎：`InnoDB`
-- 更新時間：2026-09-19
+- 更新時間：2026-09-27
 
 ## 1. 使用者表 (users)
 
@@ -302,3 +302,25 @@
 **索引：** `PRIMARY KEY(id)`、`KEY idx_user_id(user_id)`、`KEY idx_status(status)`、`KEY idx_created_at(created_at)`、`KEY idx_operator(operator)`
 
 **外鍵：** `user_id` → `users(id)` ON DELETE CASCADE
+
+## 19. 檢舉表 (reports)
+
+| 欄位 | 類型 | 說明 |
+|------|------|------|
+| id | BIGINT | 主鍵，自增 |
+| reporter_id | BIGINT | 檢舉人使用者 ID，外鍵關聯 users |
+| target_type | TINYINT(1) | 目標類型：1-筆記，2-評論 |
+| target_id | BIGINT | 目標 ID（筆記 ID 或評論 ID） |
+| reason | VARCHAR(50) | 檢舉原因（預設列舉） |
+| detail | TEXT | 補充說明，可為空 |
+| content_hash | VARCHAR(64) | 目標內容快照雜湊，用於冪等判定，可為空 |
+| status | TINYINT(1) | 處理狀態：0-待處理，1-已處理(違規)，2-已處理(不違規)，預設 0 |
+| handle_note | VARCHAR(255) | 管理員處理備註，可為空 |
+| created_at | TIMESTAMP | 建立時間 |
+| handled_at | TIMESTAMP | 處理時間，可為空 |
+
+**索引：** `PRIMARY KEY(id)`、`UNIQUE KEY uk_report_power(reporter_id, target_type, target_id, content_hash)`、`KEY idx_status(status)`、`KEY idx_created_at(created_at)`
+
+**外鍵：** `reporter_id` → `users(id)` ON DELETE CASCADE
+
+**說明：** 同一使用者對同一內容僅可檢舉一次（透過 content_hash 去重）；確認違規後目標轉待審進入審核佇列：筆記置 `posts.status=2`、評論置 `comments.status=0`，並在 audit 表寫入 `type=3/4`、`source=2` 的記錄。

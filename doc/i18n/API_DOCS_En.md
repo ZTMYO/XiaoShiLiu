@@ -2113,6 +2113,38 @@ The notification system supports the following types:
 
 ---
 
+## Report-related Interfaces
+
+### 1. Submit a Report
+**API Endpoint**: `POST /api/reports`
+**Authentication Required**: Yes (login required)
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|------|------|------|------|
+| target_type | int | Yes | Target type, 1-post, 2-comment |
+| target_id | int | Yes | Target ID (post ID or comment ID) |
+| reason | string | Yes | Report reason, options: advertising, pornographic, harassment, copyright infringement, other |
+| detail | string | No | Extra details, up to 500 characters |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "Report submitted, we will handle it shortly",
+  "data": {
+    "id": 1
+  }
+}
+```
+
+**Notes**:
+- You cannot report content you published yourself
+- A user can report the same content only once (while its content is unchanged); repeated reports return `duplicate: true`
+- Daily report limit: 20
+
+---
+
 ## Image Upload Interface
 
 ### 1. Single Image Upload
@@ -3461,6 +3493,93 @@ Administrator interfaces use JWT authentication:
   }
 }
 ```
+
+### 17. Report Management
+
+#### 17.1 Report Ticket List
+**API Endpoint**: `GET /api/admin/reports`
+**Authentication Required**: Yes (admin)
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|------|------|------|------|
+| page | int | No | Page number, default 1 |
+| limit | int | No | Number of items per page, default 10 |
+| status | int | No | Status filter, 0-pending, 1-handled (violation), 2-handled (clean) |
+| target_type | int | No | Target type filter, 1-post, 2-comment |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "data": [
+      {
+        "id": 1,
+        "reporter_id": 2,
+        "reporter_nickname": "User 2",
+        "target_type": 1,
+        "target_id": 10,
+        "reason": "advertising",
+        "detail": null,
+        "status": 0,
+        "handle_note": null,
+        "created_at": "2026-09-27T10:00:00.000Z",
+        "handled_at": null,
+        "target_summary": "Post title",
+        "target_status": 2
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 1,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+#### 17.2 Report Ticket Stats
+**API Endpoint**: `GET /api/admin/reports/stats`
+**Authentication Required**: Yes (admin)
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "pending": 1,
+    "violated": 0,
+    "clean": 0
+  }
+}
+```
+
+#### 17.3 Process a Report Ticket
+**API Endpoint**: `PUT /api/admin/reports/:id/process`
+**Authentication Required**: Yes (admin)
+
+**Request Parameters**:
+| Parameter | Type | Required | Description |
+|------|------|------|------|
+| verdict | string | Yes | Verdict, `violation`-confirmed violation, `clean`-confirmed clean |
+| note | string | No | Handling note, up to 255 characters |
+
+**Response Example**:
+```json
+{
+  "code": 200,
+  "message": "Violation confirmed, content moved to pending review"
+}
+```
+
+**Notes**:
+- When a violation is confirmed, the post is set to `status=2` (pending review) and the comment to `status=0` (pending review), and an audit record (audit table type=3/4, source=2) is written for a second review by admins
+- When confirmed clean, the ticket is closed without changing the target content
+- An already-handled ticket cannot be processed again
 
 ### Example of Admin API Usage
 
