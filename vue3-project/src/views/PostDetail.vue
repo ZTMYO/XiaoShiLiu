@@ -9,11 +9,7 @@
 
     <div v-else>
 
-      <button v-if="showBackButton" @click="goBack" class="back-home-btn">
-        <SvgIcon name="close" />
-      </button>
-
-      <DetailCard :item="postData" :page-mode="true" :target-comment-id="targetCommentId" />
+      <DetailCard :item="postData" :page-mode="true" :target-comment-id="targetCommentId" @close="goBack" />
     </div>
   </div>
 </template>
@@ -23,7 +19,6 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getPostDetail } from '@/api/posts'
 import DetailCard from '@/components/DetailCard.vue'
-import SvgIcon from '@/components/SvgIcon.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -32,15 +27,8 @@ const postData = ref(null)
 const loading = ref(true)
 const targetCommentId = ref(null)
 
-// 响应式显示返回主页按钮（只在移动端显示）
-const showBackButton = ref(false)
-
 // 保存原始页面标题
 const originalTitle = ref('')
-
-const updateShowBackButton = () => {
-  showBackButton.value = window.innerWidth <= 768
-}
 
 
 
@@ -91,10 +79,6 @@ onMounted(() => {
     router.replace({ name: 'not_found' })
     loading.value = false
   }
-
-  // 初始化返回按钮显示状态
-  updateShowBackButton()
-  window.addEventListener('resize', updateShowBackButton)
 })
 
 // 组件卸载时恢复原始标题
@@ -103,9 +87,6 @@ onUnmounted(() => {
   if (originalTitle.value) {
     document.title = originalTitle.value
   }
-
-  // 移除事件监听器
-  window.removeEventListener('resize', updateShowBackButton)
 })
 </script>
 
@@ -151,29 +132,6 @@ onUnmounted(() => {
     align-items: normal;
     justify-content: normal;
   }
-}
-
-/* 返回主页按钮样式 */
-.back-home-btn {
-  position: fixed;
-  top: calc(16px + env(safe-area-inset-top));
-  left: 16px;
-  z-index: 1001;
-  background: transparent;
-  color: var(--text-color-secondary);
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.back-home-btn:hover {
-  background: rgba(144, 144, 144, 0.292);
 }
 
 /* 加载状态样式 */

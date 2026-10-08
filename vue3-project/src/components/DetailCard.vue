@@ -84,7 +84,7 @@
 
         <div class="content-section" ref="contentSection" :style="windowWidth > 768 ? { width: contentSectionWidth + 'px' } : {}">
           <div class="author-wrapper" ref="authorWrapper">
-            <button v-if="!pageMode && isMobile" class="mobile-close-btn" @click="closeModal" aria-label="关闭">
+            <button v-if="isMobile" class="mobile-close-btn" @click="closeModal" aria-label="关闭">
               <SvgIcon name="close" />
             </button>
             <div class="author-info">
@@ -1476,8 +1476,13 @@ const closeModal = () => {
   
   isClosing.value = true
   showContent.value = false // 立即隐藏内容
-  
-  // 不再使用setTimeout，改为依赖动画结束事件触发关闭
+
+  // pageMode 无动画，直接触发关闭让父页面处理返回
+  if (props.pageMode) {
+    emit('close')
+    return
+  }
+  // 其余依赖动画结束事件触发关闭
 }
 
 
