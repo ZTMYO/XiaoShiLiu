@@ -1,7 +1,8 @@
 <template>
   <div ref="inputRef" :class="[inputClass, { 'is-empty': isEmpty }]" contenteditable="true" @input="handleInput" @focus="handleFocus"
     @blur="handleBlur" @keydown="handleKeydown" @click="handleClick" @mousedown="handleMouseDown" @paste="handlePaste"
-    @copy="handleClipboardWrite" @cut="handleClipboardWrite" :placeholder="placeholder">
+    @copy="handleClipboardWrite" @cut="handleClipboardWrite" @compositionstart="handleCompositionStart"
+    @compositionend="handleCompositionEnd" :placeholder="placeholder">
   </div>
 </template>
 
@@ -46,6 +47,7 @@ const emit = defineEmits(['update:modelValue', 'focus', 'blur', 'keydown', 'ment
 const inputRef = ref(null)
 const isUserTyping = ref(false)
 const cursorMarkerId = ref(null)
+const isComposing = ref(false)
 
 // placeholder 只由「有没有输入字符」决定。不能用 DOM 判断空不空：回车后的空行是 <div><br></div>，
 // :only-child 不把裸文本节点算作兄弟，会把它误判成「空」，占位符就压到第一行的字上。
@@ -142,9 +144,8 @@ const convertTextToMentionLinks = (text) => {
 const convertMentionLinksToText = (html) => {
   if (!html) return ''
 
-  // 创建临时div来解析HTML
-  const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = html
+  // 用惰性文档解析，避免解析不可信HTML时触发事件。
+  const tempDiv = new DOMParser().parseFromString(html, 'text/html').body
 
   // 查找所有mention链接，保持HTML格式不变
   // 不再转换为[@nickname:user_id]格式，直接保持HTML a标签格式
@@ -275,8 +276,25 @@ const redoHistory = () => {
   applyHistory(historyStack[historyIndex])
 }
 
+const handleCompositionStart = () => {
+  // 合成期间先不把中间态同步给父组件：父组件一旦改 modelValue，Vue 会重写根节点 class，
+  // Chrome 的输入法合成会被打断并重新提交，表现为多插入一个字符。
+  isComposing.value = true
+  isUserTyping.value = true
+}
+
+const handleCompositionEnd = (event) => {
+  isComposing.value = false
+  // 合成结束后统一同步一次，既保证模型拿到最终文本，也不会在合成中途改 DOM
+  if (!inputRef.value) return
+  handleInput(event)
+}
+
 // 处理输入事件
 const handleInput = (event) => {
+  if (isComposing.value || event.isComposing) {
+    return
+  }
   isUserTyping.value = true
 
   let content = event.target.innerHTML
@@ -637,6 +655,9 @@ const mergeLineBackward = () => {
 }
 
 const handleKeydown = (event) => {
+  // 输入法合成期间的回车/方向键属于候选词操作，不能按普通编辑键处理
+  if (isComposing.value || event.isComposing) return
+
   // 撤销/重做自己接管：原生撤销在这套 DOM 结构下本来就不可用，见上面 history 段注释。
   // Meta 覆盖 macOS 的 Cmd+Z，Ctrl+Shift+Z 与 Ctrl+Y 都当重做
   if (
@@ -1009,9 +1030,8 @@ const handlePaste = (event) => {
 
   // 优先处理HTML格式的粘贴（保留换行和mention链接）
   if (useHtml) {
-    // 创建临时div解析HTML
-    const tempDiv = document.createElement('div')
-    tempDiv.innerHTML = pastedHtml
+    // 用惰性文档解析剪贴板内容，避免解析阶段触发恶意事件。
+    const tempDiv = new DOMParser().parseFromString(pastedHtml, 'text/html').body
     
     // 提取文本行，保留mention链接
     const lines = []

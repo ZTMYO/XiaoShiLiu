@@ -21,6 +21,7 @@
 import { computed } from 'vue'
 import defaultPlaceholder from '@/assets/imgs/未加载.png'
 import { hydrateStickers } from '@/utils/inlineSticker'
+import { sanitizeContent } from '@/utils/contentSecurity'
 
 const props = defineProps({
   content: {
@@ -52,9 +53,8 @@ const actualContent = computed(() => {
 const parsedContent = computed(() => {
   if (!actualContent.value) return { text: '', images: [] }
 
-  // 创建临时DOM元素来解析HTML
-  const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = actualContent.value
+  // 数据库内容仍是不可信输入；先过滤，再用惰性文档解析，避免解析阶段触发事件。
+  const tempDiv = new DOMParser().parseFromString(sanitizeContent(actualContent.value), 'text/html').body
 
   // 行内表情：把 [st:包/序号] 标记换成雪碧图裁切的小图
   hydrateStickers(tempDiv)
@@ -109,7 +109,7 @@ const escapeRegExp = (word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 // 解析文本中的mention标记
 const parsedText = computed(() => {
   // 由于text现在已经包含HTML格式的mention链接，直接返回
-  // 服务端已经进行了安全过滤，这里信任数据库的数据
+  // 服务端和客户端均可能直接提供数据，不能仅信任数据库内容。
   if (!props.highlightWords.length) return text.value
 
   // 逐段处理：标签片段（如mention链接）原样保留，仅对文本片段做高亮包裹

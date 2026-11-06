@@ -3,10 +3,20 @@
  * 统一管理危险标签过滤，防止XSS攻击
  */
 
+const escapeHtml = (text) => {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }
+  return text.replace(/[&<>"']/g, (char) => map[char])
+}
+
 const validateAndCleanMentionLink = (linkHtml) => {
-  // 创建临时元素来解析链接
-  const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = linkHtml
+  // 惰性解析不可信链接片段，随后仅读取字段并重建安全链接。
+  const tempDiv = new DOMParser().parseFromString(linkHtml, 'text/html').body
   const link = tempDiv.querySelector('a')
   
   if (!link) return null
@@ -34,7 +44,7 @@ const validateAndCleanMentionLink = (linkHtml) => {
   const nickname = textContent.substring(1) // 去掉@
 
   // 重新构建安全的 mention 链接，只包含必要的属性
-  return `<a href="/user/${userId}" class="mention-link" data-user-id="${userId}" contenteditable="false">@${nickname}</a>`
+  return `<a href="/user/${userId}" class="mention-link" data-user-id="${userId}" contenteditable="false">@${escapeHtml(nickname)}</a>`
 }
 
 /**
@@ -86,17 +96,6 @@ export const sanitizeContent = (content) => {
   
   // 5. 将所有剩余的HTML标签转义为纯文本（不解析DOM，只按字符转义，
   // 否则不换行空格会被浏览器序列化成 &nbsp;，后端再转义一次就变成 &amp;nbsp;，显示为字面 nbsp）
-  const escapeHtml = (text) => {
-    const map = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    }
-    return text.replace(/[&<>"']/g, (char) => map[char])
-  }
-  
   // 先解码，再编码，避免重复编码问题
   processedContent = escapeHtml(decodeHtmlEntities(processedContent))
 

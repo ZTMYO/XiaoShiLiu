@@ -370,10 +370,8 @@ const handleEmojiSelect = (emoji) => {
 // 获取纯文本长度（去除HTML标签）
 const getPlainTextLength = (htmlContent) => {
   if (!htmlContent) return 0
-  // 创建临时div元素来获取纯文本内容
-  const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = htmlContent
-  return tempDiv.textContent?.length || 0
+  const doc = new DOMParser().parseFromString(htmlContent, 'text/html')
+  return doc.body.textContent?.length || 0
 }
 
 const formData = computed(() => {
