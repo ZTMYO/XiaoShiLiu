@@ -199,9 +199,8 @@ const templates = computed(() =>
 const processText = (text) => {
   if (!text) return []
   
-  // 创建临时DOM元素来安全地提取文本内容
-  const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = text
+  // 惰性解析不可信内容，避免提取文字时触发HTML事件。
+  const tempDiv = new DOMParser().parseFromString(text, 'text/html').body
   
   // 将<br>和<div>标签转换为换行符
   const brElements = tempDiv.querySelectorAll('br')
