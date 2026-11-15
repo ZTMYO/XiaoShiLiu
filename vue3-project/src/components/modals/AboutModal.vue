@@ -9,7 +9,20 @@
 
             <h2 class="about-title">关于小石榴</h2>
           </div>
-          <p class="version">v1.3.3</p>
+          <p v-if="showGithubBadges" class="sheilds-section">
+            <a href="https://github.com/ZTMYO/XiaoShiLiu/stargazers" target="_blank">
+              <img
+                src="https://img.shields.io/github/stars/ZTMYO/XiaoShiLiu?style=flat&logo=github&color=brightgreen&label=Stars">
+            </a>
+            <a href="https://github.com/ZTMYO/XiaoShiLiu" target="_blank">
+              <img
+                src="https://img.shields.io/badge/XiaoShiLiu-v1.3.3-brightgreen.svg?logo=data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjE0MCIgaGVpZ2h0PSIxNDAiPgo8cGF0aCBkPSJNMCAwIEMwLjk4NDg0Mzc1IDAuNDAwODk4NDQgMS45Njk2ODc1IDAuODAxNzk2ODcgMi45ODQzNzUgMS4yMTQ4NDM3NSBDMjEuMTI2MDk3NSA5LjMyMjIxOTc0IDMyLjY5NTAzOTgyIDI0LjA4MjkxNDYgMzkuNjg3NSA0Mi4zMTI1IEM0NC42NTc3MjE4NyA1Ni4yNzY0NTY2NyA0NC4xNDU5OTEyNiA3NS4xNjgzMTI0IDM4LjUzNTE1NjI1IDg4Ljg1OTM3NSBDMzguMDI4NTU0NjkgODkuODk1NzgxMjUgMzcuNTIxOTUzMTMgOTAuOTMyMTg3NSAzNyA5MiBDMzYuNTAzNzEwOTQgOTMuMDM2NDA2MjUgMzYuMDA3NDIxODggOTQuMDcyODEyNSAzNS40OTYwOTM3NSA5NS4xNDA2MjUgQzI3LjgzMzg5MjI4IDEwOS41NDE4NzExNCAxNS40NzA5NTI1IDEyMS4zNzk0NjY2OSAwIDEyNyBDLTAuMDQxMjUgMTI2LjM4MTI1IC0wLjA4MjUgMTI1Ljc2MjUgLTAuMTI1IDEyNS4xMjUgQy0wLjQxMzc1IDEyNC40MjM3NSAtMC43MDI1IDEyMy43MjI1IC0xIDEyMyBDLTMuOTk2MTU5NDYgMTIxLjY5NTQzNDQgLTMuOTk2MTU5NDYgMTIxLjY5NTQzNDQgLTcgMTIxIEMtNyAxMTguMzYgLTcgMTE1LjcyIC03IDExMyBDLTYuMjg5NzI2NTYgMTEyLjczNDQ1MzEzIC01LjU3OTQ1MzEzIDExMi40Njg5MDYyNSAtNC44NDc2NTYyNSAxMTIuMTk1MzEyNSBDLTMuOTI4NTU0NjkgMTExLjg0MjEwOTM4IC0zLjAwOTQ1MzEyIDExMS40ODg5MDYyNSAtMi4wNjI1IDExMS4xMjUgQy0xLjE0NTk3NjU2IDExMC43NzY5NTMxMyAtMC4yMjk0NTMxMyAxMTAuNDI4OTA2MjUgMC43MTQ4NDM3NSAxMTAuMDcwMzEyNSBDMy4xNDk0MTA1NiAxMDkuMjE4MDkxNCAzLjE0OTQxMDU2IDEwOS4yMTgwOTE0IDQgMTA3IEM0LjA3NzMzNjExIDEwNS40NTkwMDYzMyA0LjEzNzM2OTIxIDEwMy45MTcxMTg0MyA0LjE4NzUgMTAyLjM3NSBDNC42OTA2NzUzOSA5Ni40OTA0MDY1MSA3LjI0Nzk2Nzk5IDkzLjM0ODk0NjE5IDExIDg5IEMxMS4zMyA4OC4zNCAxMS42NiA4Ny42OCAxMiA4NyBDMTYuMzM3MDYzODcgODguNzU1MDQwNjcgMTcuNTIyMjA4NTQgOTEuMjM1NzQ3NzEgMTkuNjU2MjUgOTUuMjIyNjU2MjUgQzIwLjg3MDQxMzY4IDk3LjE0MTg2OTIxIDIwLjg3MDQxMzY4IDk3LjE0MTg2OTIxIDIyLjk2ODc1IDk3LjgwODU5Mzc1IEMyNS4yMDIxMzAyNCA5OC4xNTY5NzU0NiAyNS4yMDIxMzAyNCA5OC4xNTY5NzU0NiAyOCA5NyBDMjguNDE4MzE0MDQgOTMuNzEwMDA3MTggMjguNDE4MzE0MDQgOTMuNzEwMDA3MTggMjggOTAgQzI1LjkxOTc1NjkxIDg3LjQ3ODQ5MzIyIDIzLjY3OTk1MDk5IDg1LjUzMTAzNjEgMjEuMTA5Mzc1IDgzLjUyMzQzNzUgQzE2LjE5MjYyMjc4IDc5LjMwNjIyMzE5IDE2LjE5MjYyMjc4IDc5LjMwNjIyMzE5IDE1LjYyNSA3NS40NTcwMzEyNSBDMTUuNjY3MzcwODkgNzMuNTc5NDcxMjkgMTUuNzQ5NDAxMDYgNzEuNzAyNDY1NyAxNS44NjcxODc1IDY5LjgyODEyNSBDMTYuMjkyMDg1NTYgNjAuNzgwMjk1NjMgMTIuOTExODg3NzUgNTIuMTI5MzYzMDIgNy40Njg3NSA0NC45OTIxODc1IEMyLjQxNzc5Mjk5IDM5LjQ4ODU1MDM4IC0zLjk3NzY3ODk1IDM2LjM0MDc3MzY4IC0xMSAzNCBDLTEwLjQzNjI4NTg2IDMwLjczMDQ1Nzk4IC05LjUwMDM3NzM0IDI5LjE3NDI0MTE3IC03IDI3IEMtOC45OCAyNi42NyAtMTAuOTYgMjYuMzQgLTEzIDI2IEMtMTIuMzQgMjMuNjkgLTExLjY4IDIxLjM4IC0xMSAxOSBDLTEzLjk3IDIwLjMyIC0xNi45NCAyMS42NCAtMjAgMjMgQy0yMC45OSAyMC4wMyAtMjAuOTkgMjAuMDMgLTIyIDE3IEMtMjIuNjYgMTcgLTIzLjMyIDE3IC0yNCAxNyBDLTI1LjM4OTM4MDc3IDE4Ljk2MTQ3ODc0IC0yNi43MjYwNDExIDIwLjk2MTY2NTc2IC0yOCAyMyBDLTMxLjMgMjEuNjggLTM0LjYgMjAuMzYgLTM4IDE5IEMtMzcuMzQgMjAuNjUgLTM2LjY4IDIyLjMgLTM2IDI0IEMtMzYgMjQuOTkgLTM2IDI1Ljk4IC0zNiAyNyBDLTM4LjMxIDI3LjMzIC00MC42MiAyNy42NiAtNDMgMjggQy00MS4zNSAyOS42NSAtMzkuNyAzMS4zIC0zOCAzMyBDLTM4LjU0NTI3MzQ0IDMzLjIxOTE0MDYzIC0zOS4wOTA1NDY4OCAzMy40MzgyODEyNSAtMzkuNjUyMzQzNzUgMzMuNjY0MDYyNSBDLTUwLjk2NTAyODY5IDM4LjQyMTE5MTU1IC01OC45MTExMTI2MiA0NC4xNDc4MzA1MiAtNjQuMzEyNSA1NS4zNzUgQy02Ni4yMjgwOTAwMyA2MC4zMzM5MDY0NSAtNjYuMjE5Mjg2OTIgNjUuMDEyNjg4OTYgLTY2LjMxMjUgNzAuMjUgQy02Ni40ODY4NzY5OSA3OC4xNzA4OTM4OCAtNjYuNDg2ODc2OTkgNzguMTcwODkzODggLTY4LjQzMzU5Mzc1IDgxLjMxNjQwNjI1IEMtNzAuMjE5MDkyOTEgODIuNzg3MDQzMTkgLTcxLjk3MDU0ODA3IDgzLjg5NzY4NzE2IC03NCA4NSBDLTc2Ljk2MDUwODc0IDg3LjI5MTk5NDAzIC03Ni45NjA1MDg3NCA4Ny4yOTE5OTQwMyAtNzkgOTAgQy03OS40MTgzMTQwNCA5My43MTAwMDcxOCAtNzkuNDE4MzE0MDQgOTMuNzEwMDA3MTggLTc5IDk3IEMtNzUuNjI1OTk0MjIgOTcuNDE3MjU2NzggLTc1LjYyNTk5NDIyIDk3LjQxNzI1Njc4IC03MiA5NyBDLTcwLjI2MzMzMjczIDk0LjgwMTY3Mjg3IC03MC4yNjMzMzI3MyA5NC44MDE2NzI4NyAtNjkgOTIgQy02Ny4zNzE2MzI2MiA5MC4yOTU4OTQ2IC02NS43MTIzMDI0OCA4OC42MTk3NDU1OSAtNjQgODcgQy02Mi45NzMzNDc4NyA4Ny45NzI2MTc4MSAtNjEuOTgyOTA5NjggODguOTgzMTk2ODkgLTYxIDkwIEMtNjAuMTU0Mzc1IDkwLjc4Mzc1IC01OS4zMDg3NSA5MS41Njc1IC01OC40Mzc1IDkyLjM3NSBDLTU1LjY3MDc1MTQ2IDk1LjU3NzMyOTk1IC01NS42Njk2NDU5OSA5OC40MjM0MjUzNiAtNTUuMzc1IDEwMi41NjI1IEMtNTUuMTIyODk3NzMgMTA1Ljk2NjE3NDQ1IC01NS4xMjI4OTc3MyAxMDUuOTY2MTc0NDUgLTU0IDEwOSBDLTUwLjU5NDY1MjM3IDExMS41OTU1MzkzNSAtNDcuMTA4OTgxOTEgMTEyLjg3OTk5MzIzIC00MyAxMTQgQy00MyAxMTYuMzEgLTQzIDExOC42MiAtNDMgMTIxIEMtNDMuOTQ4NzUgMTIxLjI0NzUgLTQ0Ljg5NzUgMTIxLjQ5NSAtNDUuODc1IDEyMS43NSBDLTQ5LjA5MTI5NTA2IDEyMi42NjIxMzc3NSAtNDkuMDkxMjk1MDYgMTIyLjY2MjEzNzc1IC01MC4xOTUzMTI1IDEyNS4wNzgxMjUgQy01MC40NjA4NTkzNyAxMjUuNzEyMzQzNzUgLTUwLjcyNjQwNjI1IDEyNi4zNDY1NjI1IC01MSAxMjcgQy02OC42OTU3Mjk2NyAxMTkuMTI0OTM3MDYgLTgxLjQzOTU5ODg0IDEwNi45NDczMzUyOCAtODkgODkgQy04OS40MTM3ODkwNiA4OC4wODYwNTQ2OSAtODkuODI3NTc4MTMgODcuMTcyMTA5MzggLTkwLjI1MzkwNjI1IDg2LjIzMDQ2ODc1IEMtOTUuNzUzMTk2OCA3MS45MTY5ODQyOSAtOTUuMTUyNTY5NTQgNTMuMjc2OTg2ODkgLTg5LjQ4MDQ2ODc1IDM5LjE1MjM0Mzc1IEMtODguOTkxOTE0MDYgMzguMTEyMDcwMzEgLTg4LjUwMzM1OTM4IDM3LjA3MTc5Njg3IC04OCAzNiBDLTg3LjU0MjM4MjgxIDM1LjAxMTI4OTA2IC04Ny4wODQ3NjU2MyAzNC4wMjI1NzgxMyAtODYuNjEzMjgxMjUgMzMuMDAzOTA2MjUgQy03Ny42MTMxNDg5MSAxNS4yMjU1NjI2NCAtNjMuMDQ2NjYwMSA0LjMxOTQ5MDIxIC00NC41MDc4MTI1IC0yLjIzODI4MTI1IEMtMzAuNzgxODIwODggLTYuNDA3MzkwODYgLTEzLjEwMDE0NTE2IC01LjgzNjUxNzE5IDAgMCBaICIgZmlsbD0iI2ZmZiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoOTYsNykiLz4KPHBhdGggZD0iTTAgMCBDMS4zMiAwIDIuNjQgMCA0IDAgQzQuMzMgMS4zMiA0LjY2IDIuNjQgNSA0IEM3LjMxIDQuMzMgOS42MiA0LjY2IDEyIDUgQzEyLjA2MDU4NTk0IDUuNzgyNDYwOTQgMTIuMTIxMTcxODggNi41NjQ5MjE4NyAxMi4xODM1OTM3NSA3LjM3MTA5Mzc1IEMxMi4zMDkyNzczNCA4Ljg4ODk2NDg0IDEyLjMwOTI3NzM0IDguODg4OTY0ODQgMTIuNDM3NSAxMC40Mzc1IEMxMi41MTg3MTA5NCAxMS40NDY4MzU5NCAxMi41OTk5MjE4OCAxMi40NTYxNzE4NyAxMi42ODM1OTM3NSAxMy40OTYwOTM3NSBDMTIuNzMyMTE0NjggMTUuOTM2NDA3NzkgMTIuNzMyMTE0NjggMTUuOTM2NDA3NzkgMTQgMTcgQzE2LjMyODE3OTY0IDE3LjM2NzYwNzMxIDE4LjY2MTgzODUgMTcuNzAyNDE1ODEgMjEgMTggQzIxIDE4LjY2IDIxIDE5LjMyIDIxIDIwIEMxNC40ODAzNjU4MyAyMS4xODE5NzY4NCA4LjA0OTU0ODc3IDIxLjE0ODEwNTU5IDEuNDM3NSAyMS4xMjUgQzAuMzI2OTcyNjYgMjEuMTI4ODY3MTkgLTAuNzgzNTU0NjkgMjEuMTMyNzM0MzcgLTEuOTI3NzM0MzggMjEuMTM2NzE4NzUgQy0zLjU0MzI1MTk1IDIxLjEzNDc4NTE2IC0zLjU0MzI1MTk1IDIxLjEzNDc4NTE2IC01LjE5MTQwNjI1IDIxLjEzMjgxMjUgQy02LjE2Mjc5NTQxIDIxLjEzMTY4NDU3IC03LjEzNDE4NDU3IDIxLjEzMDU1NjY0IC04LjEzNTAwOTc3IDIxLjEyOTM5NDUzIEMtMTEuMTU2NjU0MzcgMjAuOTkyOTI0ODYgLTE0LjAyODg1ODk1IDIwLjU1NDAxMTQ5IC0xNyAyMCBDLTE3IDE5LjM0IC0xNyAxOC42OCAtMTcgMTggQy0xNS44NjU2MjUgMTcuODU1NjI1IC0xNC43MzEyNSAxNy43MTEyNSAtMTMuNTYyNSAxNy41NjI1IEMtMTAuMTkyMjI3OTkgMTcuMzg4Mjg1MjIgLTEwLjE5MjIyNzk5IDE3LjM4ODI4NTIyIC05IDE2IEMtOC43NjYzNjExOSAxNC4xNTEwODA1NCAtOC41ODY5NjM2NSAxMi4yOTUxMTk2OSAtOC40Mzc1IDEwLjQzNzUgQy04LjM1MzcxMDk0IDkuNDI1NTg1OTQgLTguMjY5OTIxODggOC40MTM2NzE4OCAtOC4xODM1OTM3NSA3LjM3MTA5Mzc1IEMtOC4xMjMwMDc4MSA2LjU4ODYzMjgxIC04LjA2MjQyMTg3IDUuODA2MTcxODggLTggNSBDLTQuNTM1IDQuNTA1IC00LjUzNSA0LjUwNSAtMSA0IEMtMC42NyAyLjY4IC0wLjM0IDEuMzYgMCAwIFogIiBmaWxsPSIjZmZmIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg2OSwxMTcpIi8+Cjwvc3ZnPgo=">
+            </a>
+            <a href="https://gitee.com/ZTMYO/XiaoShiLiu/stargazers">
+              <img src="https://gitee.com/ZTMYO/XiaoShiLiu/badge/star.svg?theme=dark">
+            </a>
+          </p>
+
         </div>
         <button class="close-btn" @click="closeModal">
           <SvgIcon name="close" />
@@ -101,6 +114,15 @@
                 <strong>免责声明：</strong>本项目与小红书官方无任何关联，所有商标、品牌名称归其各自所有者所有。
               </p>
             </div>
+            <div v-if="showGithubBadges" class="star-history-section">
+              <h3>Star历史</h3>
+              <div class="star-history-content">
+                喜欢这个项目的朋友可以给它一个 star，您的支持是我前进的动力。
+              </div>
+              <a href="https://github.com/ZTMYO/XiaoShiLiu" target="_blank">
+                <img :src="starHistoryUrl" alt="Star History Chart">
+              </a>
+            </div>
           </div>
 
           <div class="about-footer">
@@ -113,13 +135,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useScrollLock } from '@/composables/useScrollLock'
+import { useThemeStore } from '@/stores/theme'
 
 const emit = defineEmits(['close'])
 
 const { lock, unlock } = useScrollLock()
+const themeStore = useThemeStore()
+const showGithubBadges = import.meta.env.VITE_SHOW_GITHUB_BADGES === 'true'
 
 // 静态资源URL
 const logoUrl = new URL('@/assets/imgs/小石榴.png', import.meta.url).href
@@ -127,6 +152,12 @@ const ztmyoUrl = new URL('@/assets/imgs/ztmyo.png', import.meta.url).href
 const liciUrl = new URL('@/assets/imgs/栗次元.ico', import.meta.url).href
 const xiaRouUrl = new URL('@/assets/imgs/夏柔.ico', import.meta.url).href
 const baiduUrl = new URL('@/assets/imgs/百度.ico', import.meta.url).href
+
+// 根据主题动态生成图片URL
+const starHistoryUrl = computed(() => {
+  const baseUrl = 'https://api.star-history.com/svg?repos=ZTMYO/XiaoShiLiu&type=Date'
+  return themeStore.isDark ? `${baseUrl}&theme=dark` : baseUrl
+})
 
 const isAnimating = ref(false)
 
@@ -422,6 +453,14 @@ onMounted(() => {
   border-radius: 2px;
 }
 
+.sheilds-section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
 /* 移动端适配 - 全屏显示 */
 @media (max-width: 768px) {
   .about-modal {
@@ -461,7 +500,7 @@ onMounted(() => {
     z-index: 2000;
     height: calc(72px + constant(safe-area-inset-top));
     height: calc(72px + env(safe-area-inset-top));
-    padding: 12px 16px;
+    padding: 24px 32px;
     padding-left: 60px;
     background: var(--bg-color-primary);
     border-bottom: 1px solid var(--border-color-primary);
@@ -489,7 +528,7 @@ onMounted(() => {
     flex-direction: row;
     padding-top: 12px;
     gap: 12px;
-    margin-bottom: -4px;
+    margin-bottom: -7px;
   }
 
   .about-title {
@@ -503,5 +542,43 @@ onMounted(() => {
   .contact-links {
     justify-content: center;
   }
+}
+
+.star-history-section {
+  margin-top: 24px;
+}
+
+.star-history-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+  margin: 0 0 12px 0;
+}
+
+.star-history-content {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-color-secondary);
+  margin-bottom: 16px;
+}
+
+.star-history-section a {
+  display: block;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.star-history-section a:hover {
+  opacity: 0.8;
+}
+
+.star-history-section img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border-color-primary);
+  background: var(--bg-color-secondary);
+  cursor: pointer;
 }
 </style>

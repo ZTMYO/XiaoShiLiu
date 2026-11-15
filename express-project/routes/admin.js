@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { HTTP_STATUS, RESPONSE_CODES } = require('../constants')
-const { pool } = require('../config/config')
+const { pool, features } = require('../config/config')
 const { createCrudHandlers, createAdminListRoute } = require('../middleware/crudFactory')
 const { recordExists } = require('../utils/dbHelper')
 const { adminAuth } = require('../utils/uploadHelper')
@@ -13,6 +13,15 @@ const {
 const { extractMentionedUsers, hasMentions } = require('../utils/mentionParser')
 const NotificationHelper = require('../utils/notificationHelper')
 const { findSensitiveWords } = require('../scripts/local-sensitive-word-check')
+
+// 受限部署（演示站）统一拦截后台写操作；本地默认开启，线上用 FEATURE_ADMIN_WRITE=false 关闭
+router.use((req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method) || features.adminWrite) return next()
+  return res.status(HTTP_STATUS.FORBIDDEN).json({
+    code: RESPONSE_CODES.FORBIDDEN,
+    message: '演示站已关闭后台写操作'
+  })
+})
 
 // 实时诊断笔记的标题/内容/标签是否命中违规词，供审核页展示与管理员的判定依据
 function diagnosePost(post) {

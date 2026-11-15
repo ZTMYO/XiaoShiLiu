@@ -24,6 +24,19 @@ const config = {
     env: process.env.NODE_ENV || 'development'
   },
 
+  // 部署 profile 与功能开关：同一套代码，本地全开，线上演示按 .env 关闭
+  deployProfile: process.env.DEPLOY_PROFILE || 'local',
+  features: {
+    adminWrite: process.env.FEATURE_ADMIN_WRITE !== 'false',
+    userUpload: process.env.FEATURE_USER_UPLOAD !== 'false',
+    videoUpload: process.env.FEATURE_VIDEO_UPLOAD !== 'false',
+    rag: process.env.FEATURE_RAG === 'true',
+    semanticSearch: process.env.FEATURE_SEMANTIC_SEARCH === 'true',
+    qa: process.env.FEATURE_QA === 'true',
+    semanticModeration: process.env.FEATURE_SEMANTIC_MODERATION === 'true',
+    aiContent: process.env.FEATURE_AI_CONTENT === 'true'
+  },
+
   // 限流配置（按真实客户端 IP 计数）
   rateLimit: {
     // 通用 API：15 分钟 500 次

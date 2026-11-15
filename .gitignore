@@ -49,3 +49,21 @@ express-project/uploads/
 
 # 备份
 backup/
+
+# 部署密钥与线上私有运维文件
+*.pem
+*.key
+.ssh_known_hosts
+deploy/online/secrets/
+doc/internal/
+backup/online-ops/
+
+# 线上部署的服务器私有文件：只保留 *.example，实际配置不要提交
+deploy/online/nginx.conf
+deploy/online/deploy-*.ps1
+deploy/online/deploy-*.sh
+deploy/online/*.local
+.env.online
+.env.production
+.env.*.bak
+*.env.bak*

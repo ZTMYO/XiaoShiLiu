@@ -6,6 +6,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { uploadFile, uploadVideo } = require('../utils/uploadHelper');
 const { parseSize } = require('../utils/fileHelpers');
 const config = require('../config/config');
+const { requireFeature } = require('../middleware/featureGuard');
 
 // 配置 multer 内存存储（用于云端图床）
 const storage = multer.memoryStorage();
@@ -71,7 +72,7 @@ const videoUpload = multer({
 });
 
 // 单图片上传到图床
-router.post('/single', authenticateToken, upload.single('file'), async (req, res) => {
+router.post('/single', authenticateToken, requireFeature('userUpload'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.VALIDATION_ERROR, message: '没有上传文件' });
@@ -107,7 +108,7 @@ router.post('/single', authenticateToken, upload.single('file'), async (req, res
 });
 
 // 多图片上传到图床
-router.post('/multiple', authenticateToken, upload.array('files', 9), async (req, res) => {
+router.post('/multiple', authenticateToken, requireFeature('userUpload'), upload.array('files', 9), async (req, res) => {
   try {
     if (!Array.isArray(req.files) || req.files.length === 0) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
@@ -173,7 +174,7 @@ router.post('/multiple', authenticateToken, upload.array('files', 9), async (req
 });
 
 // 单视频上传到图床
-router.post('/video', authenticateToken, videoUpload.fields([
+router.post('/video', authenticateToken, requireFeature('userUpload'), requireFeature('videoUpload'), videoUpload.fields([
   { name: 'file', maxCount: 1 },
   { name: 'thumbnail', maxCount: 1 }
 ]), async (req, res) => {

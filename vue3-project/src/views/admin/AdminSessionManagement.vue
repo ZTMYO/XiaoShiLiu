@@ -6,11 +6,13 @@
 <script setup>
 import CrudTable from '@/views/admin/components/CrudTable.vue'
 
+const showUserAgent = import.meta.env.VITE_SHOW_USER_AGENT !== 'false'
+
 const columns = [
   { key: 'id', label: 'ID', sortable: true },
   { key: 'admin_id', label: '管理员ID', sortable: false },
   { key: 'username', label: '管理员用户名', sortable: false },
-  { key: 'user_agent', label: '用户代理', type: 'content', sortable: false },
+  ...(showUserAgent ? [{ key: 'user_agent', label: '用户代理', type: 'content', sortable: false }] : []),
   { key: 'is_active', label: '活跃状态', type: 'boolean' },
   { key: 'expires_at', label: '过期时间', type: 'date', sortable: true },
   { key: 'created_at', label: '创建时间', type: 'date', sortable: true }
@@ -18,7 +20,7 @@ const columns = [
 
 const formFields = [
   { key: 'admin_id', label: '管理员ID', type: 'number', required: true, placeholder: '请输入管理员ID' },
-  { key: 'user_agent', label: '用户代理', type: 'text', placeholder: '请输入用户代理' },
+  ...(showUserAgent ? [{ key: 'user_agent', label: '用户代理', type: 'text', placeholder: '请输入用户代理' }] : []),
   { key: 'is_active', label: '活跃状态', type: 'checkbox', checkboxLabel: '活跃' }
 ]
 
