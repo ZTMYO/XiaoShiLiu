@@ -5,7 +5,7 @@
 - **Version**: v1.3.3
 - **Base URL**: `http://localhost:3001`
 - **Database**: xiaoshiliu (MySQL)
-- **Update Time**: 2026-09-19
+- **Update Time**: 2026-10-08
 
 ## General Instructions
 
@@ -1224,9 +1224,13 @@ General parameters for interfaces that support pagination:
 |------|------|------|------|
 | page | Int | No | Page number, default 1 |
 | limit | Int | No | Number of items per page, default 20 |
+| type | Int | No | Post type filter, 1=Image/Text (note), 2=Video |
+| seed | String | No | Recommend/category channels only: pass back the `seed` from the previous page when paging; omit it for a fresh batch |
 | category | String | No | Category ID filter, supports "recommend" for recommended channel |
 | status | Int | No | Post status filter, 0=published, 1=draft, 2=pending review, 3=review rejected (default 0) |
 | user_id | Int | No | User ID filter (mandatory for viewing drafts) |
+
+> For `category=recommend` (ranked by engagement × time decay) and regular category channels (newest first), the list is shuffled by `seed`: refreshing reshuffles, paging stays stable, and at most 2 posts from the same author appear on one page. A small corpus still returns results — never an empty page.
 
 **Response Example**:
 
@@ -1267,7 +1271,8 @@ General parameters for interfaces that support pagination:
       "limit": 20,
       "total": 100,
       "pages": 5
-    }
+    },
+    "seed": "1984628289"
   }
 }
 ```

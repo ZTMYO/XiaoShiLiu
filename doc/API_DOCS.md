@@ -5,7 +5,7 @@
 - **版本**: v1.3.3
 - **基础URL**: `http://localhost:3001`
 - **数据库**: xiaoshiliu (MySQL)
-- **更新时间**: 2026-09-27
+- **更新时间**: 2026-10-08
 
 ## 通用说明
 
@@ -1552,8 +1552,12 @@ Content-Type: application/json
 | page | int | 否 | 页码，默认1 |
 | limit | int | 否 | 每页数量，默认20 |
 | category | string | 否 | 分类ID筛选，支持"recommend"推荐频道 |
+| type | int | 否 | 笔记类型筛选，1=图文，2=视频 |
+| seed | string | 否 | 推荐/分类频道：翻页时带回上一页的 `seed`，不传则是新一批 |
 | status | int | 否 | 笔记状态筛选，0=已发布（审核通过），1=草稿，2=待审核，3=未过审（默认2） |
 | user_id | int | 否 | 用户ID筛选（查看草稿时会强制为当前用户） |
+
+> `category=recommend`（按互动量×时间衰减）与普通分类频道（按时间倒序）都会按 seed 洗牌：刷新换序、翻页不重复，同页同作者最多 2 篇；笔记很少也不会空页。
 
 **响应示例**:
 ```json
@@ -1593,7 +1597,8 @@ Content-Type: application/json
       "limit": 20,
       "total": 100,
       "pages": 5
-    }
+    },
+    "seed": "1984628289"
   }
 }
 ```

@@ -5,7 +5,7 @@
 - **版本**: v1.3.3
 - **基礎URL**: `http://localhost:3001`
 - **數據庫**: xiaoshiliu (MySQL)
-- **更新時間**: 2026-09-19
+- **更新時間**: 2026-10-08
 
 ## 通用說明
 
@@ -1224,9 +1224,13 @@ Authorization: Bearer <access_token>
 |------|------|------|------|
 | page | int | 否 | 頁碼，預設1 |
 | limit | int | 否 | 每頁數量，預設20 |
+| type | int | 否 | 筆記類型篩選，1=圖文，2=視頻 |
+| seed | string | 否 | 推薦/分類頻道：翻頁時帶回上一頁的 `seed`，不傳則是新一批 |
 | category | string | 否 | 分類ID篩選，支持"recommend"推薦頻道 |
 | status | int | 否 | 筆記狀態篩選，0=已發布，1=草稿，2=待審核，3=審核未通過（預設0） |
 | user_id | int | 否 | 用戶ID篩選（查看草稿時會強制為當前用戶） |
+
+> `category=recommend`（按互動量×時間衰減）與普通分類頻道（按時間倒序）都會按 seed 洗牌：刷新換序、翻頁不重複，同頁同作者最多 2 篇；筆記很少也不會空頁。
 
 **響應示例**:
 ```json
@@ -1266,7 +1270,8 @@ Authorization: Bearer <access_token>
       "limit": 20,
       "total": 100,
       "pages": 5
-    }
+    },
+    "seed": "1984628289"
   }
 }
 ```

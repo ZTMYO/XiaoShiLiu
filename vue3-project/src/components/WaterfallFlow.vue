@@ -65,6 +65,8 @@ const loadingMore = ref(false)
 const hasMore = ref(true)
 const currentPage = ref(1)
 const pageSize = 20
+// 推荐流种子：首页不带 seed 让后端重新洗牌（刷新就换一批），翻页带回来同一个 seed 保证不重复
+const feedSeed = ref(null)
 // 请求序号：并发加载时只认最后一次，避免旧结果（尤其是空结果）覆盖新数据
 let contentRequestId = 0
 // 外部数据源模式下，还有没有下一页由父组件声明，内部 hasMore 不参与判断
@@ -291,6 +293,8 @@ async function initContent() {
             content = result.posts || []
             // 期间如果已经用更新的数据渲染过，丢弃这次结果，避免把新内容覆盖成空
             if (requestId !== contentRequestId) return
+            // 记住本次的推荐种子，翻页要用（首页没带 seed，所以刷新等于换一批）
+            feedSeed.value = result.seed || null
             hasMore.value = result.hasMore !== false // 默认为true，除非明确返回false
             if (result.needLogin) {
                 hasMore.value = false
@@ -410,7 +414,8 @@ async function loadMoreContent() {
             searchKeyword: props.searchKeyword,
             searchTag: props.searchTag,
             userId: props.userId,
-            type: props.type
+            type: props.type,
+            seed: feedSeed.value || undefined
         })
 
         const newContent = result.posts || []

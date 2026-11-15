@@ -76,7 +76,8 @@ export async function getPostList(params = {}) {
     userId,
     type,
     sort,
-    status
+    status,
+    seed
   } = params
 
   try {
@@ -219,6 +220,10 @@ export async function getPostList(params = {}) {
       if (type) {
         apiParams.type = type
       }
+      // 推荐流的种子：翻页沿用同一个（序列不变、不重复）；不传 = 重新洗牌
+      if (seed) {
+        apiParams.seed = seed
+      }
       response = await postApi.getPosts(apiParams)
     }
 
@@ -230,6 +235,7 @@ export async function getPostList(params = {}) {
       return {
         posts: transformedPosts,
         pagination: response.data.pagination,
+        seed: response.data.seed,
         hasMore: response.data.pagination.page < response.data.pagination.pages
       }
     }

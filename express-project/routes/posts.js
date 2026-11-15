@@ -7,6 +7,9 @@ const NotificationHelper = require('../utils/notificationHelper');
 const { extractMentionedUsers, hasMentions } = require('../utils/mentionParser');
 const { batchCleanupFiles } = require('../utils/fileCleanup');
 const { sanitizeContent } = require('../utils/contentSecurity');
+const {
+  CANDIDATE_SIZE, CATEGORY_POOL_LIMIT, hashSeed, buildRecommendOrder, buildCategoryOrder
+} = require('../utils/recommendFeed');
 
 // 获取笔记列表
 router.get('/', optionalAuth, async (req, res) => {
@@ -130,58 +133,87 @@ router.get('/', optionalAuth, async (req, res) => {
     `;
     let queryParams = [status.toString()];
 
-    // 特殊处理推荐频道：热度新鲜度评分前20%的笔记按分数排序
+    // 推荐流 / 分类频道：排序在 utils/recommendFeed.js 里做（打分/洗牌/同作者打散），这里只取候选与这一页。
+    // 两者都用同一套 seed 机制：刷新不带 seed = 重新洗牌（换一批），翻页带回 seed = 序列不变（不重复）
+    let rows;
+    let recommendSeed = null;
+    let feedTotal = null;         // 洗牌流的可用总量（与分页口径一致，前端 hasMore 才不会多请求一页）
+    const rawSeed = req.query.seed;
+    const shuffledSeed = rawSeed
+      ? (/^\d+$/.test(String(rawSeed)) ? (Number(rawSeed) >>> 0) : hashSeed(rawSeed))
+      : Math.floor(Math.random() * 2147483647);
+    const isCategoryFeed = category && category !== 'general' && category !== 'recommend' && !userId;
+
     if (category === 'recommend') {
-      // 先获取总笔记数计算20%的数量
-      let countQuery = 'SELECT COUNT(*) as total FROM posts WHERE status = ?';
-      let countParams = [status.toString()];
+      // 同一个 seed 得到同一条序列（翻页沿用），换 seed 就是换一批（刷新/切频道）。
+      // 注意纯数字的 seed 要按数字用，不能再哈希一遍——否则前端把 seed 原样带回来时序列会变，翻页就重复了
+      const seed = shuffledSeed;
+      recommendSeed = String(seed);
 
-      if (type) {
-        countQuery += ' AND type = ?';
-        countParams.push(type);
-      }
-      const [totalCountResult] = await pool.execute(countQuery, countParams);
-      const totalPosts = totalCountResult[0].total;
-      const recommendLimit = Math.ceil(totalPosts * 0.2);
-      // 推荐算法：70%热度+30%新鲜度评分，新发布24小时内的笔记获得新鲜度加分，筛选前20%按分数排序
-      let innerWhere = 'p.status = ?';
-      let innerParams = [status.toString()];
-      if (type) {
-        innerWhere += ' AND p.type = ?';
-        innerParams.push(type);
-      }
-      query = `
-        SELECT 
-          p.*, 
-          u.nickname, 
-          u.avatar as user_avatar, 
-          u.user_id as author_account, 
-          u.id as author_auto_id, 
-          u.location, 
-          u.verified,
-          c.name as category
-        FROM (
-          SELECT 
-            p.*,
-            (p.view_count * 0.7 + (24 - LEAST(TIMESTAMPDIFF(HOUR, p.created_at, NOW()), 24)) * 0.3) as score
-          FROM posts p 
-          WHERE ${innerWhere}
-          ORDER BY score DESC
-          LIMIT ?
-        ) p
-        LEFT JOIN users u ON p.user_id = u.id 
-        LEFT JOIN categories c ON p.category_id = c.id 
-        ORDER BY p.score DESC
-        LIMIT ? OFFSET ? 
-      `;
+      const typeSql = type ? ' AND p.type = ?' : '';
+      const typeParams = type ? [type] : [];
 
-      // 参数设置
-      queryParams = [
-        ...innerParams,
-        recommendLimit.toString(),
-        limit.toString(),
-        offset.toString()
-      ];
+      // 候选池：按「互动量 × 时间衰减」粗排取前 CANDIDATE_SIZE 条。
+      // 库里不足就自然全取——不设任何"必须有互动"的门槛，几篇笔记也能给几篇
+      const scoreExpr = `(p.like_count * 3 + p.collect_count * 4 + p.comment_count * 3 + p.view_count * 0.05)
+                         / POW(1 + TIMESTAMPDIFF(DAY, p.created_at, NOW()) / 30, 0.8)`;
+      const [poolRows] = await pool.query(
+        `SELECT p.id, p.user_id, p.category_id, p.view_count, p.like_count, p.collect_count, p.comment_count, p.created_at
+           FROM posts p
+          WHERE p.status = ?${typeSql}
+          ORDER BY ${scoreExpr} DESC
+          LIMIT ?`,
+        [status.toString(), ...typeParams, CANDIDATE_SIZE]
+      );
+
+      const { ids, total } = buildRecommendOrder({ posts: poolRows, seed, limit, offset });
+      feedTotal = total;
+
+      if (ids.length) {
+        const [full] = await pool.query(
+          `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.id as author_auto_id, u.location, u.verified, c.name as category
+             FROM posts p
+             LEFT JOIN users u ON p.user_id = u.id
+             LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.id IN (?)`,
+          [ids]
+        );
+        const byId = new Map(full.map(r => [Number(r.id), r]));
+        rows = ids.map(id => byId.get(Number(id))).filter(Boolean);   // 保持排序顺序
+      } else {
+        rows = [];
+      }
+    } else if (isCategoryFeed) {
+      // 分类频道：基础顺序按时间倒序（保持"新的在前"的性格），再按 seed 洗牌 + 同作者打散。
+      // 池子是该分类的全部笔记（只用一个宽松上限防将来库变大），所以翻到哪都有内容、老笔记也不会漏
+      recommendSeed = String(shuffledSeed);
+      const typeSql = type ? ' AND p.type = ?' : '';
+      const [poolRows] = await pool.query(
+        `SELECT p.id, p.user_id
+           FROM posts p
+          WHERE p.status = ? AND p.category_id = ?${typeSql}
+          ORDER BY p.created_at DESC
+          LIMIT ?`,
+        [status.toString(), category, ...(type ? [type] : []), CATEGORY_POOL_LIMIT]
+      );
+
+      const { ids, total } = buildCategoryOrder({ posts: poolRows, seed: shuffledSeed, limit, offset });
+      feedTotal = total;
+
+      if (ids.length) {
+        const [full] = await pool.query(
+          `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.id as author_auto_id, u.location, u.verified, c.name as category
+             FROM posts p
+             LEFT JOIN users u ON p.user_id = u.id
+             LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.id IN (?)`,
+          [ids]
+        );
+        const byId = new Map(full.map(r => [Number(r.id), r]));
+        rows = ids.map(id => byId.get(Number(id))).filter(Boolean);
+      } else {
+        rows = [];
+      }
     } else {
       let whereConditions = [];
       let additionalParams = [];
@@ -207,8 +239,10 @@ router.get('/', optionalAuth, async (req, res) => {
 
       query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
       queryParams = [status.toString(), ...additionalParams, limit.toString(), offset.toString()];
+
+      const [normalRows] = await pool.execute(query, queryParams);
+      rows = normalRows;
     }
-    const [rows] = await pool.execute(query, queryParams);
 
 
     // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -279,19 +313,10 @@ router.get('/', optionalAuth, async (req, res) => {
 
     // 获取总数
     let total;
-    if (category === 'recommend') {
-      // 推荐频道的总数限制为总笔记数的20%
-      let countQuery = 'SELECT COUNT(*) as total FROM posts WHERE status = ?';
-      let countParams = [status.toString()];
-
-      if (type) {
-        countQuery += ' AND type = ?';
-        countParams.push(type);
-      }
-
-      const [totalCountResult] = await pool.execute(countQuery, countParams);
-      const totalPosts = totalCountResult[0].total;
-      total = Math.ceil(totalPosts * 0.2);
+    if (feedTotal !== null) {
+      // 洗牌流（推荐/分类）：可用总量就是候选池大小，和实际能翻到的页数一致，
+      // 前端 hasMore 才不会在池子翻完之后还去多请求一页
+      total = feedTotal;
     } else {
       let countQuery = 'SELECT COUNT(*) as total FROM posts WHERE status = ?';
       let countParams = [status.toString()];
@@ -326,6 +351,9 @@ router.get('/', optionalAuth, async (req, res) => {
       message: 'success',
       data: {
         posts: rows,
+        // 推荐流的随机种子：前端翻页时原样带回，序列不变所以不会重复；
+        // 不带 seed 请求第一页 = 重新洗牌，所以"刷新"就能换一批
+        ...(recommendSeed ? { seed: recommendSeed } : {}),
         pagination: {
           page,
           limit,
