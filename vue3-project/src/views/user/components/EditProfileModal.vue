@@ -495,9 +495,9 @@ watch(showCropModal, (newValue) => {
 // 按可见文字统计简介字数：艾特链接只计 @昵称、贴纸记1个、不把标签算进去；超限仅提示，不截断
 const bioCharCount = computed(() => {
   if (!form.bio) return 0
-  const div = document.createElement('div')
-  div.innerHTML = form.bio.replace(/\[st:[^\]]*\]/g, ' ')
-  return (div.textContent || '').length
+  // DOMParser 使用惰性文档解析简介，避免用活动文档元素的 innerHTML 解析不可信内容。
+  const doc = new DOMParser().parseFromString(form.bio.replace(/\[st:[^\]]*\]/g, ' '), 'text/html')
+  return (doc.body.textContent || '').length
 })
 
 // 头像上传相关方法

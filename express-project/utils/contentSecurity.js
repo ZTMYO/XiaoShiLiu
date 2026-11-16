@@ -45,7 +45,7 @@ const validateAndCleanMentionLink = (linkHtml) => {
 
 
   // 重新构建安全的 mention 链接
-  return `<a href="/user/${userId}" class="mention-link" data-user-id="${userId}" contenteditable="false">@${nickname}</a>`
+  return `<a href="/user/${userId}" class="mention-link" data-user-id="${userId}" contenteditable="false">@${escapeHtml(nickname)}</a>`
 }
 
 /**
@@ -191,4 +191,3 @@ module.exports = {
   hasDangerousAttributes,
   escapeHtml
 }
-
