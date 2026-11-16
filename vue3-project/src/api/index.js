@@ -232,8 +232,8 @@ export const authApi = {
   },
 
   // 刷新token
-  refreshToken() {
-    return request.post('/auth/refresh')
+  refreshToken(data) {
+    return request.post('/auth/refresh', data)
   },
 
   // 获取当前用户信息

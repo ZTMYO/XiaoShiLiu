@@ -138,13 +138,19 @@ export const useUserStore = defineStore('user', () => {
   // 刷新token
   const refreshUserToken = async () => {
     try {
-      const response = await authApi.refreshToken()
-      if (response.success) {
-        token.value = response.data.tokens.access_token
-        localStorage.setItem('token', response.data.tokens.access_token)
+      if (!refreshToken.value) {
+        throw new Error('无刷新令牌')
+      }
+
+      const response = await authApi.refreshToken({ refresh_token: refreshToken.value })
+      if (response.success && response.data) {
+        token.value = response.data.access_token
+        refreshToken.value = response.data.refresh_token
+        localStorage.setItem('token', response.data.access_token)
+        localStorage.setItem('refreshToken', response.data.refresh_token)
         return true
       }
-      return false
+      throw new Error(response.message || '刷新令牌失败')
     } catch (error) {
       console.error('刷新token失败:', error)
       // token刷新失败，清除登录状态
