@@ -2,7 +2,6 @@ const axios = require('axios');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
-const { HTTP_STATUS, RESPONSE_CODES } = require('../constants');
 const config = require('../config/config');
 const crypto = require('crypto');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
@@ -575,34 +574,6 @@ async function uploadFileToImageHost(filePath, originalname, mimetype, deleteAft
 }
 
 /**
- * 管理员权限验证中间件
- * @param {Object} req - 请求对象
- * @param {Object} res - 响应对象
- * @param {Function} next - 下一个中间件函数
- */
-function adminAuth(req, res, next) {
-  const { authenticateToken } = require('../middleware/auth');
-
-  authenticateToken(req, res, (err) => {
-    if (err) {
-      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
-        code: RESPONSE_CODES.UNAUTHORIZED,
-        message: '认证失败'
-      });
-    }
-
-    if (!req.user.type || req.user.type !== 'admin') {
-      return res.status(HTTP_STATUS.FORBIDDEN).json({
-        code: RESPONSE_CODES.FORBIDDEN,
-        message: '权限不足，需要管理员权限'
-      });
-    }
-
-    next();
-  });
-}
-
-/**
  * 统一上传接口 - 根据配置选择上传策略
  * @param {Buffer} fileBuffer - 文件缓冲区
  * @param {string} filename - 文件名
@@ -686,6 +657,5 @@ module.exports = {
   uploadVideoToOSS,
   uploadImage,
   uploadVideo,
-  uploadFile,
-  adminAuth
+  uploadFile
 };

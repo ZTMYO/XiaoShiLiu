@@ -4,7 +4,7 @@ const { HTTP_STATUS, RESPONSE_CODES } = require('../constants')
 const { pool, features } = require('../config/config')
 const { createCrudHandlers, createAdminListRoute } = require('../middleware/crudFactory')
 const { recordExists } = require('../utils/dbHelper')
-const { adminAuth } = require('../utils/uploadHelper')
+const { adminAuth } = require('../middleware/auth')
 const {
   validateLikeOrFavoriteData,
   validateFollowData,

@@ -107,6 +107,32 @@ async function authenticateToken(req, res, next) {
 }
 
 /**
+ * 管理员权限验证中间件 - 在认证的基础上要求 admin 身份
+ * @param {Object} req - 请求对象
+ * @param {Object} res - 响应对象
+ * @param {Function} next - 下一个中间件函数
+ */
+function adminAuth(req, res, next) {
+  authenticateToken(req, res, (err) => {
+    if (err) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        code: RESPONSE_CODES.UNAUTHORIZED,
+        message: '认证失败'
+      });
+    }
+
+    if (!req.user || !req.user.type || req.user.type !== 'admin') {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        code: RESPONSE_CODES.FORBIDDEN,
+        message: '权限不足，需要管理员权限'
+      });
+    }
+
+    next();
+  });
+}
+
+/**
  * 可选认证中间件 - 如果有token则验证，没有则跳过
  */
 async function optionalAuth(req, res, next) {
@@ -154,5 +180,6 @@ async function optionalAuth(req, res, next) {
 
 module.exports = {
   authenticateToken,
+  adminAuth,
   optionalAuth
 };
