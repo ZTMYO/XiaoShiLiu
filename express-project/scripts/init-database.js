@@ -84,6 +84,9 @@ class DatabaseInitializer {
       // 创建审核表
       await this.createAuditTable(connection);
 
+      // 创建举报表
+      await this.createReportsTable(connection);
+
       // 创建用户认证表
       await this.createUserVerificationTable(connection);
 
@@ -164,7 +167,7 @@ class DatabaseInitializer {
         \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
         PRIMARY KEY (\`id\`),
         UNIQUE KEY \`name\` (\`name\`),
-        UNIQUE KEY \`category_title\` (\`category_title\`)
+        UNIQUE KEY \`uk_category_title\` (\`category_title\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='分类表';
     `;
     await connection.execute(sql);
@@ -336,6 +339,7 @@ class DatabaseInitializer {
         \`parent_id\` bigint(20) DEFAULT NULL COMMENT '父评论ID',
         \`content\` text NOT NULL COMMENT '评论内容',
         \`like_count\` int(11) DEFAULT 0 COMMENT '点赞数',
+        \`is_pinned\` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否置顶',
         \`status\` tinyint(1) NOT NULL DEFAULT 1 COMMENT '评论状态：0-待审核，1-正常显示，2-审核未通过',
         \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '评论时间',
         PRIMARY KEY (\`id\`),
@@ -456,6 +460,31 @@ class DatabaseInitializer {
     console.log('✓ audit 表创建成功');
   }
 
+  async createReportsTable(connection) {
+    const sql = `
+      CREATE TABLE IF NOT EXISTS \`reports\` (
+        \`id\` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '举报ID',
+        \`reporter_id\` bigint(20) NOT NULL COMMENT '举报人用户ID',
+        \`target_type\` tinyint(1) NOT NULL COMMENT '目标类型：1-笔记 2-评论',
+        \`target_id\` bigint(20) NOT NULL COMMENT '目标ID（笔记ID或评论ID）',
+        \`reason\` varchar(50) NOT NULL COMMENT '举报原因（预设枚举）',
+        \`detail\` text DEFAULT NULL COMMENT '补充说明',
+        \`content_hash\` varchar(64) DEFAULT NULL COMMENT '目标内容快照哈希（幂等判定）',
+        \`status\` tinyint(1) DEFAULT 0 COMMENT '处理状态：0-待处理 1-已处理(违规) 2-已处理(不违规)',
+        \`handle_note\` varchar(255) DEFAULT NULL COMMENT '管理员处理备注',
+        \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        \`handled_at\` timestamp NULL DEFAULT NULL COMMENT '处理时间',
+        PRIMARY KEY (\`id\`),
+        UNIQUE KEY \`uk_report_power\` (\`reporter_id\`, \`target_type\`, \`target_id\`, \`content_hash\`),
+        KEY \`idx_status\` (\`status\`),
+        KEY \`idx_created_at\` (\`created_at\`),
+        CONSTRAINT \`reports_ibfk_1\` FOREIGN KEY (\`reporter_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='举报表';
+    `;
+    await connection.execute(sql);
+    console.log('✓ reports 表创建成功');
+  }
+
   async createUserVerificationTable(connection) {
     const sql = `
       CREATE TABLE IF NOT EXISTS \`user_verification\` (
@@ -486,21 +515,21 @@ class DatabaseInitializer {
       CREATE TABLE IF NOT EXISTS \`user_ban\` (
         \`id\` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '封禁记录ID',
         \`user_id\` bigint(20) NOT NULL COMMENT '被封禁用户ID',
-        \`reason\` varchar(255) NOT NULL COMMENT '封禁原因',
+        \`reason\` text NOT NULL COMMENT '封禁原因',
         \`end_time\` timestamp NULL DEFAULT NULL COMMENT '封禁结束时间',
         \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-        \`status\` int(11) DEFAULT 0 COMMENT '状态：0-封禁中，1-管理员解封，2-自动解封，3-永久封禁，4-封禁撤销',
+        \`status\` tinyint(4) DEFAULT 0 COMMENT '状态：0=封禁中，1=管理员解封，2=自动解封，3=永久封禁，4=封禁撤销',
         \`operator\` bigint(20) NOT NULL DEFAULT 0 COMMENT '操作人ID：0-系统，其他为管理员ID',
         PRIMARY KEY (\`id\`),
         KEY \`idx_user_id\` (\`user_id\`),
         KEY \`idx_status\` (\`status\`),
         KEY \`idx_created_at\` (\`created_at\`),
-        KEY \`idx_end_time\` (\`end_time\`),
+        KEY \`idx_operator\` (\`operator\`),
         CONSTRAINT \`user_ban_ibfk_1\` FOREIGN KEY (\`user_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户封禁表';
     `;
     await connection.execute(sql);
-    console.log('user_ban 表创建成功');
+    console.log('✓ user_ban 表创建成功');
   }
 
   async insertDefaultAdmin() {
@@ -553,32 +582,17 @@ class DatabaseInitializer {
     } catch (error) {
       console.error('\n=== 数据库初始化失败 ===');
       console.error('错误信息:', error.message);
-      process.exit(1);
+      throw error;
     }
   }
-}
-
-// 等待用户按回车退出
-async function waitForExit() {
-  console.log('\n按回车键退出...');
-  return new Promise((resolve) => {
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.once('data', () => {
-      process.stdin.setRawMode(false);
-      resolve();
-    });
-  });
 }
 
 // 如果直接运行此脚本
 if (require.main === module) {
   const initializer = new DatabaseInitializer();
-  initializer.run().then(async () => {
-    await waitForExit();
+  initializer.run().then(() => {
     process.exit(0);
-  }).catch(async () => {
-    await waitForExit();
+  }).catch(() => {
     process.exit(1);
   });
 }
