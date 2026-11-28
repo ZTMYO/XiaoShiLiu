@@ -2160,14 +2160,14 @@ Authorization: Bearer <access_token>
 **請求參數**:
 - 使用 `multipart/form-data` 格式
 - 文件字段名: `file`
-- 支持格式: jpg, jpeg, png, webp
+- 支持格式: jpg, jpeg, png, gif, webp
 - 文件大小限制: 10MB
 
 **響應示例**:
 ```json
 {
   "code": 200,
-  "message": "圖片上傳成功",
+  "message": "上傳成功",
   "data": {
     "originalname": "image.jpg",
     "size": 1024000,
@@ -2184,7 +2184,7 @@ Authorization: Bearer <access_token>
 - 使用 `multipart/form-data` 格式
 - 文件欄位名: `files`
 - 最多支持9個文件
-- 支持格式: jpg, jpeg, png, webp
+- 支持格式: jpg, jpeg, png, gif, webp
 - 單文件大小限制: 10MB
 
 **響應示例**:

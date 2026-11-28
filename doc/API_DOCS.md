@@ -2495,14 +2495,14 @@ Content-Type: application/json
 **请求参数**:
 - 使用 `multipart/form-data` 格式
 - 文件字段名: `file`
-- 支持格式: jpg, jpeg, png, webp
+- 支持格式: jpg, jpeg, png, gif, webp
 - 文件大小限制: 10MB
 
 **响应示例**:
 ```json
 {
   "code": 200,
-  "message": "图片上传成功",
+  "message": "上传成功",
   "data": {
     "originalname": "image.jpg",
     "size": 1024000,
@@ -2519,7 +2519,7 @@ Content-Type: application/json
 - 使用 `multipart/form-data` 格式
 - 文件字段名: `files`
 - 最多支持9个文件
-- 支持格式: jpg, jpeg, png, webp
+- 支持格式: jpg, jpeg, png, gif, webp
 - 单文件大小限制: 10MB
 
 **响应示例**:
