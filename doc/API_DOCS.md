@@ -26,6 +26,7 @@
 - `401`: 未授权，需要登录
 - `403`: 禁止访问
 - `404`: 资源不存在
+- `409`: 资源冲突（如邮箱、用户ID已被占用）
 - `500`: 服务器内部错误
 
 ### 认证说明
@@ -237,7 +238,7 @@ Content-Type: application/json
 
 **功能说明**:
 - 使用小石榴号与密码登录，密码以 SHA2-256 哈希比对
-- 用户不存在返回 400「用户不存在」，密码错误返回 400「密码错误」
+- 用户不存在返回 404「用户不存在」，密码错误返回 400「密码错误」
 - 账户被禁用（is_active = 0）返回 403「账户已被禁用」
 - 登录成功会将该用户此前的全部会话置为失效，仅保留本次登录的会话
 - 每次登录都会重新解析 IP 属地并写入 location，同时更新最后登录时间
@@ -465,7 +466,7 @@ Authorization: Bearer <access_token>
 **功能说明**:
 - 用于注册前的邮箱校验，邮件功能未启用时返回 400「邮件功能未启用」
 - 邮箱格式不合法返回 400「邮箱格式不正确」
-- 邮箱已被其他账号注册返回 400「该邮箱已被注册」
+- 邮箱已被其他账号注册返回 409「该邮箱已被注册」
 - 验证码为 6 位数字，10 分钟内有效，同一邮箱重复请求会覆盖旧验证码
 - 验证码在注册校验通过后立即失效
 
@@ -529,7 +530,7 @@ GET /api/auth/email-config
 
 **功能说明**:
 - 为当前登录用户绑定邮箱，邮件功能未启用时返回 400「邮件功能未启用」
-- 邮箱格式不合法返回 400，已被其他用户绑定返回 400「该邮箱已被其他用户绑定」
+- 邮箱格式不合法返回 400，已被其他用户绑定返回 409「该邮箱已被其他用户绑定」
 - 验证码不存在、已过期或错误均返回 400，校验通过后立即失效
 - 绑定成功后 users.email 更新为该邮箱
 
@@ -596,7 +597,7 @@ Authorization: Bearer <access_token>
 
 **功能说明**:
 - 向已绑定账号的邮箱发送找回密码验证码，邮件功能未启用时返回 400「邮件功能未启用」
-- 邮箱格式不合法返回 400，未绑定任何账号返回 400「该邮箱未绑定任何账号」
+- 邮箱格式不合法返回 400，未绑定任何账号返回 404「该邮箱未绑定任何账号」
 - 验证码为 6 位数字，10 分钟内有效，与注册验证码分开存储互不影响
 - 响应会返回该邮箱对应的 user_id，供前端展示待找回的账号
 
@@ -2494,14 +2495,14 @@ Content-Type: application/json
 **请求参数**:
 - 使用 `multipart/form-data` 格式
 - 文件字段名: `file`
-- 支持格式: jpg, jpeg, png, webp
+- 支持格式: jpg, jpeg, png, gif, webp
 - 文件大小限制: 10MB
 
 **响应示例**:
 ```json
 {
   "code": 200,
-  "message": "图片上传成功",
+  "message": "上传成功",
   "data": {
     "originalname": "image.jpg",
     "size": 1024000,
@@ -2518,28 +2519,36 @@ Content-Type: application/json
 - 使用 `multipart/form-data` 格式
 - 文件字段名: `files`
 - 最多支持9个文件
-- 支持格式: jpg, jpeg, png, webp
+- 支持格式: jpg, jpeg, png, gif, webp
 - 单文件大小限制: 10MB
 
 **响应示例**:
 ```json
 {
   "code": 200,
-  "message": "文件上传成功",
-  "data": [
-    {
-      "originalname": "image1.jpg",
-      "size": 1024000,
-      "url": "https://img.example.com/1640995200000_image1.jpg"
-    },
-    {
-      "originalname": "image2.jpg",
-      "size": 2048000,
-      "url": "https://img.example.com/1640995200001_image2.jpg"
-    }
-  ]
+  "message": "所有图片上传成功",
+  "data": {
+    "uploaded": [
+      {
+        "originalname": "image1.jpg",
+        "size": 1024000,
+        "url": "https://img.example.com/1640995200000_image1.jpg"
+      },
+      {
+        "originalname": "image2.jpg",
+        "size": 2048000,
+        "url": "https://img.example.com/1640995200001_image2.jpg"
+      }
+    ],
+    "errors": [],
+    "total": 2,
+    "successCount": 2,
+    "errorCount": 0
+  }
 }
 ```
+
+> 部分文件上传失败时仍返回 `code: 200`，失败明细见 `data.errors`；全部失败或未收到文件时返回 `code: 400`。
 
 ### 3. 单视频上传
 **接口地址**: `POST /api/upload/video`

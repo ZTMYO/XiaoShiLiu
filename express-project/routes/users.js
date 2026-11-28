@@ -1275,7 +1275,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
     res.json({
       code: RESPONSE_CODES.SUCCESS,
       message: '资料更新成功',
-      success: true,
       data: updatedUser[0]
     });
   } catch (error) {
@@ -1332,8 +1331,7 @@ router.put('/:id/password', authenticateToken, async (req, res) => {
 
     res.json({
       code: RESPONSE_CODES.SUCCESS,
-      message: '密码修改成功',
-      success: true
+      message: '密码修改成功'
     });
   } catch (error) {
     console.error('修改密码失败:', error);
@@ -1374,8 +1372,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     res.json({
       code: RESPONSE_CODES.SUCCESS,
-      message: '账号删除成功',
-      success: true
+      message: '账号删除成功'
     });
   } catch (error) {
     // 回滚事务
@@ -1452,7 +1449,7 @@ router.post('/verification', authenticateToken, async (req, res) => {
       [type.toString(), userId.toString()]
     );
 
-    res.status(HTTP_STATUS.CREATED).json({
+    res.status(HTTP_STATUS.OK).json({
       code: RESPONSE_CODES.SUCCESS,
       message: '认证申请提交成功，请耐心等待审核',
       data: {
@@ -1462,8 +1459,8 @@ router.post('/verification', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('提交认证申请错误:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.SERVER_ERROR,
-      message: ERROR_MESSAGES.SERVER_ERROR
+      code: RESPONSE_CODES.ERROR,
+      message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR
     });
   }
 });
@@ -1487,8 +1484,8 @@ router.get('/verification/status', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('获取认证状态错误:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.SERVER_ERROR,
-      message: ERROR_MESSAGES.SERVER_ERROR
+      code: RESPONSE_CODES.ERROR,
+      message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR
     });
   }
 });
@@ -1536,8 +1533,8 @@ router.delete('/verification/revoke', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('撤回认证申请错误:', error);
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      code: RESPONSE_CODES.SERVER_ERROR,
-      message: ERROR_MESSAGES.SERVER_ERROR
+      code: RESPONSE_CODES.ERROR,
+      message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR
     });
   }
 });

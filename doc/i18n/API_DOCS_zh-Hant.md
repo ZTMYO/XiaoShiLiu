@@ -26,6 +26,7 @@
 - `401`: 未授權，需要登錄
 - `403`: 禁止訪問
 - `404`: 資源不存在
+- `409`: 資源衝突（如郵箱、用戶ID已被佔用）
 - `500`: 伺服器內部錯誤
 
 ### 認證說明
@@ -2159,14 +2160,14 @@ Authorization: Bearer <access_token>
 **請求參數**:
 - 使用 `multipart/form-data` 格式
 - 文件字段名: `file`
-- 支持格式: jpg, jpeg, png, webp
+- 支持格式: jpg, jpeg, png, gif, webp
 - 文件大小限制: 10MB
 
 **響應示例**:
 ```json
 {
   "code": 200,
-  "message": "圖片上傳成功",
+  "message": "上傳成功",
   "data": {
     "originalname": "image.jpg",
     "size": 1024000,
@@ -2183,28 +2184,36 @@ Authorization: Bearer <access_token>
 - 使用 `multipart/form-data` 格式
 - 文件欄位名: `files`
 - 最多支持9個文件
-- 支持格式: jpg, jpeg, png, webp
+- 支持格式: jpg, jpeg, png, gif, webp
 - 單文件大小限制: 10MB
 
 **響應示例**:
 ```json
 {
   "code": 200,
-  "message": "文件上傳成功",
-  "data": [
-    {
-      "originalname": "image1.jpg",
-      "size": 1024000,
-      "url": "https://img.example.com/1640995200000_image1.jpg"
-    },
-    {
-      "originalname": "image2.jpg",
-      "size": 2048000,
-      "url": "https://img.example.com/1640995200001_image2.jpg"
-    }
-  ]
+  "message": "所有圖片上傳成功",
+  "data": {
+    "uploaded": [
+      {
+        "originalname": "image1.jpg",
+        "size": 1024000,
+        "url": "https://img.example.com/1640995200000_image1.jpg"
+      },
+      {
+        "originalname": "image2.jpg",
+        "size": 2048000,
+        "url": "https://img.example.com/1640995200001_image2.jpg"
+      }
+    ],
+    "errors": [],
+    "total": 2,
+    "successCount": 2,
+    "errorCount": 0
+  }
 }
 ```
+
+> 部分文件上傳失敗時仍返回 `code: 200`，失敗明細見 `data.errors`；全部失敗或未收到文件時返回 `code: 400`。
 
 ### 3. 單視頻上傳
 **接口地址**: `POST /api/upload/video`

@@ -26,6 +26,7 @@ All API interfaces return JSON format with the following structure:
 - `401`: Unauthorized, requires login
 - `403`: Forbidden access
 - `404`: Resource not found
+- `409`: Resource conflict (e.g. email or user ID already taken)
 - `500`: Internal server error
 
 ### Authentication Instructions
@@ -2159,18 +2160,18 @@ The notification system supports the following types:
 **Request Parameters**:
 - Use `multipart/form-data` format
 - File field name: `file`
-- Supported formats: jpg, jpeg, png, webp
+- Supported formats: jpg, jpeg, png, gif, webp
 - File size limit: 10MB
 
 **Response Example**:
 ```json
 {
   "code": 200,
-  "message": "Image upload successful",
+  "message": "Upload successful",
   "data": {
-    "Original Name": "image.jpg",
-    "Size": 1024000,
-    "URL": "https://img.example.com/1640995200000_image.jpg"
+    "originalname": "image.jpg",
+    "size": 1024000,
+    "url": "https://img.example.com/1640995200000_image.jpg"
   }
 }
 ```
@@ -2183,28 +2184,36 @@ The notification system supports the following types:
 - Use `multipart/form-data` format
 - File field name: `files`
 - Up to 9 files supported
-- Supported formats: jpg, jpeg, png, webp
+- Supported formats: jpg, jpeg, png, gif, webp
 - Single file size limit: 10MB
 
 **Response Example**:
 ```json
 {
   "code": 200,
-  "message": "File upload successful",
-  "data": [
-    {
-      "originalname": "image1.jpg",
-      "size": 1024000,
-      "url": "https://img.example.com/1640995200000_image1.jpg"
-    },
-    {
-      "originalname": "image2.jpg",
-      "size": 2048000,
-      "url": "https://img.example.com/1640995200001_image2.jpg"
-    }
-  ]
+  "message": "All images uploaded successfully",
+  "data": {
+    "uploaded": [
+      {
+        "originalname": "image1.jpg",
+        "size": 1024000,
+        "url": "https://img.example.com/1640995200000_image1.jpg"
+      },
+      {
+        "originalname": "image2.jpg",
+        "size": 2048000,
+        "url": "https://img.example.com/1640995200001_image2.jpg"
+      }
+    ],
+    "errors": [],
+    "total": 2,
+    "successCount": 2,
+    "errorCount": 0
+  }
 }
 ```
+
+> When some files fail, the response still uses `code: 200` and lists the failures in `data.errors`; when all files fail or no file is received, `code: 400` is returned.
 
 ### 3. Single Video Upload
 **API Endpoint**: `POST /api/upload/video`

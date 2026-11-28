@@ -2868,7 +2868,7 @@ router.put('/audit/:id/approve', adminAuth, async (req, res) => {
     const [verificationResult] = await pool.query('SELECT user_id, type FROM user_verification WHERE id = ?', [id])
     if (verificationResult.length === 0) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
-        code: RESPONSE_CODES.ERROR,
+        code: RESPONSE_CODES.NOT_FOUND,
         message: '认证记录不存在'
       })
     }
@@ -2926,7 +2926,7 @@ router.put('/audit/:id/reject', adminAuth, async (req, res) => {
     const [verificationResult] = await pool.query('SELECT user_id, type FROM user_verification WHERE id = ?', [id])
     if (verificationResult.length === 0) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
-        code: RESPONSE_CODES.ERROR,
+        code: RESPONSE_CODES.NOT_FOUND,
         message: '认证记录不存在'
       })
     }
