@@ -26,6 +26,7 @@
 - `401`: 未授權，需要登錄
 - `403`: 禁止訪問
 - `404`: 資源不存在
+- `409`: 資源衝突（如郵箱、用戶ID已被佔用）
 - `500`: 伺服器內部錯誤
 
 ### 認證說明
@@ -2190,21 +2191,29 @@ Authorization: Bearer <access_token>
 ```json
 {
   "code": 200,
-  "message": "文件上傳成功",
-  "data": [
-    {
-      "originalname": "image1.jpg",
-      "size": 1024000,
-      "url": "https://img.example.com/1640995200000_image1.jpg"
-    },
-    {
-      "originalname": "image2.jpg",
-      "size": 2048000,
-      "url": "https://img.example.com/1640995200001_image2.jpg"
-    }
-  ]
+  "message": "所有圖片上傳成功",
+  "data": {
+    "uploaded": [
+      {
+        "originalname": "image1.jpg",
+        "size": 1024000,
+        "url": "https://img.example.com/1640995200000_image1.jpg"
+      },
+      {
+        "originalname": "image2.jpg",
+        "size": 2048000,
+        "url": "https://img.example.com/1640995200001_image2.jpg"
+      }
+    ],
+    "errors": [],
+    "total": 2,
+    "successCount": 2,
+    "errorCount": 0
+  }
 }
 ```
+
+> 部分文件上傳失敗時仍返回 `code: 200`，失敗明細見 `data.errors`；全部失敗或未收到文件時返回 `code: 400`。
 
 ### 3. 單視頻上傳
 **接口地址**: `POST /api/upload/video`

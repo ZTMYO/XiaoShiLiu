@@ -209,7 +209,7 @@ router.post('/send-email-code', async (req, res) => {
     );
 
     if (existingUser.length > 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.CONFLICT, message: '该邮箱已被注册' });
+      return res.status(HTTP_STATUS.CONFLICT).json({ code: RESPONSE_CODES.CONFLICT, message: '该邮箱已被注册' });
     }
 
     // 生成6位随机验证码
@@ -270,7 +270,7 @@ router.post('/bind-email', authenticateToken, async (req, res) => {
     );
 
     if (existingUser.length > 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.CONFLICT, message: '该邮箱已被其他用户绑定' });
+      return res.status(HTTP_STATUS.CONFLICT).json({ code: RESPONSE_CODES.CONFLICT, message: '该邮箱已被其他用户绑定' });
     }
 
     // 验证邮箱验证码
@@ -337,7 +337,7 @@ router.post('/send-reset-code', async (req, res) => {
     );
 
     if (existingUser.length === 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.NOT_FOUND, message: '该邮箱未绑定任何账号' });
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ code: RESPONSE_CODES.NOT_FOUND, message: '该邮箱未绑定任何账号' });
     }
 
     // 生成6位随机验证码
@@ -541,7 +541,7 @@ router.post('/register', async (req, res) => {
       [user_id.toString()]
     );
     if (existingUser.length > 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.CONFLICT, message: '用户ID已存在' });
+      return res.status(HTTP_STATUS.CONFLICT).json({ code: RESPONSE_CODES.CONFLICT, message: '用户ID已存在' });
     }
 
     // 验证验证码
@@ -684,7 +684,7 @@ router.post('/login', async (req, res) => {
 
     if (userRows.length === 0) {
       recordLoginFail(user_id.toString());
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.NOT_FOUND, message: '用户不存在' });
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ code: RESPONSE_CODES.NOT_FOUND, message: '用户不存在' });
     }
 
     const user = userRows[0];
@@ -930,7 +930,7 @@ router.post('/admin/login', async (req, res) => {
 
     if (adminRows.length === 0) {
       recordLoginFail(adminLockKey);
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: RESPONSE_CODES.NOT_FOUND, message: '管理员账号不存在' });
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ code: RESPONSE_CODES.NOT_FOUND, message: '管理员账号不存在' });
     }
 
     const admin = adminRows[0];

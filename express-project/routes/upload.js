@@ -111,8 +111,8 @@ router.post('/single', authenticateToken, requireFeature('userUpload'), upload.s
 router.post('/multiple', authenticateToken, requireFeature('userUpload'), upload.array('files', 9), async (req, res) => {
   try {
     if (!Array.isArray(req.files) || req.files.length === 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
-        success: false, 
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        code: RESPONSE_CODES.VALIDATION_ERROR,
         data: null, 
         message: '没有上传文件' 
       });
@@ -142,8 +142,8 @@ router.post('/multiple', authenticateToken, requireFeature('userUpload'), upload
     }
 
     if (uploadResults.length === 0) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
-        success: false, 
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        code: RESPONSE_CODES.VALIDATION_ERROR,
         data: null, 
         message: '所有图片上传失败' 
       });
@@ -153,7 +153,7 @@ router.post('/multiple', authenticateToken, requireFeature('userUpload'), upload
     console.log(`多图片上传成功 - 用户ID: ${req.user.id}, 文件数量: ${uploadResults.length}`);
 
     res.json({
-      success: true,
+      code: RESPONSE_CODES.SUCCESS,
       data: {
         uploaded: uploadResults,
         errors,
@@ -165,8 +165,8 @@ router.post('/multiple', authenticateToken, requireFeature('userUpload'), upload
     });
   } catch (error) {
     console.error('多图片上传失败:', error);
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      code: RESPONSE_CODES.ERROR,
       data: null, 
       message: '上传失败' 
     });
